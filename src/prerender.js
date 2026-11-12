@@ -24,7 +24,7 @@ export function loadJourney(webDir) {
   const a = src.indexOf('const FREE');
   const b = src.indexOf('\nfunction lpNav');
   if (a < 0 || b < 0) throw new Error('prerender: cannot find the landing data in web/app.js');
-  return new Function(`${src.slice(a, b)}\nreturn { JOURNEY, PROTECT, ROADMAP };`)();
+  return new Function(`${src.slice(a, b)}\nreturn { JOURNEY, PROTECT, ROADMAP, PRICING: typeof PRICING === 'undefined' ? null : PRICING };`)();
 }
 
 function allTools({ JOURNEY, PROTECT }) {
@@ -63,7 +63,7 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
 
   const NAV = (b) => `<header class="top">
     <a class="brand" href="${b}"><span class="mark" aria-hidden="true"></span>skillyard</a>
-    <nav aria-label="Site"><a href="${b}skills/">Skills</a><a href="${b}tools/">Tools</a><a href="${b}proof/">Proof</a><a href="${b}learn/">Learn</a><a href="${b}#/teams">For teams</a><a href="${b}#/browse">Open the app</a></nav>
+    <nav aria-label="Site"><a href="${b}skills/">Skills</a><a href="${b}tools/">Tools</a><a href="${b}proof/">Proof</a><a href="${b}learn/">Learn</a><a href="${b}pricing/">Pricing</a><a href="${b}#/teams">For teams</a><a href="${b}#/browse">Open the app</a></nav>
   </header>`;
   const FOOT = (b) => `<footer class="foot"><span>Skillyard builds, checks and protects your company's AI skills. Open source (MIT).</span><span><a href="${b}skills/">Skills</a> · <a href="${b}tools/">Tools</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="https://github.com/agentwik-labs/skillyard">GitHub</a></span></footer>`;
 
@@ -162,6 +162,22 @@ ${body(b)}
     <h1>Skillyard tools</h1>
     <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine; the protect tools are for teams and in pilot.</p>
     ${[...journey.JOURNEY, journey.PROTECT].map((s) => `<h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)}</p><ul class="sp-grid">${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="${b}tools/${t.slug}/">${esc(t.name)}</a><p>${esc(t.what)}</p></li>`).join('')}</ul>`).join('\n')}` });
+
+  // ---- pricing ------------------------------------------------------------------------------------------------
+  const P = journey.PRICING;
+  if (P) {
+    const num = (x) => (/^\$\d+/.test(x) ? x.slice(1) : null);
+    const offers = P.plans.filter((x) => num(x.price) !== null).map((x) => ({ '@type': 'Offer', name: x.name, price: num(x.price), priceCurrency: 'USD', description: `${x.price} ${x.per}. ${x.blurb}` }));
+    page({ p: '/pricing/', title: 'Skillyard pricing: free for developers, per seat for teams', description: `Free open-source developer tools. Team ${P.plans[1].price} and Protect ${P.plans[2].price} per seat per month. ${P.note}`,
+      ld: [crumbs([['Skillyard', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillyard', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
+      body: (b) => `${trail(b, [['Skillyard', ''], ['Pricing']])}
+    <h1>Skillyard pricing</h1>
+    <p class="sp-answer">The developer tools are free and open source. Teams pay per seat for the private vault (Team, ${esc(P.plans[1].price)}) and for leak tracing and offboarding (Protect, ${esc(P.plans[2].price)}). ${esc(P.note)}</p>
+    ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${x.per ? ` ${esc(x.per)}` : ''}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
+    <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
+    <p><a href="${b}#/?s=teams">Become a design partner</a></p>` });
+    texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price} ${x.per}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
+  }
 
   // ---- skills -------------------------------------------------------------------------------------------------
   const refOf = (s) => (idScope(s) === 'skillyard' ? s.name : s.id);

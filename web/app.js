@@ -338,10 +338,28 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
 // BACKLOG.md "Later": planned, not built.
 const ROADMAP = ['Leak-watch crawler', 'Collusion-resistant marks', 'Single sign-on', 'Slack alerts', 'VS Code extension', 'Self-hosted vault'];
 
+const PRICING = {
+  note: 'Prices in USD. Paid plans start after a free pilot; nothing is charged today.',
+  plans: [
+    { id: 'free', name: 'Free', price: '$0', per: 'forever', blurb: 'Open source (MIT). Runs on your machine; nothing leaves it.',
+      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'map, tokens, savings ledger', 'test, dev, ci, badge'],
+      cta: { label: 'npx skillyard review', href: 'https://github.com/agentwik-labs/skillyard', code: true } },
+    { id: 'team', name: 'Team', price: '$15', per: 'per seat / month', blurb: 'One private vault for every skill your company runs.',
+      items: ['Vault: roles, versions, diffs, rollback', 'Publishing gated by Reviewer + Security', 'Audit log, lockfile, signed skills', 'Team radar, A/B skills, model-release watch', 'Monthly savings statement'],
+      cta: { label: 'Become a design partner', href: '#/?s=teams' } },
+    { id: 'protect', name: 'Protect', price: '$30', per: 'per seat / month', featured: true, blurb: 'Everything in Team, and every copy traceable.',
+      items: ['Every copy marked for its recipient', 'Leak trace + signed evidence pack', 'Revocable streaming, offboarding report', 'Exit-interview agent', 'Governance export (SOC 2, ISO 42001, EU AI Act evidence)', 'Call-home link: opt-in, legal review required'],
+      cta: { label: 'Become a design partner', href: '#/?s=teams' } },
+    { id: 'enterprise', name: 'Enterprise', price: 'Custom', per: '', blurb: 'For security and procurement reviews.',
+      items: ['Self-hosted vault', 'Data processing agreement + security review', 'Single sign-on (roadmap)', 'Onboarding and priority support'],
+      cta: { label: 'Talk to us', href: '#/?s=teams' } },
+  ],
+  audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes within five working days.' },
+};
 function lpNav() {
   return `<header class="lp-nav">
     <a class="lp-word" href="#/">skillyard</a>
-    <nav aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a></nav>
+    <nav aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a><a href="#/?s=pricing">Pricing</a></nav>
     <a class="lp-action" href="#/?s=teams">For teams</a>
   </header>`;
 }
@@ -350,7 +368,7 @@ function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
       <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillyard#readme">Install guide on GitHub →</a></p></div>
-      <ul class="jf">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/teams">For teams</a></li></ul>
+      <ul class="jf">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillyard">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
     ${LEGAL_LIVE ? `<nav class="lp-legal-links" aria-label="Legal"><a href="legal/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="legal/terms.html">Terms</a><span aria-hidden="true">·</span><a href="legal/security.html">Security</a><span aria-hidden="true">·</span><a href="legal/contact.html">Contact</a></nav>` : ''}
@@ -389,6 +407,23 @@ function roadmapStrip() {
   return `<section class="v-sec rm" aria-labelledby="rm-h">
       <h2 id="rm-h" class="rm-h">Roadmap, built when design partners ask for it</h2>
       <ul class="rm-list">${ROADMAP.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+    </section>`;
+}
+
+function pricingSection(id = 'pricing') {
+  const P = PRICING;
+  return `<section class="v-sec pr" id="${id}" aria-labelledby="${id}-h">
+      <p class="v-eyebrow">Pricing</p>
+      <h2 class="lp-h" id="${id}-h">Free for developers. Per seat for teams.</h2>
+      <ul class="pr-grid">${P.plans.map((p) => `<li class="pr-card${p.featured ? ' pr-featured' : ''}">
+        <h3>${esc(p.name)}</h3>
+        <p class="pr-price"><b>${esc(p.price)}</b>${p.per ? `<span>${esc(p.per)}</span>` : ''}</p>
+        <p class="pr-blurb">${esc(p.blurb)}</p>
+        <ul class="pr-items">${p.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+        <a class="${p.cta.code ? 'pr-code' : 'lp-action'}" href="${esc(p.cta.href)}">${p.cta.code ? `<code>${esc(p.cta.label)}</code>` : esc(p.cta.label)}</a>
+      </li>`).join('')}</ul>
+      <p class="pr-audit"><b>${esc(P.audit.name)}: ${esc(P.audit.price)}</b>, ${esc(P.audit.extra)}. ${esc(P.audit.text)}</p>
+      <p class="pr-note">${esc(P.note)}</p>
     </section>`;
 }
 
@@ -615,6 +650,7 @@ async function viewShowcase() {
     <section class="v-sec" id="library" aria-labelledby="library-h" data-library><p class="pf-k">Loading the library…</p></section>
 
     ${roadmapStrip()}
+    ${pricingSection()}
     ${teamsCta('su-home')}
     ${lpFooter()}
   </div>`;
@@ -635,6 +671,7 @@ function viewTeams() {
       <p class="lp-lede">The developer tools are free and open source. The vault and the team features below are in pilot. Work with us before they open: you get a free audit of the skills your team already uses, and a say in what we build next.</p>
     </section>
     ${protectSection('vault')}
+    ${pricingSection('pricing-teams')}
     ${roadmapStrip()}
     ${teamsCta('su-teams')}
     ${lpFooter()}
