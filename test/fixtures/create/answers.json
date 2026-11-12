@@ -1,0 +1,11 @@
+{
+  "generator": "checklist",
+  "reviews": "Outbound sales emails before they are sent.",
+  "blockers": ["Names the recipient's company in the first line", "Has exactly one clear call to action", "No pricing promises without approval"],
+  "warnings": ["Longer than 150 words"],
+  "output": "A ranked list: blocker or should-fix, where, why, the exact fix.",
+  "should_fire": ["check this sales email before I send it", "review my outbound email draft", "is this cold email ready to go out"],
+  "should_not_fire": ["write a blog post about our product launch"],
+  "example_request": "Review this email: Hi there, we are the best. Buy now.",
+  "must_include": ["flags the missing company name", "flags the missing call to action"]
+}

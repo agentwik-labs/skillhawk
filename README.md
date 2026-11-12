@@ -72,6 +72,12 @@ your team's defect rate for AI work, with the pipeline from corrections to prove
 | **Cross-agent install** | `skillyard install` writes each skill where each agent looks: `.claude/skills/`, `.codex/skills/`, `.cursor/rules/*.mdc` (+ files), and `.agents/skills/` with a managed index in `AGENTS.md`. |
 | **MCP server** | Tools `search_skills`, `get_skill`, `read_skill_file`; every skill as an MCP prompt and resource. Over HTTP from the registry, or as a stdio bridge (`skillyard mcp`). |
 | **Lift evals** | `skillyard eval <skill>` runs the skill's `evals/evals.json` tasks through Claude Code or Codex with and without the skill, grades both with fixed checks, and reports the lift. Skills that don't help are context you pay for on every task. |
+| **Skill reviewer** | `skillyard review <dir>` grades every skill A-F with line-level findings and fixes, `--fix` applies safe mechanical fixes, and a library pass flags duplicates, overlapping triggers and contradictions; also a Claude Code skill + subagent in `plugins/review`. |
+| **Skill optimizer** | `skillyard optimize <dir>` cuts tokens with a static pass (filler, repeats, whitespace) that must keep the review grade and trigger cases; `--allow-model` adds model rewrites kept only if lift holds; `--all <dir>` summarizes a library; plugin in `plugins/optimize`. |
+| **Clean** | `skillyard clean scripts <skill-dir...>` reviews scripts bundled in skills (error handling, `set -e`, unquoted variables, hard-coded paths, unused code; also shown in `review`); `skillyard clean standards [repo] [--from-git] [--from-reviews file]` learns a coding-standards skill from the repo and clusters repeated PR review requests into counted rules; skill + subagent in `plugins/clean`. |
+| **Token Saver** | `skillyard map [dir]` builds a zero-dependency index of a repo and its skills (symbols, imports, summaries; `--update` is incremental; `--engine graphify` uses the graphify CLI if installed); `skillyard map query "<question>"` returns ranked `file:line` hits with no model. `skillyard mcp` serves it as `map_query` and `skill_section` (one heading of a SKILL.md), and `plugins/tokensaver` teaches agents to use both. |
+| **Token dashboard** | `skillyard tokens [--days 7] [--logs dir] [--json]` totals tokens and estimated cost from Claude Code logs per day, repo, skill and session (folders listed in `exclude` in ~/.skillyard/config.json, SKILLYARD_EXCLUDE or `--exclude` are never read). |
+| **Secure the setup** | `skillyard secure [dir...] [--gate high]` audits skills plus MCP configs, hooks, skill dependencies, run-time downloads and tool grants, with file:line, why and fix; `--gate` fails CI. |
 | **Scan any folder** | `skillyard scan <dir>` finds every skill under a folder (a repo, `~/.claude/skills`) and reports what runs code, talks to the network or hides instructions. |
 | **Project manifest** | `skills.json` lists a project's skills and agents; `skillyard sync` reproduces the set on any machine. |
 | **Claude plugin marketplace** | This repo is a Claude Code marketplace of the open-source skills, and `skillyard export claude-marketplace --scope acme` turns an org's private skills into a marketplace for a private git repo. |
@@ -144,6 +150,22 @@ Or with Docker: `docker build -t skillyard . && docker run -p 7420:7420 -v skill
 Put it behind TLS (any reverse proxy). Tokens are stored as SHA-256 hashes; org members manage tokens and see the
 activity log on their org page. See [docs/self-hosting.md](docs/self-hosting.md).
 
+## Sign, test and live-reload a skill
+
+- `skillyard keys create --out keys/`, `skillyard sign <skill-dir> --key keys/skillyard-private.pem`, `skillyard verify <skill-dir> --pub keys/skillyard-public.pem` (exit 1, names the changed files). The signature is ed25519 over a sorted path-to-sha256 manifest, stored in `.skillyard-signature.json` (excluded from the manifest). Per-person marked copies differ from the signed original, so the vault signs the marked copy it serves, at serve time, with the org key; `verify` works on whatever was delivered. Library: `generateKeys`, `signFiles`, `verifyFiles` in `src/sign.js`.
+- `skillyard new` adds `tests/cases.yaml` (`should_fire`, `should_not_fire`, `behaviour` with `expect`/`forbid`/`rubric`; `cases.json` also works). `skillyard test <dir>` scores each trigger prompt against this skill's description and the sibling/installed skills (BM25) and reports which skill would win; `--allow-model` also runs behaviour cases in the confined eval runner.
+- `skillyard dev <dir> [--agent claude]` watches the folder, re-installs on change and prints one status line (review grade, static tests).
+- `skillyard ci skills --compare origin/main` adds a grade before/after and findings-delta table for changed skills to the PR summary (action input `compare`).
+## Leak tracing: mark and trace
+
+`skillyard mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> --marks marks.json` writes a per-person copy and appends its fingerprint to `marks.json`; `skillyard trace leaked.md --marks marks.json --secret <s>` names the recipient with confidence and evidence, from a full copy or a fragment. Three layers, all keyed by HMAC(secret, recipient|version):
+
+- **zw**: a 32-bit tag as zero-width characters at up to 8 line ends. Easy to strip, which is fine.
+- **wording**: meaning-preserving variants (verify/confirm/check, make sure/ensure, before/prior to, e.g./for example, contractions and apostrophe style, Oxford comma, list marker style, order of adjacent independent bullets). Each site carries one bit of a 32-bit code in the parity of the choice, so every bit is repeated across sites; sites are anchored to line content, so fragments and merged copies still match. Never touches frontmatter, code fences, inline code, URLs, paths, headings or tables. Short skills get fewer sites (about 10 to 35).
+- **canary**: one line of illustrative sample values (a name, a ticket number, an amount) added to the Example section, or a short "Example (illustrative)" section when there is none. It never alters thresholds or instructions, and survives paraphrase as long as the example is kept. A rewrite that drops the example removes it.
+
+`mark` refuses to record a copy whose `review` grade differs from the original. Collusion: merged copies list both recipients at the top (certain while zero-width tags or the canary survive; with wording alone, both usually rank in the top 2-3 of 10). Tardos-style collusion-resistant codes are on the later list. Demo: `node scripts/trace-demo.mjs`.
+
 ## Authoring skills
 
 ```
@@ -183,3 +205,5 @@ npm run build:marketplace
 ```
 
 MIT licensed. Skills in `registry/public` are MIT; the `seed/orgs` companies are fictional demo data.
+
+Site built following UI Skills by ibelick, MIT.

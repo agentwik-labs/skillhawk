@@ -1,0 +1,10 @@
+{
+  "name": "secure-agent-setup",
+  "version": "1.0.0",
+  "title": "Secure Agent Setup",
+  "summary": "Audit skills, MCP configs, hooks, dependencies and tool grants with skillyard secure, and explain each fix.",
+  "category": "security",
+  "tags": ["mcp", "hooks", "supply-chain", "audit", "ci"],
+  "license": "MIT",
+  "author": "Skillyard Community"
+}

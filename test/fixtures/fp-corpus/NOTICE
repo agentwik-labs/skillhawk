@@ -1,0 +1,3 @@
+These skills are copied unmodified from https://github.com/ibelick/ui-skills
+(MIT License, copyright the ui-skills authors). They are used only as a regression
+corpus to check that `skillyard review` does not raise false positives on well-regarded skills.

@@ -4,6 +4,7 @@
 // `registry` is any object with: search(opts), get(scope, name, version), readFile(scope, name, version, path).
 // LocalRegistry (server side) and RemoteRegistry (CLI side) both implement it.
 import { parseSkillRef } from './skill.js';
+import { loadMap, queryMap, formatHits, sectionOf, localSkillText } from './map.js';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const SERVER_INFO = { name: 'skillyard', title: 'Skillyard skill registry', version: '0.1.0' };
@@ -60,7 +61,25 @@ const TOOLS = [
   },
 ];
 
-export function createMcpHandler(registry) {
+// Lean loading: ask the repo map and read one section of a skill instead of whole files.
+const MAP_TOOL = {
+  name: 'map_query',
+  title: 'Query the repo map',
+  description: 'Find the files and symbols (with line numbers) that match a question, using the local skillyard map (built by `skillyard map`). Call this before opening files; then read only the lines it points to.',
+  inputSchema: { type: 'object', properties: { question: { type: 'string', description: 'Keywords or a short question, e.g. "where is the security scan"' }, limit: { type: 'number', description: 'Max hits (default 8)' } }, required: ['question'] },
+  annotations: { readOnlyHint: true },
+};
+const SECTION_TOOL = {
+  name: 'skill_section',
+  title: 'Read one section of a skill',
+  description: 'Return one heading-section of a skill\'s SKILL.md instead of the whole file. Omit heading to get the outline (headings with line numbers) first.',
+  inputSchema: { type: 'object', properties: { skill: { type: 'string', description: 'Skill id or name' }, heading: { type: 'string', description: 'Heading text (exact or partial); omit for the outline' } }, required: ['skill'] },
+  annotations: { readOnlyHint: true },
+};
+
+/** opts.root: a local folder holding .skillyard/map (stdio mode); enables map_query and local skill lookup. */
+export function createMcpHandler(registry, opts = {}) {
+  const tools = opts.root ? [...TOOLS, MAP_TOOL, SECTION_TOOL] : TOOLS;
   const handlers = {
     initialize: (params = {}) => ({
       protocolVersion: PROTOCOL_VERSIONS.includes(params.protocolVersion) ? params.protocolVersion : PROTOCOL_VERSIONS[0],
@@ -69,8 +88,8 @@ export function createMcpHandler(registry) {
       instructions: INSTRUCTIONS,
     }),
     ping: () => ({}),
-    'tools/list': () => ({ tools: TOOLS }),
-    'tools/call': (params = {}) => callTool(registry, params.name, params.arguments || {}),
+    'tools/list': () => ({ tools }),
+    'tools/call': (params = {}) => callTool(registry, params.name, params.arguments || {}, opts),
     'prompts/list': async () => {
       const skills = await registry.search({ limit: 500 });
       return {
@@ -140,8 +159,24 @@ export function createMcpHandler(registry) {
   }
 }
 
-async function callTool(registry, name, args) {
+async function callTool(registry, name, args, opts = {}) {
   try {
+    if (name === 'map_query' && opts.root) {
+      const map = loadMap(opts.root);
+      if (!map) return text('No map found. Run `skillyard map` in the repo first.', true);
+      return text(formatHits(queryMap(map, args.question || '', Math.min(Number(args.limit) || 8, 30))));
+    }
+    if (name === 'skill_section') {
+      let md = opts.root ? localSkillText(opts.root, args.skill) : null;
+      if (!md) {
+        const ref = parseSkillRef(args.skill);
+        if (!ref) return text(`Invalid skill id "${args.skill}".`, true);
+        md = (await registry.get(ref.scope, ref.name, ref.version)).skillMd;
+      }
+      const r = sectionOf(md, args.heading);
+      if (r.text) return text(r.text);
+      return text(`${r.missing ? `No heading matches "${args.heading}". ` : ''}Outline:\n${r.outline.join('\n')}`, !!r.missing);
+    }
     if (name === 'search_skills') {
       const results = await registry.search({ q: args.query || '', scope: args.scope, category: args.category, limit: Math.min(Number(args.limit) || 10, 50) });
       if (!results.length) return text(`No skills match "${args.query || ''}".`);

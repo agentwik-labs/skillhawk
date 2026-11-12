@@ -1,4 +1,5 @@
 // skillyard command-line interface.
+import { parseArgs } from './args.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +12,7 @@ import { createMcpHandler } from './mcp.js';
 import { AGENTS, detectAgents, installBundle, listInstalled, resolveAgents, uninstall, writeAgentsIndex } from './agents.js';
 import { loadConfig, RemoteRegistry, saveConfig } from './client.js';
 import { scanFiles } from './scan.js';
+import { secureCmd, secureScan, formatFinding } from './secure.js';
 import { evalSkill, evalMarkdown } from './eval.js';
 import { checksum, parseSkillRef, readSkillDir, titleCase, validateFiles, NAME_RE } from './skill.js';
 
@@ -33,18 +35,42 @@ Using skills
   sync [--quiet]                                 Install everything in ./skills.json for its agents
   hooks install [--claude] | hooks remove        Keep skills in sync automatically: git post-merge/post-checkout,
                                                  and with --claude a Claude Code SessionStart hook
-  ci [dirs...]                                   Format check + security scan for CI; writes a PR summary
+  ci [dirs...] [--compare <base-ref>]            Format check + security scan for CI; writes a PR summary;
+                                                 --compare adds a review/test table of changed skills vs the base ref
+  secure [dir...] [--json out.json] [--gate high|medium]  Audit skills plus MCP configs, hooks, dependencies, remote scripts, tool grants
 
 Connecting agents over MCP
   connect <claude|codex|cursor|vscode|gemini|claude-desktop> [--write]
                                                  Print (or write) the MCP config for an agent
   mcp                                            Run a stdio MCP server against the configured registry
+  connect <agent> --stream | mcp --stream        Stream skills from the company vault on demand: no files on disk,
+                                                 each response marked and audit-logged, revocable mid-session
+
+Offboarding (org admin)
+  revoke --user <member> [--org o]               Disable a member's tokens now; their next call is refused
+  offboard <member> [--org o] [--out report.md]  Revoke, then list every skill/version they ever pulled
+  exit-interview <member> [--answers a.json] [--from-logs dir] [--out skills/]
+                                                 Capture what only they know as checked, private draft skills
+  (installed copies of private skills carry a lease, default 7 days; sync removes expired ones)
 
 Studio (learns from your agent logs, with your consent)
   studio [--port 7430]                           Open Studio: correction rate, themes, proposed skill fixes to approve
   studio review [--max 3]                        Run a review now (for a schedule); needs consent given in Studio
   studio find [--all]                            Search the skill library for existing skills that fix waiting proposals
   studio --demo [--reset]                        Try Studio on a fictional team's data (reads nothing of yours)
+
+Token Saver
+  map [dir] [--out .skillyard/map] [--update] [--engine builtin|graphify]
+                                                 Index a repo + its skills (files, symbols, imports, skills) into map.json + MAP.md
+  map query "<question>" [--limit 8] [--json]    Top files/symbols with line numbers, no model; read less, ask the map
+  tokens [--days 7] [--logs dir] [--json] [--exclude p]
+  savings [--days 30] [--logs dir] [--price-table f] [--rate 100] [--json] [--statement out.md]
+                                                 Estimated dollars saved per skill (corrections, redo turns, tokens vs comparable sessions without it)
+  radar <dir...> [--team] [--min-people 2] [--days 14] [--branch]
+                                                 Repeated corrections across people's logs -> drafted, tested skill in .skillyard/radar/<id>/ (counts only, no push)
+  ab <skill> --a <dirA> --b <dirB> [--split 50] | ab hook | ab report <skill> | ab promote <skill>
+                                                 A/B two versions of a skill across sessions; z-test; promote B only at p<0.05 and n>=30 per arm
+                                                 Token and estimated cost dashboard from Claude Code logs: per day, repo, skill, top sessions
 
 Account
   login --registry <url> [--token <token>]       Save registry URL and token (~/.skillyard/config.json)
@@ -55,13 +81,55 @@ Authoring
   generate [generator] [--from doc.md | --answers a.json] [--out .] [--license MIT]
                                                  Build a skill from a generator: procedure, checklist, voice,
                                                  playbook, decision, metric; --from fills it from your own document
+  create [name] [--from doc.md] [--from-chats] [--answers a.json] [--out .] [--allow-model]
+                                                 One front door: interview (or doc, or a session-log proposal) -> a
+                                                 skill with tests/cases.yaml, then review, secure and test it
+  clean scripts <skill-dir...> [--json]          Static review of scripts bundled in skills (error handling, set -e, paths)
+  clean standards [repo] [--from-git] [--from-reviews f] [--out skills/coding-standards]
+                                                 Learn a coding-standards skill from the repo (and PR review comments)
   kit [dir] [--force]                            Copy the team starter kit (guide, session, review checklist,
                                                  data-handling + definition-of-done skills, CI) into a repo
+  keys create --out <dir>                        Make an ed25519 key pair for signing skills
+  sign <skill-dir> --key <private.pem>           Write .skillyard-signature.json (the vault signs the marked copy it serves)
+  verify <skill-dir> --pub <public.pem>          Check a delivered skill against its signature; exit 1 and name changed files
+  test <skill-dir> [--static] [--allow-model] [--model haiku]
+                                                 Trigger cases (tests/cases.yaml) scored against sibling/installed skills;
+                                                 --allow-model also runs behaviour cases in the confined eval runner
+  dev <skill-dir> [--agent claude] [--once]      Watch a skill, re-install on change, rerun review + static test
+  watch models [--check --models a,b | --from-file f] [--add m] [--save]   Known models per agent; print new ones (no network; --fetch needs ANTHROPIC_API_KEY)
+  watch run <dir...> --model <new> [--baseline <old>] [--threshold 10] --allow-model
+                                                 Re-run evals on old and new model, report lift drops, draft fixes to .skillyard/watch/<model>/
+  badge <skill-dir> [--out badge.svg] [--lift <pts> | --from-report r.json] [--markdown]   Shields-style SVG: grade, lift (only if given), secure
+  compile <skill-dir> --to claude,codex,cursor,copilot,gemini|all [--out dir]   Native format per agent, with size/frontmatter/content-kept checks
   validate <dir...>                              Check skill directories (or folders of them)
   scan <dir...> [--json out.json] [--all]        Security-scan every skill found under the given folders
+  review <dir...> [--json out.json] [--fix]      Grade skills A-F with line-level findings; library pass for duplicates,
+                                                 overlapping triggers and contradictions; --fix applies safe mechanical fixes
+  optimize <skill-dir> [--rounds 3] [--allow-model] [--model haiku] [--out dir] [--apply]
+                                                 Cut tokens without losing meaning: static pass (no model), gated by review grade + trigger cases;
+                                                 --allow-model adds model rewrites kept only if lift holds; --all <dir> = library table
   eval <dir...> [--agent claude|codex] [--model m] [--runs n] [--tools Skill,Read] [--out report.md]
                                                  Measure lift: run evals/evals.json with and without the skill
-  publish <dir> --org <org> [--visibility public|private]
+  publish <dir> --org <org> [--visibility public|private] [--force]   Org publishes must pass review (>= org minimum, default C) + secure; admin --force is logged
+  pull [--org o] [--frozen]                      Install an org's skills into your agents and write skillyard.lock (--frozen = exactly the lock)
+  versions <skill>                               Full version history (* = current)
+  diff <skill> <v1> <v2>                         Line diff between two versions
+  rollback <skill> <version>                     Serve an earlier version again (admin/editor; history kept)
+  audit [--org o] [--skill s] [--json]           Append-only log of pulls, publishes, rollbacks (admin only)
+
+Leak tracing
+  mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> [--marks marks.json] [--layers zw,wording,canary]
+                                                 Write a per-person copy (zero-width tag, wording choices, example canary);
+                                                 review grade must match the original; appends the fingerprint to --marks
+  trace <leaked.md> --marks marks.json --secret <s> [--json]
+                                                 Name the recipient of a leaked copy or fragment, with confidence and evidence
+  org settings <org> --beacon on|off --i-have-legal-review   Optional per-copy reference link (off by default; read docs/beacon.md)
+  alerts [--org o] [--json]                      Beacon hits: time, recipient, skill, ip, user-agent, referer (admin, local data dir)
+  evidence <leaked.md> --org o [--out evidence/] Signed evidence pack: trace, pull history, audit chain, draft takedown (admin)
+  evidence verify <dir>                          Check an evidence pack's signature
+  audit verify [--data dir]                      Verify the audit log's hash chain
+  governance export --org o [--framework soc2|iso42001|euaiact|all] [--out dir]
+                                                 Auditor bundle: inventory, approval trail, access, integrity, control mapping (admin)
 
 Running a registry
   serve [--port 7420] [--host 127.0.0.1] [--data ./data] [--log]
@@ -70,7 +138,7 @@ Running a registry
                                                  Import openly licensed skills from public GitHub repos (scanned,
                                                  licence kept, source recorded); no args = sources/community.json
   org create <slug> [--name "Acme"] [--data ./data]
-  token create --org <org> [--scopes read,publish] [--name n] [--data ./data]
+  token create --org <org> [--role admin|editor|reader | --scopes read,publish] [--name n] [--data ./data]
   token list --org <org> | token revoke <id>
   export site --out <dir> [--data ./data]       Static read-only demo of a registry (for GitHub Pages)
   export claude-marketplace --out <dir> [--from <dir> | --scope <org>]
@@ -83,8 +151,65 @@ export async function main(argv) {
   const { _: args, ...flags } = parseArgs(argv);
   const cmd = args.shift();
   const cmds = {
-    serve, seed, org, token, login, whoami, search, info, install, uninstall: uninstallCmd, list, update, init, sync,
-    new: scaffold, kit, studio, import: importCmd, hooks, ci, generate: generateCmd, validate, scan: scanCmd, eval: evalCmd, publish, connect, mcp, export: exportCmd,
+    serve,
+    seed,
+    org,
+    token,
+    login,
+    whoami,
+    search,
+    info,
+    install,
+    uninstall: uninstallCmd,
+    list,
+    update,
+    init,
+    sync: (a, f) => import('./lease.js').then((m) => m.syncWithLeases(a, f, sync)),
+    new: async (a, f) => { await scaffold(a, f); (await import('./devloop.js')).addCasesStub(path.resolve(f.dir || '.', a[0])); },
+    keys: (a, f) => import('./sign.js').then((m) => m.keysCmd(a, f)),
+    sign: (a, f) => import('./sign.js').then((m) => m.signCmd(a, f)),
+    verify: (a, f) => import('./sign.js').then((m) => m.verifyCmd(a, f)),
+    test: (a, f) => import('./devloop.js').then((m) => m.testCmd(a, f)),
+    dev: (a, f) => import('./devloop.js').then((m) => m.devCmd(a, f)),
+    kit,
+    studio,
+    import: importCmd,
+    hooks,
+    ci,
+    secure: secureCmd,
+    generate: generateCmd,
+    validate,
+    scan: scanCmd,
+    optimize: (a, f) => import('./optimize.js').then((m) => m.run(a, f)),
+    create: (a, f) => import('./create.js').then((m) => m.createCmd(a, f)),
+    review: (a, f) => import('./review.js').then((m) => m.run(a, f)),
+    eval: evalCmd,
+    map: (a, f) => import('./map.js').then((m) => m.run(a, f)),
+    tokens: (a, f) => import('./tokens.js').then((m) => m.run(a, f)),
+    publish: (a, f) => import('./vault-cli.js').then((m) => m.publish(a, f)),
+    pull: (a, f) => import('./vault-cli.js').then((m) => m.pull(a, f)),
+    versions: (a, f) => import('./vault-cli.js').then((m) => m.versions(a, f)),
+    diff: (a, f) => import('./vault-cli.js').then((m) => m.diff(a, f)),
+    rollback: (a, f) => import('./vault-cli.js').then((m) => m.rollback(a, f)),
+    audit: (a, f) => (a[0] === 'verify' ? import('./evidence.js').then((m) => m.auditVerifyCmd(a, f)) : import('./vault-cli.js').then((m) => m.audit(a, f))),
+    connect: (a, f) => (f.stream ? import('./stream.js').then((m) => m.connectStream(a, f)) : connect(a, f)),
+    mcp: (a, f) => (f.stream ? import('./stream.js').then((m) => m.mcpStdio()) : mcp()),
+    export: exportCmd,
+    watch: (a, f) => import('./watch.js').then((m) => m.run(a, f)),
+    badge: (a, f) => import('./badge.js').then((m) => m.run(a, f)),
+    compile: (a, f) => import('./compile.js').then((m) => m.run(a, f)),
+    savings: (a, f) => import('./savings.js').then((m) => m.run(a, f)),
+    radar: (a, f) => import('./radar.js').then((m) => m.run(a, f)),
+    ab: (a, f) => import('./ab.js').then((m) => m.run(a, f)),
+    governance: (a, f) => import('./governance.js').then((m) => m.governanceCmd(a, f)),
+    alerts: (a, f) => import('./beacon.js').then((m) => m.alertsCmd(a, f)),
+    offboard: (a, f) => import('./offboard.js').then((m) => m.offboardCmd(a, f)),
+    'exit-interview': (a, f) => import('./exit-interview.js').then((m) => m.exitInterviewCmd(a, f)),
+    clean: (a, f) => import('./clean.js').then((m) => m.run(a, f)),
+    mark: (a, f) => import('./mark.js').then((m) => m.run(a, f)),
+    trace: (a, f) => import('./mark.js').then((m) => m.traceCmd(a, f)),
+    revoke: (a, f) => import('./offboard.js').then((m) => m.revokeCmd(a, f)),
+    evidence: (a, f) => import('./evidence.js').then((m) => m.evidenceCmd(a, f)),
   };
   if (!cmd || cmd === 'help' || flags.help) return void process.stdout.write(HELP);
   if (cmd === '--version' || cmd === 'version') return void console.log('0.1.0');
@@ -92,25 +217,7 @@ export async function main(argv) {
   await cmds[cmd](args, flags);
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
-  const alias = { g: 'global', a: 'agent', h: 'help', f: 'force' };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a.startsWith('--')) {
-      const [k, v] = a.slice(2).split(/=(.*)/s);
-      if (v !== undefined) out[k] = v;
-      else if (argv[i + 1] !== undefined && !argv[i + 1].startsWith('-')) out[k] = argv[++i];
-      else out[k] = true;
-    } else if (/^-[a-z]$/.test(a)) {
-      const k = alias[a[1]] || a[1];
-      if (k === 'agent' && argv[i + 1] && !argv[i + 1].startsWith('-')) out[k] = argv[++i];
-      else out[k] = true;
-    } else out._.push(a);
-  }
-  return out;
-}
-
+const HAND_WRITTEN_PLUGINS = ['review', 'security', 'create', 'optimize', 'tokensaver', 'clean'];
 const dataDir = (f) => f.data || process.env.SKILLYARD_DATA || 'data';
 const registry = () => new RemoteRegistry(loadConfig());
 
@@ -213,7 +320,7 @@ async function hooks(args, f) {
 }
 
 /** CI gate: validate + scan every skill under the given folders; markdown summary to $GITHUB_STEP_SUMMARY. */
-async function ci(args) {
+async function ci(args, f = {}) {
   const roots = args.length ? args : ['skills', '.claude/skills'].filter((d) => fs.existsSync(d));
   const dirs = [];
   const walk = (d, depth) => {
@@ -234,8 +341,17 @@ async function ci(args) {
     rows.push(`| ${bad ? '❌' : notes.length ? '⚠️' : '✅'} | \`${d}\` | ${notes.map((n) => n.replace(/\|/g, '\\|')).join('<br>') || 'clean'} |`);
     console.log(`${bad ? 'FAIL' : notes.length ? 'warn' : 'ok  '} ${d}${notes.map((n) => `\n     - ${n}`).join('')}`);
   }
-  const md = [`### Skillyard: ${dirs.length} skill(s) checked, ${failed} failing`, '', '| | Skill | Findings |', '|---|---|---|', ...rows, ''].join('\n');
-  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+  const pk = secureScan(args.length ? args : ['.'], { skills: false });
+  for (const x of pk.findings.filter((x) => x.severity !== 'low')) console.log(`${x.severity === 'high' ? 'FAIL' : 'warn'} ${formatFinding(x).replace(/\n\s+/, ' ')}`);
+  if (pk.high) failed += pk.high;
+  const md = [`### Skillyard: ${dirs.length} skill(s) checked, ${failed} failing${pk.findings.length ? `; packages: ${pk.high} high, ${pk.medium} medium` : ''}`, '', '| | Skill | Findings |', '|---|---|---|', ...rows, ''].join('\n');
+  let out = md;
+  if (f.compare && f.compare !== true) {
+    const cmp = (await import('./devloop.js')).compareMarkdown(dirs, f.compare);
+    console.log(`\n${cmp}`);
+    out += `\n${cmp}`;
+  }
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out);
   if (!dirs.length) console.log('no skills found');
   if (failed) process.exitCode = 1;
 }
@@ -263,11 +379,12 @@ async function importCmd(args, f) {
 
 async function org(args, f) {
   const sub = args.shift();
+  if (sub === 'settings') return (await import('./beacon.js')).orgSettings(args, f);
   if (sub !== 'create' || !args[0]) throw new Error('usage: skillyard org create <slug> [--name "Acme"] [--description ...]');
   const store = new Store(dataDir(f));
   const o = store.createOrg({ slug: args[0], name: f.name, description: f.description || '', website: f.website || '' });
-  const t = store.createToken({ org: o.slug, name: 'owner', scopes: ['read', 'publish'] });
-  console.log(`created org @${o.slug}\nowner token (read+publish), shown once:\n  ${t.token}`);
+  const t = store.createToken({ org: o.slug, name: 'owner', role: 'admin' });
+  console.log(`created org @${o.slug}\nowner token (admin), shown once:\n  ${t.token}`);
 }
 
 async function token(args, f) {
@@ -276,7 +393,7 @@ async function token(args, f) {
   if (sub === 'create') {
     if (!f.org && !f.admin) throw new Error('usage: skillyard token create --org <org> [--scopes read,publish] | --admin');
     const scopes = f.admin ? ['admin', 'read', 'publish'] : String(f.scopes || 'read').split(',');
-    const t = store.createToken({ org: f.admin ? null : f.org, name: f.name || 'token', scopes });
+    const t = store.createToken({ org: f.admin ? null : f.org, name: f.name || 'token', ...(f.role ? { role: f.role } : { scopes }) });
     console.log(`token ${t.id} (${t.scopes.join(',')}${t.org ? ` for @${t.org}` : ', admin'}), shown once:\n  ${t.token}`);
   } else if (sub === 'list') {
     for (const t of store.listTokens(f.org || null)) console.log(`${t.id}  ${t.name.padEnd(16)} ${t.scopes.join(',').padEnd(14)} created ${t.createdAt.slice(0, 10)}  last used ${t.lastUsedAt?.slice(0, 10) || 'never'}`);
@@ -493,7 +610,7 @@ async function syncInner(f) {
 // ---- MCP --------------------------------------------------------------------
 
 async function mcp() {
-  const handle = createMcpHandler(registry());
+  const handle = createMcpHandler(registry(), { root: process.cwd() });
   const rl = readline.createInterface({ input: process.stdin });
   rl.on('line', async (line) => {
     if (!line.trim()) return;
@@ -729,9 +846,14 @@ async function exportCmd(args, f) {
   const byCat = {};
   for (const s of skills) (byCat[s.category] ||= []).push(s);
   const pluginsDir = path.join(out, 'plugins');
-  fs.rmSync(pluginsDir, { recursive: true, force: true });
+  // Hand-written plugin folders (not generated from registry skills) survive a regenerate.
+  const keep = new Set(HAND_WRITTEN_PLUGINS.filter((d) => fs.existsSync(path.join(pluginsDir, d))));
+  if (fs.existsSync(pluginsDir)) {
+    for (const d of fs.readdirSync(pluginsDir)) if (!keep.has(d)) fs.rmSync(path.join(pluginsDir, d), { recursive: true, force: true });
+  }
   const plugins = [];
   for (const [cat, list] of Object.entries(byCat).sort()) {
+    if (keep.has(cat)) continue;
     const pname = `${name}-${cat}`;
     const pdir = path.join(pluginsDir, cat);
     fs.mkdirSync(path.join(pdir, '.claude-plugin'), { recursive: true });
@@ -747,6 +869,10 @@ async function exportCmd(args, f) {
     plugins.push({ name: pname, source: `./plugins/${cat}`, description, version: '1.0.0', category: cat });
   }
   fs.mkdirSync(path.join(out, '.claude-plugin'), { recursive: true });
+  try {
+    const prev = JSON.parse(fs.readFileSync(path.join(out, '.claude-plugin', 'marketplace.json'), 'utf8'));
+    for (const e of prev.plugins || []) if (keep.has(path.basename(String(e.source))) && !plugins.some((x) => x.source === e.source)) plugins.push(e);
+  } catch { /* no previous marketplace */ }
   fs.writeFileSync(path.join(out, '.claude-plugin', 'marketplace.json'), `${JSON.stringify({
     name,
     owner: { name: f.scope ? f.scope : 'Skillyard Community' },
@@ -764,6 +890,8 @@ async function exportSite(f) {
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(path.join(out, 'api'), { recursive: true });
   for (const file of fs.readdirSync(webDir)) if (fs.statSync(path.join(webDir, file)).isFile()) fs.copyFileSync(path.join(webDir, file), path.join(out, file));
+  // Page media (launch video, poster, proof data) lives in web/media/.
+  if (fs.existsSync(path.join(webDir, 'media'))) fs.cpSync(path.join(webDir, 'media'), path.join(out, 'media'), { recursive: true });
   fs.writeFileSync(path.join(out, 'static.js'), 'window.SKILLYARD_STATIC = true;\n');
   // Stamp asset URLs with the build so browsers fetch the new CSS and JS after every deploy.
   const v = Date.now().toString(36);

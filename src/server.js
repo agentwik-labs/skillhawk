@@ -5,13 +5,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HttpError, Store } from './store.js';
 import { createMcpHandler } from './mcp.js';
+import { createStreamHandler, StreamRegistry } from './stream.js';
 import { safeRelPath } from './skill.js';
+import { finalizePull, signFiles } from './vault.js';
 
 const WEB_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');
 const MAX_BODY = 8 * 1024 * 1024;
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png', '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.mp4': 'video/mp4', '.ico': 'image/x-icon',
   '.md': 'text/markdown; charset=utf-8', '.py': 'text/plain; charset=utf-8', '.sh': 'text/plain; charset=utf-8',
 };
 
@@ -26,14 +28,15 @@ export class LocalRegistry {
   readFile(scope, name, version, p) { return this.store.readFile(scope, name, version, p, this.auth).toString('utf8'); }
 }
 
-export function createServer({ dataDir = 'data', adminToken = process.env.SKILLYARD_ADMIN_TOKEN, allowedOrigins = [], log = false } = {}) {
+export function createServer({ dataDir = 'data', adminToken = process.env.SKILLYARD_ADMIN_TOKEN, allowedOrigins = [], log = false, publicUrl = process.env.SKILLYARD_PUBLIC_URL } = {}) {
   const store = new Store(dataDir);
   const routes = [];
   const route = (method, pattern, fn) => routes.push({ method, re: new RegExp(`^${pattern}$`), fn });
+  const baseOf = (req) => (publicUrl || `http://${req.headers.host}`).replace(/\/+$/, '');
   const SKILL = '/api/skills/@([a-z0-9-]+)/([a-z0-9-]+)';
 
   route('GET', '/api/health', () => ({ ok: true }));
-  route('GET', '/api/whoami', ({ auth }) => auth ? { org: auth.org, scopes: auth.scopes, admin: auth.admin } : { anonymous: true });
+  route('GET', '/api/whoami', ({ auth }) => auth ? { org: auth.org, scopes: auth.scopes, admin: auth.admin, role: auth.role, name: auth.name } : { anonymous: true });
   route('GET', '/api/stats', ({ auth }) => store.stats(auth));
   route('GET', '/api/skills', ({ auth, query }) => ({
     skills: store.search({
@@ -42,20 +45,40 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
     }, auth),
   }));
   route('GET', SKILL, ({ auth, m, query }) => store.get(m[1], m[2], query.get('version') || 'latest', auth));
-  route('GET', `${SKILL}/bundle`, ({ auth, m, query }) => store.bundle(m[1], m[2], query.get('version') || 'latest', auth));
-  route('GET', `${SKILL}/files/(.+)`, ({ auth, m, query }) => {
-    const buf = store.readFile(m[1], m[2], query.get('version') || 'latest', decodeURIComponent(m[3]), auth);
+  route('GET', `${SKILL}/bundle`, async ({ auth, m, query, req }) => {
+    // Every copy of a private org skill is marked for its recipient, whichever way it is fetched.
+    const priv = store.db.skills[`@${m[1]}/${m[2]}`]?.visibility === 'private';
+    const pull = query.get('pull') === '1' || priv;
+    const b = store.bundle(m[1], m[2], query.get('version') || 'latest', auth, { audit: !pull });
+    return pull ? finalizePull(store, b, auth, { baseUrl: baseOf(req) }) : b;
+  });
+  route('GET', `${SKILL}/versions`, ({ auth, m }) => ({ versions: store.versions(m[1], m[2], auth) }));
+  route('GET', `${SKILL}/diff`, ({ auth, m, query }) => store.diff(m[1], m[2], query.get('from'), query.get('to'), auth));
+  route('POST', `${SKILL}/rollback`, ({ auth, m, body }) => store.rollback(m[1], m[2], body?.version, auth));
+  route('GET', '/api/audit', ({ auth, query }) => {
+    const org = auth?.admin ? query.get('org') || undefined : auth?.org;
+    if (!auth || !(auth.admin || (auth.role === 'admin' && auth.org))) throw new HttpError(403, 'audit log needs an admin token');
+    return { events: store.auditLog({ org, skill: query.get('skill') || undefined, limit: Math.min(Number(query.get('limit')) || 500, 5000) }) };
+  });
+  route('GET', `${SKILL}/files/(.+)`, async ({ auth, m, query, req }) => {
+    const rel = decodeURIComponent(m[3]);
+    if (rel === 'SKILL.md' && store.db.skills[`@${m[1]}/${m[2]}`]?.visibility === 'private') {
+      const b = await finalizePull(store, store.bundle(m[1], m[2], query.get('version') || 'latest', auth, { audit: false }), auth, { baseUrl: baseOf(req) });
+      return { raw: Buffer.from(b.files['SKILL.md'], 'base64'), type: 'text/markdown; charset=utf-8' };
+    }
+    const buf = store.readFile(m[1], m[2], query.get('version') || 'latest', rel, auth);
     return { raw: buf, type: MIME[path.extname(m[3])] || 'text/plain; charset=utf-8' };
   });
   route('POST', '/api/skills/@([a-z0-9-]+)', async ({ auth, m, body }) => {
-    const { files, visibility } = body || {};
+    const { files, visibility, force } = body || {};
     if (!files || typeof files !== 'object') throw new HttpError(400, 'body must be {"files": {"path": "<base64>"}}');
     const decoded = {};
     for (const [p, b64] of Object.entries(files)) {
       if (typeof b64 !== 'string') throw new HttpError(400, `file ${p} must be base64 text`);
       decoded[p] = Buffer.from(b64, 'base64');
     }
-    return { status: 201, body: store.publish({ scope: m[1], files: decoded, visibility, auth }) };
+    const signature = store.getOrg(m[1]) ? await signFiles(decoded, store.getOrg(m[1])) : null;
+    return { status: 201, body: store.publish({ scope: m[1], files: decoded, visibility, auth, force: !!force, signature }) };
   });
   route('PATCH', SKILL, ({ auth, m, body }) => store.setVisibility(m[1], m[2], body?.visibility, auth));
   route('DELETE', SKILL, ({ auth, m }) => { store.deleteSkill(m[1], m[2], auth); return { deleted: true }; });
@@ -65,10 +88,15 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
     if (!auth?.admin) throw new HttpError(403, 'admin token required');
     return { status: 201, body: store.createOrg(body || {}) };
   });
+  route('PATCH', '/api/orgs/([a-z0-9-]+)', ({ auth, m, body }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    if (body?.leaseDays !== undefined) store.setLeaseDays(m[1], body.leaseDays);
+    return body?.minGrade === undefined && body?.leaseDays !== undefined ? store.publicOrg(store.getOrg(m[1])) : store.setMinGrade(m[1], body?.minGrade);
+  });
   route('GET', '/api/orgs/([a-z0-9-]+)', ({ auth, m }) => {
     const org = store.getOrg(m[1]);
     if (!org) throw new HttpError(404, 'org not found');
-    return { ...org, member: auth?.org === m[1] || !!auth?.admin, skills: store.search({ scope: m[1], limit: 500 }, auth) };
+    return { ...store.publicOrg(org), member: auth?.org === m[1] || !!auth?.admin, skills: store.search({ scope: m[1], limit: 500 }, auth) };
   });
   const orgManager = (auth, org) => {
     if (!(auth?.admin || (auth?.org === org && auth.scopes.includes('publish')))) throw new HttpError(403, 'a publish token for this org is required');
@@ -87,8 +115,18 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
   });
   route('GET', '/api/orgs/([a-z0-9-]+)/events', ({ auth, m }) => { orgManager(auth, m[1]); return { events: store.events(m[1]) }; });
 
-  route('POST', '/mcp', async ({ auth, body }) => {
-    const handle = createMcpHandler(new LocalRegistry(store, auth));
+  route('POST', '/api/orgs/([a-z0-9-]+)/revoke', ({ auth, m, body }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    return store.revokeMember(m[1], String(body?.member || ''), auth);
+  });
+  route('GET', '/api/orgs/([a-z0-9-]+)/members/([^/]+)/holdings', ({ auth, m }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    return store.holdings(m[1], decodeURIComponent(m[2]));
+  });
+
+  route('POST', '/mcp', async ({ auth, body, query }) => {
+    if (query.get('stream') === '1' && !auth) throw new HttpError(401, 'stream mode needs your org token');
+    const handle = query.get('stream') === '1' ? createStreamHandler(new StreamRegistry(store, auth)) : createMcpHandler(new LocalRegistry(store, auth));
     const res = await handle(body);
     return res === null ? { status: 202, empty: true } : res;
   });
@@ -111,9 +149,11 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
         if (origin && !originAllowed(origin, req.headers.host, allowedOrigins)) throw new HttpError(403, 'origin not allowed');
         if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); throw new HttpError(405, 'this MCP server does not offer an SSE stream; POST JSON-RPC messages'); }
       }
+      if (req.method === 'GET' && /^\/r\/[A-Za-z0-9_-]{16,64}$/.test(url.pathname)) return beaconHit(req, res, url.pathname.slice(3));
       if (!isApi) return serveStatic(url.pathname, res);
 
       const auth = store.authenticate(bearer(req), adminToken);
+      if (auth) auth.host = String(req.headers['x-skillyard-host'] || '').slice(0, 100) || null;
       const r = routes.find((x) => x.method === req.method && x.re.test(url.pathname));
       if (!r) throw new HttpError(404, 'not found');
       const body = ['POST', 'PATCH'].includes(req.method) ? await readJson(req) : undefined;
@@ -134,6 +174,19 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
       if (log) console.log(`${req.method} ${url.pathname} ${res.statusCode} ${Date.now() - started}ms`);
     }
   });
+  // Beacon: neutral text page; records time, ip, user-agent and referer only for known tokens. Rate-limited.
+  const hits = new Map();
+  const beaconHit = (req, res, token) => {
+    const ip = req.socket.remoteAddress || '';
+    const now = Date.now();
+    const recent = (hits.get(ip) || []).filter((t) => now - t < 60_000);
+    if (recent.length >= 20) { hits.set(ip, recent); return send(res, 429, 'Too many requests.', 'text/plain; charset=utf-8'); }
+    recent.push(now);
+    hits.set(ip, recent);
+    if (hits.size > 5000) hits.clear();
+    store.recordBeaconHit(token, { ip, userAgent: req.headers['user-agent'], referer: req.headers.referer });
+    return send(res, 200, 'Reference material moved; contact the owner.\n', 'text/plain; charset=utf-8');
+  };
   server.store = store;
   return server;
 }

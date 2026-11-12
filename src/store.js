@@ -4,9 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { scanFiles } from './scan.js';
+import { diffFiles, GRADES, newOrgKeys, roleOf, ROLE_SCOPES, ROLES, runChecks } from './vault.js';
 import { checksum, compareSemver, resolveVersion, safeRelPath, SCOPE_RE, skillId, validateFiles } from './skill.js';
 
-const EMPTY_DB = () => ({ version: 1, orgs: {}, tokens: {}, skills: {}, events: [] });
+const EMPTY_DB = () => ({ version: 1, orgs: {}, tokens: {}, skills: {}, events: [], marks: [], beacons: {}, alerts: [] });
 export const SCOPES = ['read', 'publish', 'admin'];
 
 export class HttpError extends Error {
@@ -23,6 +24,92 @@ export class Store {
     this.blobDir = path.join(this.dataDir, 'blobs');
     fs.mkdirSync(this.blobDir, { recursive: true });
     this.db = fs.existsSync(this.dbPath) ? JSON.parse(fs.readFileSync(this.dbPath, 'utf8')) : EMPTY_DB();
+    this.db.marks ||= [];
+    this.db.beacons ||= {};
+    this.db.alerts ||= [];
+    this.auditPath = path.join(this.dataDir, 'audit.jsonl');
+  }
+
+  /**
+   * Append-only audit log (JSON lines, never rewritten), hash-chained: each entry stores prev (the hash of the entry
+   * before it, or "genesis") and hash = sha256(prev + canonical entry). who = token name, host = client hostname.
+   */
+  audit(entry, auth) {
+    const rec = { at: new Date().toISOString(), who: auth?.name || auth?.tokenId || 'anonymous', tokenId: auth?.tokenId || null, host: auth?.host || null, ...entry };
+    rec.prev = this.auditTip();
+    rec.hash = auditHash(rec);
+    fs.appendFileSync(this.auditPath, `${JSON.stringify(rec)}\n`);
+    return rec;
+  }
+
+  /** Hash the next entry must chain to: the last entry's hash, the sha256 of a legacy last line, or "genesis". */
+  auditTip() {
+    if (!fs.existsSync(this.auditPath)) return 'genesis';
+    const lines = fs.readFileSync(this.auditPath, 'utf8').split('\n').filter(Boolean);
+    if (!lines.length) return 'genesis';
+    const last = lines[lines.length - 1];
+    try { const e = JSON.parse(last); if (e.hash) return e.hash; } catch { /* fall through to raw hash */ }
+    return crypto.createHash('sha256').update(last).digest('hex');
+  }
+
+  /** Walk audit.jsonl and check the chain. Entries written before chaining existed count as legacy. */
+  verifyAudit() {
+    return verifyAuditFile(this.auditPath);
+  }
+
+  /** Org-level setting for the optional beacon mark layer. Enabling needs an explicit legal-review acknowledgement. */
+  setBeacon(slug, on, legalReview, auth) {
+    const org = this.db.orgs[slug];
+    if (!org) throw new HttpError(404, `org ${slug} not found`);
+    if (on && !legalReview) throw new HttpError(400, 'enabling the beacon needs --i-have-legal-review (read docs/beacon.md first)');
+    org.beacon = { enabled: !!on, changedAt: new Date().toISOString(), legalReviewAcknowledged: !!on && !!legalReview };
+    this.audit({ action: on ? 'beacon.enable' : 'beacon.disable', org: slug, legalReviewAcknowledged: !!legalReview }, auth || { name: 'cli' });
+    this.save();
+    return this.publicOrg(org);
+  }
+
+  /** Stable opaque token for (org, recipient, skill, version), remembered server-side. */
+  registerBeacon({ org, recipient, skill, version, token }) {
+    this.db.beacons[token] ||= { org, recipient, skill, version, createdAt: new Date().toISOString() };
+    this.save();
+  }
+
+  /** Record a beacon fetch. Returns the alert, or null for an unknown token. Collects only time, ip, user-agent, referer. */
+  recordBeaconHit(token, { ip, userAgent, referer }) {
+    const b = this.db.beacons[token];
+    if (!b) return null;
+    const alert = { at: new Date().toISOString(), org: b.org, recipient: b.recipient, skill: b.skill, version: b.version, token, ip: ip || null, userAgent: String(userAgent || '').slice(0, 300) || null, referer: String(referer || '').slice(0, 300) || null };
+    this.db.alerts.push(alert);
+    if (this.db.alerts.length > 5000) this.db.alerts.splice(0, this.db.alerts.length - 5000);
+    this.audit({ action: 'beacon.hit', org: b.org, skill: b.skill, version: b.version, recipient: b.recipient }, { name: 'beacon' });
+    this.save();
+    return alert;
+  }
+
+  alerts(org) {
+    return this.db.alerts.filter((a) => !org || a.org === org);
+  }
+
+  auditLog({ org, skill, limit = 500 } = {}) {
+    if (!fs.existsSync(this.auditPath)) return [];
+    const all = fs.readFileSync(this.auditPath, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    return all.filter((e) => (!org || e.org === org) && (!skill || e.skill === skill || e.skill === `@${org || e.org}/${skill}`)).slice(-limit).reverse();
+  }
+
+  recordMark({ recipient, skill, version, fingerprint }) {
+    this.db.marks.push({ recipient, skill, version, fingerprint, at: new Date().toISOString() });
+    this.save();
+  }
+
+  isOrgAdmin(auth, scope) {
+    return !!auth?.admin || (auth?.org === scope && auth.role === 'admin');
+  }
+
+  /** Org record without its secret and private key. */
+  publicOrg(o) {
+    if (!o) return o;
+    const { secret, privateKey, ...rest } = o;
+    return rest;
   }
 
   save() {
@@ -38,14 +125,22 @@ export class Store {
 
   // ---- orgs ---------------------------------------------------------------
 
-  createOrg({ slug, name, description = '', website = '' }) {
+  createOrg({ slug, name, description = '', website = '', minGrade = 'C' }) {
+    if (!GRADES.includes(minGrade)) throw new HttpError(400, `minGrade must be one of ${GRADES.join(', ')}`);
     if (!SCOPE_RE.test(slug || '') || slug.length > 40) throw new HttpError(400, 'org slug must be lowercase-hyphenated, <= 40 chars');
     if (this.db.orgs[slug]) throw new HttpError(409, `org ${slug} already exists`);
-    const org = { slug, name: name || slug, description, website, createdAt: new Date().toISOString() };
+    const org = { slug, name: name || slug, description, website, createdAt: new Date().toISOString(), minGrade, ...newOrgKeys() };
     this.db.orgs[slug] = org;
     this.log('org.create', { org: slug });
     this.save();
-    return org;
+    return this.publicOrg(org);
+  }
+
+  setMinGrade(slug, minGrade) {
+    if (!GRADES.includes(minGrade)) throw new HttpError(400, `minGrade must be one of ${GRADES.join(', ')}`);
+    this.db.orgs[slug].minGrade = minGrade;
+    this.save();
+    return this.publicOrg(this.db.orgs[slug]);
   }
 
   getOrg(slug) {
@@ -56,23 +151,28 @@ export class Store {
     return Object.values(this.db.orgs).map((o) => {
       const skills = Object.values(this.db.skills).filter((s) => s.scope === o.slug);
       const visible = skills.filter((s) => this.canRead(s, auth));
-      return { ...o, skillCount: visible.length, privateCount: visible.filter((s) => s.visibility === 'private').length };
+      return { ...this.publicOrg(o), skillCount: visible.length, privateCount: visible.filter((s) => s.visibility === 'private').length };
     }).filter((o) => o.skillCount > 0 || auth?.org === o.slug || auth?.admin);
   }
 
   // ---- tokens -------------------------------------------------------------
 
-  createToken({ org, name = 'token', scopes = ['read'] }) {
+  createToken({ org, name = 'token', scopes = ['read'], role }) {
+    if (role) {
+      if (!ROLES.includes(role)) throw new HttpError(400, `role must be one of ${ROLES.join(', ')}`);
+      if (!org) throw new HttpError(400, 'roles apply to org tokens');
+      scopes = ROLE_SCOPES[role];
+    }
     if (org && !this.db.orgs[org]) throw new HttpError(404, `org ${org} not found`);
     const bad = scopes.filter((s) => !SCOPES.includes(s));
     if (bad.length) throw new HttpError(400, `unknown scopes: ${bad.join(', ')}`);
     if (scopes.includes('admin') && org) throw new HttpError(400, 'admin tokens are not tied to an org');
     const secret = `sy_${crypto.randomBytes(24).toString('base64url')}`;
     const id = crypto.randomBytes(6).toString('hex');
-    this.db.tokens[id] = { id, org: org || null, name, scopes, hash: hashToken(secret), createdAt: new Date().toISOString(), lastUsedAt: null };
-    this.log('token.create', { org, tokenId: id, scopes });
+    this.db.tokens[id] = { id, org: org || null, name, scopes, role: role || (scopes.includes('publish') ? 'editor' : scopes.includes('admin') ? 'admin' : 'reader'), hash: hashToken(secret), createdAt: new Date().toISOString(), lastUsedAt: null };
+    this.log('token.create', { org, tokenId: id, scopes, role });
     this.save();
-    return { id, token: secret, org: org || null, name, scopes };
+    return { id, token: secret, org: org || null, name, scopes, role: this.db.tokens[id].role };
   }
 
   listTokens(org) {
@@ -87,19 +187,72 @@ export class Store {
     this.save();
   }
 
+  /** Disable every token of a member (matched by token name or id) at once. Records stay so later calls get a clear error. */
+  revokeMember(org, member, auth) {
+    const hits = Object.values(this.db.tokens).filter((t) => t.org === org && (t.name === member || t.id === member));
+    if (!hits.length) throw new HttpError(404, `no member or token "${member}" in @${org}`);
+    const at = new Date().toISOString();
+    for (const t of hits) t.revoked ||= { at, by: auth?.name || 'admin' };
+    this.log('member.revoke', { org, member });
+    this.save();
+    this.audit({ action: 'member.revoke', org, member, tokenIds: hits.map((t) => t.id) }, auth);
+    return { member, org, revoked: hits.map((t) => t.id) };
+  }
+
+  setLeaseDays(slug, days) {
+    const n = Number(days);
+    if (!Number.isInteger(n) || n < 1 || n > 365) throw new HttpError(400, 'leaseDays must be a whole number from 1 to 365');
+    this.db.orgs[slug].leaseDays = n;
+    this.save();
+    return this.publicOrg(this.db.orgs[slug]);
+  }
+
+  /** Everything a member pulled (installed or streamed): one row per skill version, from the audit log and the marks. */
+  holdings(org, member) {
+    const names = new Set([member]);
+    for (const t of Object.values(this.db.tokens)) if (t.org === org && t.id === member) names.add(t.name);
+    const rows = new Map();
+    const row = (skill, version) => {
+      const k = `${skill}@${version}`;
+      if (!rows.has(k)) rows.set(k, { skill, version, count: 0, first: null, last: null, via: new Set(), fingerprint: null });
+      return rows.get(k);
+    };
+    for (const e of this.auditLog({ org, limit: 100000 }).reverse()) {
+      if (!names.has(e.who) || !['pull', 'stream.load'].includes(e.action) || !e.skill) continue;
+      const r = row(e.skill, e.version);
+      r.count++;
+      r.first ||= e.at;
+      r.last = e.at;
+      r.via.add(e.action === 'stream.load' ? 'stream' : 'install');
+    }
+    for (const m of this.db.marks) {
+      if (!names.has(m.recipient) || !m.skill.startsWith(`@${org}/`)) continue;
+      const r = row(m.skill, m.version);
+      r.fingerprint = m.fingerprint || r.fingerprint;
+      r.first ||= m.at;
+      r.last = r.last && r.last > m.at ? r.last : m.at;
+    }
+    const tokens = Object.values(this.db.tokens).filter((t) => t.org === org && names.has(t.name)).map((t) => ({ id: t.id, name: t.name, createdAt: t.createdAt, lastUsedAt: t.lastUsedAt, revokedAt: t.revoked?.at || null }));
+    return { member, org, tokens, held: [...rows.values()].map((r) => ({ ...r, via: [...r.via] })).sort((a, b) => a.skill.localeCompare(b.skill) || a.version.localeCompare(b.version)) };
+  }
+
   /** Bearer token -> auth context, or null for anonymous. Throws 401 on an unknown token. */
   authenticate(secret, adminToken) {
     if (!secret) return null;
-    if (adminToken && timingSafeEqual(secret, adminToken)) return { admin: true, org: null, scopes: SCOPES, tokenId: 'env' };
+    if (adminToken && timingSafeEqual(secret, adminToken)) return { admin: true, org: null, scopes: SCOPES, role: 'admin', name: 'admin', tokenId: 'env' };
     const h = hashToken(secret);
     const t = Object.values(this.db.tokens).find((x) => timingSafeEqual(x.hash, h));
     if (!t) throw new HttpError(401, 'invalid token');
+    if (t.revoked) {
+      this.audit({ action: 'access.denied', org: t.org, reason: 'token revoked' }, { name: t.name, tokenId: t.id });
+      throw new HttpError(401, 'access revoked by your org admin');
+    }
     const today = new Date().toISOString().slice(0, 10);
     if (!t.lastUsedAt || !t.lastUsedAt.startsWith(today)) {
       t.lastUsedAt = new Date().toISOString();
       this.save();
     }
-    return { admin: t.scopes.includes('admin'), org: t.org, scopes: t.scopes, tokenId: t.id };
+    return { admin: t.scopes.includes('admin'), org: t.org, scopes: t.scopes, role: roleOf(t), name: t.name, tokenId: t.id };
   }
 
   // ---- access -------------------------------------------------------------
@@ -118,7 +271,7 @@ export class Store {
    * Publish a new immutable version. files: {relPath: Buffer}.
    * Visibility comes from the request, then skill.json, then the existing record, then "private" for org scopes.
    */
-  publish({ scope, files, visibility, auth, publishedBy }) {
+  publish({ scope, files, visibility, auth, publishedBy, force = false, signature = null }) {
     if (!this.db.orgs[scope]) throw new HttpError(404, `org ${scope} not found`);
     if (!this.canPublish(scope, auth)) throw new HttpError(403, `token cannot publish to @${scope}`);
     const v = validateFiles(files);
@@ -130,6 +283,21 @@ export class Store {
       throw new HttpError(422, `security scan blocked publish: ${top.join('; ')}`);
     }
     const id = skillId(scope, manifest.name);
+    // Org checks: Reviewer + Security must pass. Internal callers (seed, import) pass publishedBy and skip them.
+    let check = null;
+    if (!publishedBy) {
+      const c = runChecks(files, this.db.orgs[scope].minGrade || 'C');
+      check = { ...c.summary, minGrade: c.minGrade, passed: c.passed, forced: false };
+      if (!c.passed) {
+        const forced = force && this.isOrgAdmin(auth, scope);
+        this.audit({ action: forced ? 'publish.forced' : 'publish.rejected', org: scope, skill: id, version: manifest.version, check, reasons: c.reasons }, auth);
+        if (!forced) {
+          if (force) throw new HttpError(403, `only an org admin can force a failing publish\n${c.reasons.join('; ')}\n${c.report}`);
+          throw new HttpError(422, `publish checks failed: ${c.reasons.join('; ')}\n${c.report}\n(an org admin can override with --force; it is logged)`);
+        }
+        check.forced = true;
+      }
+    }
     const existing = this.db.skills[id];
     if (existing?.versions[manifest.version]) throw new HttpError(409, `${id}@${manifest.version} already exists; bump the version in skill.json`);
     const vis = visibility || manifest.visibility || existing?.visibility || 'private';
@@ -155,9 +323,11 @@ export class Store {
       publishedAt: now,
       publishedBy: publishedBy || auth?.tokenId || null,
       scan: { scannedAt: now, critical: 0, warning: scan.warning, findings: scan.findings },
+      signature: signature || undefined,
     };
     rec.latest = resolveVersion(Object.keys(rec.versions), 'latest');
     this.db.skills[id] = rec;
+    this.audit({ action: 'publish', org: scope, skill: id, version: manifest.version, check, forced: !!check?.forced }, auth);
     this.log('skill.publish', { skill: id, version: manifest.version, visibility: vis, by: rec.versions[manifest.version].publishedBy });
     this.save();
     return { ...this.summary(rec), warnings: [...v.warnings, ...scan.findings.map((f) => `security: ${f.file}:${f.line} ${f.message}`)] };
@@ -195,9 +365,46 @@ export class Store {
     return rec;
   }
 
+  /** Resolve a version spec; "latest" honours a rollback. */
+  pick(rec, spec) {
+    return !spec || spec === 'latest' ? rec.latest : resolveVersion(Object.keys(rec.versions), spec);
+  }
+
+  versions(scope, name, auth) {
+    const rec = this.find(scope, name, auth);
+    return Object.keys(rec.versions).sort(compareSemver).reverse().map((v) => {
+      const x = rec.versions[v];
+      return { version: v, current: v === rec.latest, publishedAt: x.publishedAt, publishedBy: x.publishedBy, checksum: x.checksum, size: x.size, files: x.files.length, signed: !!x.signature };
+    });
+  }
+
+  versionFiles(rec, version) {
+    const dir = this.versionDir(rec.scope, rec.name, version);
+    return Object.fromEntries(rec.versions[version].files.map((f) => [f, fs.readFileSync(path.join(dir, f))]));
+  }
+
+  diff(scope, name, from, to, auth) {
+    const rec = this.find(scope, name, auth);
+    for (const v of [from, to]) if (!rec.versions[v]) throw new HttpError(404, `${rec.id} has no version ${v}`);
+    return { id: rec.id, from, to, files: diffFiles(this.versionFiles(rec, from), this.versionFiles(rec, to)) };
+  }
+
+  /** Make an earlier version the current one. History is kept; a later publish moves "latest" forward again. */
+  rollback(scope, name, version, auth) {
+    const rec = this.find(scope, name, auth);
+    if (!this.canPublish(scope, auth)) throw new HttpError(403, 'rollback needs an editor or admin token');
+    if (!rec.versions[version]) throw new HttpError(404, `${rec.id} has no version ${version}`);
+    const from = rec.latest;
+    rec.latest = version;
+    rec.updatedAt = new Date().toISOString();
+    this.audit({ action: 'rollback', org: scope, skill: rec.id, version, from }, auth);
+    this.save();
+    return this.summary(rec);
+  }
+
   get(scope, name, spec, auth) {
     const rec = this.find(scope, name, auth);
-    const version = resolveVersion(Object.keys(rec.versions), spec);
+    const version = this.pick(rec, spec);
     if (!version) throw new HttpError(404, `no version of ${rec.id} matches ${spec}`);
     const ver = rec.versions[version];
     const skillMd = fs.readFileSync(path.join(this.versionDir(scope, name, version), 'SKILL.md'), 'utf8');
@@ -216,7 +423,7 @@ export class Store {
 
   readFile(scope, name, spec, rel, auth) {
     const rec = this.find(scope, name, auth);
-    const version = resolveVersion(Object.keys(rec.versions), spec);
+    const version = this.pick(rec, spec);
     if (!version) throw new HttpError(404, 'version not found');
     const safe = safeRelPath(rel);
     if (!safe || !rec.versions[version].files.includes(safe)) throw new HttpError(404, `file ${rel} not found`);
@@ -224,7 +431,7 @@ export class Store {
   }
 
   /** Full file bundle for installs; counts as a download. */
-  bundle(scope, name, spec, auth) {
+  bundle(scope, name, spec, auth, { audit = true } = {}) {
     const info = this.get(scope, name, spec, auth);
     const dir = this.versionDir(scope, name, info.version);
     const files = {};
@@ -232,6 +439,7 @@ export class Store {
     const rec = this.db.skills[info.id];
     rec.downloads = (rec.downloads || 0) + 1;
     this.save();
+    if (audit && (auth || rec.visibility === 'private')) this.audit({ action: 'pull', org: scope, skill: info.id, version: info.version }, auth);
     delete info.skillMd;
     return { ...info, files };
   }
@@ -307,6 +515,37 @@ export class Store {
   events(org) {
     return this.db.events.filter((e) => !org || e.org === org || (e.skill || '').startsWith(`@${org}/`)).slice(-100).reverse();
   }
+}
+
+/** Canonical chain hash of an audit entry (everything except its own hash). */
+export function auditHash(rec) {
+  const { hash, ...rest } = rec;
+  return crypto.createHash('sha256').update(`${rest.prev}\n${JSON.stringify(rest)}`).digest('hex');
+}
+
+export function verifyAuditFile(file) {
+  const r = { ok: true, entries: 0, chained: 0, legacy: 0, head: 'genesis', errors: [] };
+  if (!fs.existsSync(file)) return r;
+  const lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
+  let tip = 'genesis';
+  lines.forEach((line, i) => {
+    r.entries++;
+    let e;
+    try { e = JSON.parse(line); } catch { r.errors.push(`line ${i + 1}: not valid JSON`); tip = crypto.createHash('sha256').update(line).digest('hex'); return; }
+    if (!e.hash) {
+      if (r.chained) r.errors.push(`line ${i + 1}: unchained entry after the chain started`);
+      else r.legacy++;
+      tip = crypto.createHash('sha256').update(line).digest('hex');
+      return;
+    }
+    r.chained++;
+    if (e.prev !== tip) r.errors.push(`line ${i + 1}: prev hash does not match the entry before it (an entry was edited, removed or inserted)`);
+    else if (auditHash(e) !== e.hash) r.errors.push(`line ${i + 1}: entry content does not match its hash (edited)`);
+    tip = e.hash;
+  });
+  r.head = tip;
+  r.ok = r.errors.length === 0;
+  return r;
 }
 
 export function hashToken(secret) {

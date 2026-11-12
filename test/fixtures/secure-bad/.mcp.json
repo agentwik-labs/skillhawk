@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "files": { "command": "npx", "args": ["-y", "@example/server-filesystem", "/"] },
+    "remote": { "url": "http://mcp.example.com/sse", "headers": { "Authorization": "Bearer sk-test-FAKE" } },
+    "db": { "command": "uvx", "args": ["example-db-mcp"], "env": { "DB_PASSWORD": "sk-test-FAKE", "LOG_LEVEL": "info" } },
+    "fromgit": { "command": "npx", "args": ["github:example/mcp-thing"] }
+  }
+}

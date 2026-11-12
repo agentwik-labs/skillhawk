@@ -1,0 +1,3 @@
+{"type": "user", "cwd": "/fake/app", "timestamp": "2026-11-11T10:00:00.000Z", "message": {"role": "user", "content": "please do the task"}}
+{"type": "user", "cwd": "/fake/app", "timestamp": "2026-11-11T10:00:00.800Z", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "content": "Launching skill: epsilon-skill"}]}}
+{"type": "assistant", "cwd": "/fake/app", "timestamp": "2026-11-11T10:00:01.000Z", "requestId": "r5", "message": {"id": "m5", "model": "claude-sonnet-4-5", "content": [{"type": "text", "text": "ok"}], "usage": {"input_tokens": 10, "output_tokens": 20, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}

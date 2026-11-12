@@ -29,7 +29,7 @@ export class RemoteRegistry {
   }
 
   async request(method, p, body, { raw = false } = {}) {
-    const headers = { Accept: 'application/json' };
+    const headers = { Accept: 'application/json', 'X-Skillyard-Host': os.hostname() };
     if (this.token) headers.Authorization = `Bearer ${this.token}`;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     let res;
@@ -58,12 +58,22 @@ export class RemoteRegistry {
     return this.request('GET', `/api/skills/@${scope}/${name}/files/${p}?version=${encodeURIComponent(version || 'latest')}`, undefined, { raw: true });
   }
 
-  bundle(scope, name, version = 'latest') {
-    return this.request('GET', `/api/skills/@${scope}/${name}/bundle?version=${encodeURIComponent(version)}`);
+  bundle(scope, name, version = 'latest', { pull = false } = {}) {
+    return this.request('GET', `/api/skills/@${scope}/${name}/bundle?version=${encodeURIComponent(version)}${pull ? '&pull=1' : ''}`);
   }
-  publish(scope, files, visibility) {
+  publish(scope, files, visibility, { force = false } = {}) {
     const enc = {};
     for (const [k, v] of Object.entries(files)) enc[k] = v.toString('base64');
-    return this.request('POST', `/api/skills/@${scope}`, { files: enc, visibility });
+    return this.request('POST', `/api/skills/@${scope}`, { files: enc, visibility, ...(force ? { force: true } : {}) });
+  }
+  versions(scope, name) { return this.request('GET', `/api/skills/@${scope}/${name}/versions`).then((r) => r.versions); }
+  diff(scope, name, from, to) { return this.request('GET', `/api/skills/@${scope}/${name}/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`); }
+  rollback(scope, name, version) { return this.request('POST', `/api/skills/@${scope}/${name}/rollback`, { version }); }
+  audit({ org, skill, limit } = {}) {
+    const qs = new URLSearchParams();
+    if (org) qs.set('org', org);
+    if (skill) qs.set('skill', skill);
+    if (limit) qs.set('limit', limit);
+    return this.request('GET', `/api/audit?${qs}`).then((r) => r.events);
   }
 }

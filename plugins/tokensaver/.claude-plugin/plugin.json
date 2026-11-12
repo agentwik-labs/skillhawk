@@ -1,0 +1,9 @@
+{
+  "name": "skillyard-token-saver",
+  "description": "Token Saver: ask the repo map and read single skill sections before opening whole files",
+  "version": "1.0.0",
+  "author": {
+    "name": "Skillyard Community"
+  },
+  "skills": "./skills"
+}

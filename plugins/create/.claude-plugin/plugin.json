@@ -1,0 +1,10 @@
+{
+  "name": "skillyard-create",
+  "description": "Skill creator: turn know-how, a runbook or past corrections into a reviewed skill with trigger tests (skill + subagent)",
+  "version": "1.0.0",
+  "author": {
+    "name": "Skillyard Community"
+  },
+  "skills": "./skills",
+  "agents": "./agents"
+}

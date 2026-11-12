@@ -7,3 +7,7 @@ __pycache__/
 .demo-data/
 _site/
 .taste-skill/
+.skillyard/
+.shots/
+launch/*.mp4
+web/media/badges/

@@ -1,0 +1,1 @@
+{ "mcpServers": { "home": { "command": "npx", "args": ["@example/fs@1.2.3", "~"] } } }

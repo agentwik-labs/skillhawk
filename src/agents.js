@@ -5,6 +5,7 @@ import path from 'node:path';
 import { parseFrontmatter, safeRelPath } from './skill.js';
 
 export const MARKER = '.skillyard-install.json';
+export const LEASE_FILE = '.skillyard-lease.json';
 
 /**
  * Install targets. `dir(name, {global, cwd})` returns the directory that receives the skill's files.
@@ -83,6 +84,9 @@ export function installBundle(agent, bundle, { global = false, cwd = process.cwd
   fs.writeFileSync(path.join(dir, MARKER), JSON.stringify({
     id: bundle.id, version: bundle.version, checksum: bundle.checksum, installedAt: new Date().toISOString(),
   }, null, 2));
+  if (bundle.lease) {
+    fs.writeFileSync(path.join(dir, LEASE_FILE), JSON.stringify({ id: bundle.id, version: bundle.version, issuedAt: new Date().toISOString(), expiresAt: bundle.lease.expiresAt }, null, 2));
+  }
   if (a.after) a.after(bundle.name, dir, opts);
   return dir;
 }

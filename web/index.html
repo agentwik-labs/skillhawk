@@ -3,8 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skillyard</title>
-  <meta name="description" content="Open-source and private Agent Skills for Claude Code, Codex, Cursor and every AGENTS.md agent.">
+  <title>Skillyard: build, check and protect your company's AI skills</title>
+  <meta name="description" content="Skillyard builds, checks and protects your company's AI skills. Free review and security checks for developers; a private vault for companies.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="canonical" href="https://agentwik-labs.github.io/skillyard/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Skillyard">
+  <meta property="og:title" content="Skillyard: build, check and protect your company's AI skills">
+  <meta property="og:description" content="Free review and security checks for developers; a private vault for companies.">
+  <meta property="og:url" content="https://agentwik-labs.github.io/skillyard/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Skillyard: build, check and protect your company's AI skills">
+  <meta name="twitter:description" content="Free review and security checks for developers; a private vault for companies.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,14 +24,17 @@
   <link rel="stylesheet" href="landing.css">
 </head>
 <body>
+  <a class="skip" href="#app" onclick="document.getElementById('app').focus();return false">Skip to content</a>
   <header class="top">
     <a class="brand" href="#/"><span class="mark" aria-hidden="true"></span>skillyard</a>
-    <nav>
-      <a href="#/">Showcase</a>
-      <a href="#/browse">Browse</a>
+    <nav aria-label="The journey">
+      <a href="#/?s=build">Build</a>
+      <a href="#/?s=check">Check</a>
+      <a href="#/?s=improve">Improve</a>
+      <a href="#/?s=save">Save</a>
+      <a href="#/?s=protect">Protect</a>
+      <a href="#/browse">Library</a>
       <a href="#/create">Create</a>
-      <a href="#/examples">Good vs bad</a>
-      <a href="#/connect">Connect</a>
       <a href="#/teams">For teams</a>
       <a href="studio/" id="studio-link">Studio</a>
     </nav>
@@ -42,8 +55,8 @@
     </form>
   </dialog>
   <footer class="foot">
-    <span>Skillyard — skills for every agent. Open source (MIT). <a href="#/teams">Get a free skills audit →</a></span>
-    <span><a href="https://github.com/agentwik-labs/skillyard">GitHub</a> · <a href="#/connect">MCP endpoint</a></span>
+    <span>Skillyard builds, checks and protects your company's AI skills. Open source (MIT). <a href="#/teams">Become a design partner →</a></span>
+    <span><a href="#/?s=build">Build</a> · <a href="#/?s=check">Check</a> · <a href="#/?s=improve">Improve</a> · <a href="#/?s=save">Save</a> · <a href="#/?s=protect">Protect</a> · <a href="#/browse">Library</a> · <a href="#/examples">Good vs bad</a> · <a href="#/connect">MCP endpoint</a> · <a href="https://github.com/agentwik-labs/skillyard">GitHub</a></span>
   </footer>
   <script src="config.js"></script>
   <script src="static.js"></script>

@@ -1,0 +1,13 @@
+# trigger cases
+should_fire:
+  - "write the release notes for v2.3 from the merged pull requests"
+  - 'Draft a changelog entry for this sprint'
+should_not_fire:
+  - "fill out this PDF form with my address"
+  - "why is this database query so slow?"   # nearby but another skill
+behaviour:
+  - prompt: "Write release notes for: fix login bug, add dark mode"
+    expect: ["dark mode", "login"]
+    forbid: ["TODO"]
+  - prompt: "Changelog please"
+    rubric: "Uses a Keep a Changelog style heading"

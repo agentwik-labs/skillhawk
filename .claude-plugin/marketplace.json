@@ -88,7 +88,7 @@
     {
       "name": "skillyard-security",
       "source": "./plugins/security",
-      "description": "Security skills: dockerfile-hardening, secrets-hygiene, security-review",
+      "description": "Security skills: dockerfile-hardening, secrets-hygiene, secure-agent-setup, security-review; security-auditor subagent",
       "version": "1.0.0",
       "category": "security"
     },
@@ -98,6 +98,41 @@
       "description": "Testing skills: unit-testing, web-accessibility-audit",
       "version": "1.0.0",
       "category": "testing"
+    },
+    {
+      "name": "skillyard-review",
+      "source": "./plugins/review",
+      "description": "Skill reviewer: grade SKILL.md files A-F, find duplicates and overlapping skills (skill + subagent)",
+      "version": "1.0.0",
+      "category": "ai"
+    },
+    {
+      "name": "skillyard-optimize",
+      "source": "./plugins/optimize",
+      "description": "Skill optimizer: cut a skill's tokens without losing meaning, gated by review grade, trigger cases and lift",
+      "version": "1.0.0",
+      "category": "ai"
+    },
+    {
+      "name": "skillyard-create",
+      "source": "./plugins/create",
+      "description": "Skill creator: turn know-how, a runbook or past corrections into a reviewed skill with trigger tests (skill + subagent)",
+      "version": "1.0.0",
+      "category": "ai"
+    },
+    {
+      "name": "skillyard-token-saver",
+      "source": "./plugins/tokensaver",
+      "description": "Token Saver: query the repo map and read single skill sections before opening whole files",
+      "version": "1.0.0",
+      "category": "ai"
+    },
+    {
+      "name": "skillyard-clean",
+      "source": "./plugins/clean",
+      "description": "Clean code: review skill scripts and learn a coding-standards skill from your repo (skill + subagent)",
+      "version": "1.0.0",
+      "category": "engineering"
     }
   ]
 }

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Skillyard launch</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#141414; --muted:#6b6b6b; --red:#c41f17; --field:#0a0a0a; --line:#e6e6e6; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#fff; color:var(--ink);
+    font-family: Switzer, system-ui, sans-serif; }
+  .scene { position:absolute; inset:0; opacity:0; padding:120px 160px; }
+  h1, h2 { margin:0; font-weight:600; letter-spacing:-0.045em; line-height:.95; }
+  h1 { font-size:150px; } h2 { font-size:96px; }
+  .eyebrow { font:600 26px/1 'IBM Plex Mono', monospace; color:var(--red); letter-spacing:.08em; text-transform:uppercase; margin-bottom:36px; }
+  .lede { font-size:44px; line-height:1.25; color:var(--muted); letter-spacing:-0.015em; margin-top:40px; max-width:1300px; }
+  .term { background:var(--field); color:#f2f2f2; border-radius:22px; padding:44px 52px; font:500 27px/1.55 'IBM Plex Mono', monospace;
+    white-space:pre; overflow:hidden; box-shadow:0 40px 80px -40px rgba(0,0,0,.45); }
+  .term .cap { color:#8a8a8a; font-size:22px; margin-bottom:22px; display:block; }
+  .hi { color:#fff; background:var(--red); padding:0 8px; border-radius:6px; }
+  .red { color:#ff5a4f; } .grn { color:#5ad17a; } .dim { color:#8a8a8a; }
+  .row { display:flex; gap:56px; align-items:flex-start; }
+  .grid10 { display:grid; grid-template-columns:repeat(5, 1fr); gap:28px; margin-top:60px; }
+  .copy { height:200px; border:2px solid var(--line); border-radius:18px; padding:22px; font:500 24px/1.4 'IBM Plex Mono', monospace; position:relative; background:#fff; }
+  .copy b { font-family:Switzer, sans-serif; font-size:34px; display:block; margin-bottom:10px; letter-spacing:-0.02em; }
+  .copy .fp { position:absolute; right:18px; top:24px; font:600 20px 'IBM Plex Mono', monospace; color:var(--red); opacity:0; }
+  .copy .bars i { display:block; height:9px; background:#ececec; border-radius:5px; margin:9px 0; }
+  .tools { display:grid; grid-template-columns:repeat(4, 1fr); gap:30px; margin-top:70px; }
+  .tool { border-top:3px solid var(--ink); padding-top:24px; }
+  .tool code { font:500 24px 'IBM Plex Mono', monospace; background:#f2f2f2; padding:4px 10px; border-radius:6px; }
+  .tool b { display:block; font-size:44px; letter-spacing:-0.03em; margin:18px 0 10px; }
+  .tool span { font-size:27px; color:var(--muted); line-height:1.3; }
+  .pill { display:inline-block; margin-top:60px; font:500 40px 'IBM Plex Mono', monospace; background:#f2f2f2; padding:18px 30px; border-radius:14px; }
+  .cta { display:inline-block; margin-left:24px; font-size:40px; font-weight:600; background:var(--red); color:#fff; padding:20px 34px; border-radius:14px; }
+  .scan { position:absolute; left:0; right:0; height:6px; background:var(--red); box-shadow:0 0 30px var(--red); opacity:0; }
+  .wordmark { position:absolute; left:160px; bottom:70px; font-size:34px; font-weight:600; letter-spacing:-0.03em; }
+  .wordmark i { display:inline-block; width:14px; height:14px; background:var(--red); border-radius:50%; margin-right:12px; }
+</style>
+</head>
+<body>
+<div class="wordmark" id="wm"><i></i>skillyard</div>
+
+<section class="scene" id="s1">
+  <div class="eyebrow">Your agents follow skills</div>
+  <h1 id="s1h">Skills are your<br>company's playbook.</h1>
+  <p class="lede" id="s1l">Sales calls, deploy runbooks, code standards. Written as plain text files your AI agents follow, on every laptop.</p>
+</section>
+
+<section class="scene" id="s2">
+  <div class="eyebrow">01 · skillyard review</div>
+  <h2>Find what's wrong<br>before the agent does.</h2>
+  <div class="term" id="t2" style="margin-top:60px"></div>
+</section>
+
+<section class="scene" id="s3">
+  <div class="eyebrow">02 · skillyard secure</div>
+  <h2>Check everything<br>around the skill.</h2>
+  <div class="term" id="t3" style="margin-top:60px"></div>
+</section>
+
+<section class="scene" id="s4">
+  <div class="eyebrow">03 · skillyard mark + trace</div>
+  <h2 id="s4h">Every copy is marked<br>for the person it's issued to.</h2>
+  <div class="grid10" id="g10"></div>
+  <div class="scan" id="scan"></div>
+</section>
+
+<section class="scene" id="s5">
+  <div class="eyebrow">03 · leak trace</div>
+  <h2>A leaked skill<br>names its source.</h2>
+  <div class="row" style="margin-top:60px">
+    <div class="term" id="t5a" style="flex:1; height:520px"></div>
+    <div class="term" id="t5b" style="flex:1; height:520px"></div>
+  </div>
+</section>
+
+<section class="scene" id="s6">
+  <div class="eyebrow">Also free</div>
+  <h2>Cheaper, better skills.</h2>
+  <div class="tools" id="tools"></div>
+</section>
+
+<section class="scene" id="s7">
+  <h1 id="s7h">Build, check and protect<br>your company's AI skills.</h1>
+  <div><span class="pill">npx skillyard review</span><span class="cta">Become a design partner</span></div>
+  <p class="lede">Free for developers. A private, traceable vault for companies.</p>
+</section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// Scene windows [start, end] in seconds; each fades/slides in over 0.6s and out over 0.4s.
+const S = { s1: [0, 5], s2: [5, 13], s3: [13, 20], s4: [20, 27], s5: [27, 36], s6: [36, 42], s7: [42, 48] };
+const DURATION = 48;
+
+const REVIEW = [
+  '$ skillyard review skills/',
+  '',
+  '<span class="red">F</span>  engineering-handbook   6 findings',
+  '     high  SKILL.md:13  <span class="hi">contradiction</span> with line 12',
+  '           "Always indent with tabs." vs "Use 2-space indentation"',
+  '     high  SKILL.md:26  <span class="hi">contradiction</span> with line 25',
+  '           "Deploy on Fridays after 4pm" vs "Never deploy on Fridays."',
+  '<span class="red">C</span>  notes-v2               description never says when to use it',
+  '<span class="grn">A</span>  incident-postmortem    no findings',
+];
+const SECURE = [
+  '$ skillyard secure --gate high',
+  '',
+  '<span class="red">HIGH</span>  .claude/settings.json:2  "Bash(*)" runs any shell command unprompted',
+  '<span class="red">HIGH</span>  .claude/settings.json:6  hook downloads and runs remote code',
+  '<span class="red">HIGH</span>  .mcp.json:5             secret inlined in DB_PASSWORD',
+  '<span class="red">HIGH</span>  skills/risky/package.json:3  postinstall: curl … | sh',
+  '',
+  'gate high: <span class="hi">FAIL</span>  · CI blocked until fixed',
+];
+const LEAK = [
+  '<span class="cap">leaked.md · found on a public repo</span>',
+  'AI-rewritten. Invisible marks stripped.',
+  '',
+  '<span class="dim">## Example (illustrative)</span>',
+  'Contact Viktor Yamamoto,',
+  'ticket 47339, amount $2,667.07.',
+];
+const TRACE = [
+  '$ skillyard trace leaked.md',
+  '',
+  'recipient   confidence',
+  '<span class="hi">dave</span>        1.00',
+  'alice       0.00',
+  'bob         0.00',
+  '',
+  'evidence: canary "Viktor Yamamoto",',
+  '          ticket 47339 (+48 bits)',
+];
+const NAMES = ['alice', 'bob', 'carol', 'dave', 'erin', 'frank', 'grace', 'heidi', 'ivan', 'judy'];
+const TOOLS = [
+  ['skillyard review --chats', 'Chat review', 'Learns from your sessions. You approve every edit.'],
+  ['skillyard map', 'Token Saver', 'Agents query a map instead of reading every file.'],
+  ['skillyard optimize', 'Optimizer', 'Shorter skills, kept only if they score as well.'],
+  ['skillyard create', 'Creator', 'A runbook or your corrections, turned into a tested skill.'],
+];
+$('g10').innerHTML = NAMES.map((n, i) => `<div class="copy" id="c-${n}"><span class="fp">#${(((i + 3) * 2654435761) >>> 0).toString(16).slice(0, 4)}</span><b>${n}</b>SKILL.md<div class="bars"><i style="width:90%"></i><i style="width:70%"></i><i style="width:82%"></i></div></div>`).join('');
+$('tools').innerHTML = TOOLS.map(([c, n, w]) => `<div class="tool"><code>${c}</code><b>${n}</b><span>${w}</span></div>`).join('');
+
+function lines(el, arr, p, cap = '') {
+  const n = Math.floor(p * arr.length + 0.0001);
+  el.innerHTML = cap + arr.slice(0, n).join('\n') + (n < arr.length ? '\n<span class="dim">▌</span>' : '');
+}
+
+window.render = (t) => {
+  for (const [id, [a, b]] of Object.entries(S)) {
+    const inn = ease(prog(t, a, a + 0.6)), out = prog(t, b - 0.4, b);
+    const el = $(id);
+    el.style.opacity = (t >= a && t < b) ? String(inn * (1 - out)) : '0';
+    el.style.transform = `translateY(${(1 - inn) * 40 - out * 30}px)`;
+  }
+  // 1: lede follows the headline
+  $('s1l').style.opacity = String(ease(prog(t, 1.4, 2.2)));
+  // 2, 3: terminals type line by line
+  lines($('t2'), REVIEW, prog(t, 6.2, 10.5), '<span class="cap">terminal</span>');
+  lines($('t3'), SECURE, prog(t, 14.2, 18.2), '<span class="cap">terminal</span>');
+  // 4: copies appear, each gets its own mark, then dave's copy lifts out as the leak
+  NAMES.forEach((n, i) => {
+    const c = $(`c-${n}`);
+    const p = ease(prog(t, 21 + i * 0.12, 21.6 + i * 0.12));
+    const marked = t > 23 + i * 0.1;
+    c.style.opacity = String(p);
+    c.style.borderColor = marked ? (n === 'dave' && t > 25 ? '#c41f17' : '#141414') : '#e6e6e6';
+    const lift = n === 'dave' ? ease(prog(t, 25, 26.2)) : 0;
+    c.style.transform = `translateY(${(1 - p) * 30 - lift * 26}px) scale(${1 + lift * 0.06})`;
+    c.style.boxShadow = lift ? `0 30px 60px -20px rgba(196,31,23,${0.45 * lift})` : 'none';
+    c.querySelector('i').style.background = marked ? '#141414' : '#ececec';
+    c.querySelector('.fp').style.opacity = marked ? '1' : '0';
+  });
+  const sc = $('scan'); const sp = prog(t, 22.6, 24.6);
+  sc.style.opacity = sp > 0 && sp < 1 ? '1' : '0';
+  sc.style.top = `${430 + sp * 460}px`;
+  // 5: the leak, then the trace
+  lines($('t5a'), LEAK, prog(t, 28, 30.5));
+  lines($('t5b'), TRACE, prog(t, 31, 34.5), '<span class="cap">terminal</span>');
+  // 6: tools stagger in
+  document.querySelectorAll('.tool').forEach((el, i) => {
+    const p = ease(prog(t, 37 + i * 0.25, 37.8 + i * 0.25));
+    el.style.opacity = String(p); el.style.transform = `translateY(${(1 - p) * 30}px)`;
+  });
+  $('wm').style.opacity = t < 42 ? '1' : String(1 - prog(t, 42, 42.4));
+};
+window.DURATION = DURATION;
+render(0);
+</script>
+</body>
+</html>
