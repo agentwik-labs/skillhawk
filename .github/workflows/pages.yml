@@ -25,7 +25,11 @@ jobs:
           node-version: 22
       - run: node bin/skillyard.js seed --data .demo-data --community
       - run: node tools/build-library.mjs --data .demo-data
+      # The canonical URL used by every pre-rendered page and the sitemap. Defaults to the GitHub Pages URL; once a
+      # custom domain is live, uncomment this (or pass --site-url) and no other file changes.
       - run: node bin/skillyard.js export site --data .demo-data --out _site
+        # env:
+        #   SITE_URL: https://example.com
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

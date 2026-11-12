@@ -615,3 +615,78 @@ body.is-landing main { max-width: none; padding: 0; }
 .lc .cmd button { flex: none; }
 @media (max-width: 1080px) { .j-step .x-head .lp-h, #library .x-head .lp-h, .j-step .j-side, #library .j-side { grid-column: 1 / -1; } .lib-fig, .lib-picks { grid-column: 1 / -1; } }
 @media (max-width: 720px) { .j-step .x-head .lp-h, #library .x-head .lp-h { font-size: clamp(2rem, 8.4vw, 2.6rem); } .v-install code { white-space: normal; overflow-wrap: anywhere; } .x-side .v-actions { min-width: 0; } }
+/* v5 polish: one tighter rhythm (112px between sections on desktop, 72px on a phone), Protect as a 2x2 field,
+   library install chips that scroll instead of breaking words, and a legal row in the footer. */
+.v-sec { padding-top: 112px; }
+.j-dark { margin-top: 112px; padding-top: 96px; padding-bottom: 96px; }
+.j-dark + .v-sec { padding-top: 112px; }
+.rm { padding-top: 80px; }
+.lp-cta { padding-top: 96px; padding-bottom: 96px; }
+.jr { margin-top: 32px; }
+.jr li { padding: 14px 20px; }
+.x-head .lp-h, .j-step .x-head .lp-h { max-width: 24ch; }
+.pf-grid, .lib { margin-top: 40px; }
+.vid video { max-height: 62svh; object-fit: contain; }
+/* Protect: four groups in two columns; every tool keeps its name, command and output, stacked */
+.jgs { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 32px; margin-top: 40px; align-items: start; }
+.jgs .jg { margin-top: 0; min-width: 0; }
+.jgs .jr { margin-top: 12px; }
+.jgs .jr li { grid-template-columns: 1fr; row-gap: 10px; padding: 16px 18px; }
+.jgs .jr-a b { font-size: 19px; }
+.jgs .jr-cmd { max-width: 100%; }
+/* library: install commands stay on one line and scroll inside their chip */
+.lc .cmd { align-items: center; min-width: 0; }
+.lc .cmd code { white-space: nowrap; overflow-wrap: normal; word-break: normal; overflow-x: auto; min-width: 0; scrollbar-width: thin; }
+/* footer */
+.lp-foot { min-height: 0; padding-top: 80px; }
+.lp-foot-top { padding-bottom: 72px; }
+.lp-install a { color: #fff; }
+.lp-legal-links { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: var(--step-small); color: #9a9a9a; padding-bottom: 10px; position: relative; z-index: 1; }
+.lp-legal-links a { color: #cfcfcf; text-decoration: none; }
+.lp-legal-links a:hover { color: #fff; text-decoration: underline; }
+@media (max-width: 900px) { .jgs { grid-template-columns: 1fr; } }
+@media (max-width: 720px) {
+  .v-sec { padding-top: 72px; }
+  .j-dark { margin-top: 72px; padding-top: 64px; padding-bottom: 64px; }
+  .j-dark + .v-sec { padding-top: 72px; }
+  .lp-cta { padding-top: 72px; padding-bottom: 72px; }
+  .rm { padding-top: 56px; }
+  .jr { margin-top: 24px; }
+  .jr li { padding: 14px 16px; row-gap: 8px; }
+  .j-step .x-head .lp-h, #library .x-head .lp-h { font-size: clamp(1.875rem, 8vw, 2.4rem); }
+  .lp-foot { padding-top: 56px; }
+  .lp-foot-top { padding-bottom: 48px; }
+}
+/* v5: Keep, Trace and Take back side by side; Prove, a single tool, runs the full width under them */
+.jgs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.jgs .jg:last-child:nth-child(4) { grid-column: 1 / -1; }
+.jgs .jg:last-child:nth-child(4) .jr li { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 5fr); column-gap: 24px; align-items: center; }
+.jgs .jr-a span { font-size: var(--step-body); line-height: 1.45; }
+/* commands wrap only at spaces, never inside a word */
+.lp .jr-cmd { overflow-wrap: normal; word-break: normal; }
+.jr li { grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) minmax(0, 5fr); }
+.jr-a b { font-size: 21px; }
+.jr-a span { line-height: 1.45; }
+.v-terms pre { max-height: 300px; overflow: auto; }
+.vid video { max-height: 56svh; }
+@media (max-width: 1080px) {
+  .jgs { grid-template-columns: 1fr 1fr; }
+  .jgs .jg:last-child:nth-child(4) { grid-column: auto; }
+  .jgs .jg:last-child:nth-child(4) .jr li { grid-template-columns: 1fr; }
+  .jr li { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 720px) {
+  .jgs { grid-template-columns: 1fr; gap: 32px; }
+  .jr li { grid-template-columns: 1fr; }
+}
+/* v5: scan facts as four short rows; library picks three across; one 96px section rhythm */
+.sc { grid-template-columns: 1fr; gap: 12px; }
+.sc li { grid-template-columns: 3.2ch minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline; }
+.sc b { font-size: clamp(1.6rem, 1.2rem + 1vw, 2.1rem); }
+.sc li .pf-bar { grid-column: 1 / -1; }
+.sc-big b { font-size: clamp(3rem, 2rem + 3vw, 4.6rem); }
+.v-sec { padding-top: 96px; }
+.j-dark { margin-top: 96px; }
+.j-dark + .v-sec { padding-top: 96px; }
+.v-terms pre { max-height: 240px; }
+@media (max-width: 720px) { .v-sec, .j-dark + .v-sec { padding-top: 72px; } .j-dark { margin-top: 72px; } .sc { grid-template-columns: 1fr; } }

@@ -14,6 +14,7 @@ import { loadConfig, RemoteRegistry, saveConfig } from './client.js';
 import { scanFiles } from './scan.js';
 import { secureCmd, secureScan, formatFinding } from './secure.js';
 import { evalSkill, evalMarkdown } from './eval.js';
+import { prerenderSite } from './prerender.js';
 import { checksum, parseSkillRef, readSkillDir, titleCase, validateFiles, NAME_RE } from './skill.js';
 
 const BIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'skillyard.js');
@@ -140,7 +141,7 @@ Running a registry
   org create <slug> [--name "Acme"] [--data ./data]
   token create --org <org> [--role admin|editor|reader | --scopes read,publish] [--name n] [--data ./data]
   token list --org <org> | token revoke <id>
-  export site --out <dir> [--data ./data]       Static read-only demo of a registry (for GitHub Pages)
+  export site --out <dir> [--data ./data] [--site-url u]  Static read-only demo of a registry (for GitHub Pages)
   export claude-marketplace --out <dir> [--from <dir> | --scope <org>]
                                                  Build a Claude Code plugin marketplace from skills
 
@@ -883,7 +884,7 @@ async function exportCmd(args, f) {
 }
 
 async function exportSite(f) {
-  if (!f.out) throw new Error('usage: skillyard export site --out <dir> [--data ./data]');
+  if (!f.out) throw new Error('usage: skillyard export site --out <dir> [--data ./data] [--site-url https://example.com/base]');
   const store = new Store(dataDir(f));
   const out = path.resolve(f.out);
   const webDir = path.join(REPO_ROOT, 'web');
@@ -921,7 +922,9 @@ async function exportSite(f) {
       fs.writeFileSync(dest, store.readFile(s.scope, s.name, 'latest', rel, ADMIN));
     }
   }
+  const pre = prerenderSite({ out, webDir, reportsDir: path.join(REPO_ROOT, 'reports'), siteUrl: f['site-url'] || process.env.SITE_URL });
   console.log(`wrote static site with ${all.length} skills to ${tilde(out)}`);
+  console.log(`  pre-rendered ${pre.pages} pages for search and AI engines (${pre.skills} skill pages, ${pre.tools} tools, ${pre.learn} answers) at ${pre.siteUrl}`);
 }
 
 async function studio(args, f) {

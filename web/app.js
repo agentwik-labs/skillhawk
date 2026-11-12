@@ -1,3 +1,5 @@
+// Legal pages (web/legal) go live after counsel review and the business details are filled in.
+const LEGAL_LIVE = false;
 // Skillyard web UI: hash-routed, no build step, no dependencies.
 const app = document.getElementById('app');
 const ORIGIN = window.SKILLYARD_STATIC ? 'https://skills.your-company.com' : location.origin;
@@ -287,11 +289,11 @@ const JOURNEY = [
       { name: 'Generate', cmd: 'skillyard generate checklist --from runbook.md', what: 'Six generators (procedure, checklist, voice, playbook, decision, metric) filled from your own document.', out: 'created refund-request-review' },
       { name: 'Compile', cmd: 'skillyard compile release-notes --to all', what: 'Native files for Claude Code, Codex, Cursor, Copilot and Gemini, each checked for size, frontmatter and lost content.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
     ] },
-  { id: 'check', step: 'Check', h: 'Find what is wrong before an agent follows it.', tier: FREE,
+  { id: 'check', step: 'Check', h: 'Catch the errors before agents do.', tier: FREE,
     promise: 'Grade every skill A to F with line-level findings, and audit the skills, MCP configs, hooks and scripts around them.',
     tools: [
-      { name: 'Review', cmd: 'skillyard review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: 'F  engineering-handbook  ~ 217 tok  6 findings: contradiction' },
-      { name: 'Secure', cmd: 'skillyard secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: 'HIGH .mcp.json:5  MCP server "db" has a secret inlined in DB_PASSWORD' },
+      { name: 'Review', cmd: 'skillyard review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: null, noOut: 'Full output below.' },
+      { name: 'Secure', cmd: 'skillyard secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: null, noOut: 'Full output below.' },
       { name: 'Clean', cmd: 'skillyard clean scripts skills/', what: 'Scripts shipped inside skills: error handling, hard-coded paths, exec bits.', out: 'high scripts/fetch.sh:2 no `set -e`: a failed command is ignored' },
     ] },
   { id: 'improve', step: 'Improve', h: 'Learn from how your team really works.', tier: FREE,
@@ -301,17 +303,17 @@ const JOURNEY = [
       { name: 'Optimize', cmd: 'skillyard optimize notes-v2', what: 'Cuts tokens and keeps the rewrite only if the grade and trigger cases hold.', out: 'notes-v2: tokens 811 -> 783 (-3%)  grade C -> C' },
       { name: 'Radar', cmd: 'skillyard radar logs/ --team', what: 'Corrections repeated across people become a drafted, tested skill, ready for a pull request.', out: 'Cluster 85fd6553: 2 people, 6 corrections in 4 sessions' },
       { name: 'A/B', cmd: 'skillyard ab report deploy', what: 'Split sessions between two versions; promote B only at p < 0.05 with 30 sessions per arm.', out: 'Decision: promote B (p=0.0000 ... (56/78 vs 9/82))' },
-      { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'When a new model ships, re-run every skill\'s evals on old and new, report drops and draft fixes.', out: null, noOut: 'Runs real model calls, so no sample output here. Needs --allow-model and an API key.' },
+      { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'When a new model ships, re-run every skill\'s evals on old and new, report drops and draft fixes.', out: null, noOut: 'Runs when a new model ships; needs --allow-model and an API key, so no sample output here.' },
     ] },
-  { id: 'save', step: 'Save', h: 'Spend tokens on the work, not on re-reading.', tier: FREE,
+  { id: 'save', step: 'Save', h: 'Stop paying to re-read files.', tier: FREE,
     promise: 'Give agents a map to query instead of opening every file, see where the tokens go, and estimate what each skill saves.',
     tools: [
       { name: 'Map', cmd: 'skillyard map', what: 'Indexes files, symbols, imports and skills; agents ask the map and read one section.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
-      { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: 'Token usage, last 7 days: 13.5k tokens, est. $0.05 across 1 sessions' },
+      { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.' },
       { name: 'Savings ledger', cmd: 'skillyard savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
     ] },
 ];
-const PROTECT = { id: 'protect', step: 'Protect', h: 'Your company\'s skills are an asset. Keep them yours.', tier: PILOT,
+const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. Keep them.', tier: PILOT,
   promise: 'A private vault with roles and an audit trail, copies that name the person they were issued to, and access you can take back.',
   groups: [
     { name: 'Keep', tools: [
@@ -347,10 +349,11 @@ function lpNav() {
 function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
-      <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><code>npx skillyard review</code></p></div>
+      <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillyard#readme">Install guide on GitHub →</a></p></div>
       <ul class="jf">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/teams">For teams</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillyard">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
+    ${LEGAL_LIVE ? `<nav class="lp-legal-links" aria-label="Legal"><a href="legal/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="legal/terms.html">Terms</a><span aria-hidden="true">·</span><a href="legal/security.html">Security</a><span aria-hidden="true">·</span><a href="legal/contact.html">Contact</a></nav>` : ''}
     <div class="lp-legal"><span>MIT licensed. Imported skills keep their own licences.</span><span>No cookies, no analytics.</span></div>
   </footer>`;
 }
@@ -358,7 +361,7 @@ function lpFooter() {
 function toolRow(t) {
   return `<li><div class="jr-a"><b>${esc(t.name)}</b><span>${esc(t.what)}</span>${t.note ? `<em class="jr-note">${esc(t.note)}</em>` : ''}</div>
     <code class="jr-cmd">${esc(t.cmd)}</code>
-    ${t.out ? `<pre class="jr-out" aria-label="Example output">${esc(t.out)}</pre>` : `<span class="jr-out none">${esc(t.noOut || '')}</span>`}</li>`;
+    ${t.live ? `<pre class="jr-out" aria-label="Output from one developer's logs" data-live="${t.live}">Loading the measured week…</pre>` : t.out ? `<pre class="jr-out" aria-label="Example output">${esc(t.out)}</pre>` : `<span class="jr-out none">${esc(t.noOut || '')}</span>`}</li>`;
 }
 
 function stepHead(s, extra = '') {
@@ -378,7 +381,7 @@ function protectSection(id = 'protect') {
   const s = PROTECT;
   return `<section class="v-sec j-step j-dark" id="${id}" aria-labelledby="${s.id}-h">
       ${stepHead(s)}
-      ${s.groups.map((g) => `<div class="jg"><h3 class="jg-h">${esc(g.name)}</h3><ul class="jr">${g.tools.map(toolRow).join('')}</ul></div>`).join('')}
+      <div class="jgs">${s.groups.map((g) => `<div class="jg"><h3 class="jg-h">${esc(g.name)}</h3><ul class="jr">${g.tools.map(toolRow).join('')}</ul></div>`).join('')}</div>
     </section>`;
 }
 
@@ -540,13 +543,29 @@ function chartScan(d) {
     body, table: numTable(['Finding', 'Skills', `Share of ${d.skills}`], facts.map(([v, t]) => [t, v, `${Math.round(v / d.skills * 100)}%`])), source: d.source });
 }
 
+// A `skillyard tokens` excerpt rebuilt only from the measured numbers in proof.json (no cost: it is not recorded there).
+function tokensExcerpt(d) {
+  const f = (m) => (m >= 1 ? `${m.toFixed(1)}M` : `${(m * 1000).toFixed(1)}k`);
+  const peak = d.daily_m.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const sessions = (d.source.match(/(\d+) sessions/) || [])[1];
+  const s = d.split_m;
+  const txt = `Token usage, last 7 days: ${f(d.total_m)} tokens
+${sessions ? `${sessions} sessions · ` : ''}cache reads ${Math.round(s.cache_read / d.total_m * 100)}% of all tokens
+input ${f(s.input)} · output ${f(s.output)}
+cache wr ${f(s.cache_write)} · cache rd ${f(s.cache_read)}
+busiest day ${peak[0]}: ${f(peak[1])}`;
+  document.querySelectorAll('[data-live="tokens"]').forEach((x) => { x.textContent = txt; });
+}
+
 async function proofCharts(el) {
   try {
     const r = await fetch('media/proof.json');
     if (!r.ok) throw new Error(String(r.status));
     const d = await r.json();
+    tokensExcerpt(d.tokens);
     el.innerHTML = chartLift(d.lift) + chartPrecision(d.reviewer_precision) + chartTokens(d.tokens) + chartTrace(d.trace) + chartScan(d.scan);
   } catch {
+    document.querySelectorAll('[data-live="tokens"]').forEach((x) => { x.textContent = 'The measured week could not be loaded; see web/media/proof.json.'; });
     el.innerHTML = '<p class="pf-k">The measurements could not be loaded. They are in <a href="https://github.com/agentwik-labs/skillyard/tree/main/reports">the reports folder on GitHub</a>.</p>';
   }
 }
@@ -564,8 +583,8 @@ function launchVideo() {
 async function viewShowcase() {
   const [build, check, improve, save] = JOURNEY;
   const terms = `<div class="v-terms">
-        <figure><figcaption>skillyard review examples/bad (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard review">${esc(TERM_REVIEW)}</pre></figure>
-        <figure><figcaption>skillyard secure test/fixtures/secure-bad (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard secure">${esc(TERM_SECURE)}</pre></figure>
+        <figure><figcaption>Review, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard review">${esc(TERM_REVIEW)}</pre></figure>
+        <figure><figcaption>Secure, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard secure">${esc(TERM_SECURE)}</pre></figure>
       </div>`;
   app.innerHTML = `
   <div class="lp" data-landing data-home>
