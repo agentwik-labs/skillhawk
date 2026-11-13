@@ -179,7 +179,7 @@ ${body(b)}
       ld: [crumbs([['Skillyard', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillyard', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillyard', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillyard pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. Pro (${esc(pro.price)}${esc(perOf(pro))}) is one person's private vault. Team (${esc(team.price)}${esc(perOf(team))}, extra seats $${esc(team.extraSeatUsd)} each) adds Protect: marked copies, leak tracing, revocable streaming and offboarding. ${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. Pro (${esc(pro.price)}${esc(perOf(pro))}) is one person's private vault. Team (${esc(team.price)}${esc(perOf(team))}, extra seats $${esc(team.extraSeatUsd)} each) is Pro for the whole team, plus what a group needs: roles, publish approval, copies marked per person with leak trace, offboarding and revocable streaming. ${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
     <p><a href="${b}#/?s=teams">Become a design partner</a></p>` });

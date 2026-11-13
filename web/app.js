@@ -330,10 +330,10 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
     { name: 'Take back', tools: [
       { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; nothing is written to disk.', out: 'Nothing is installed on this machine, and `skillyard revoke` cuts access on the next call.' },
       { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
-      { name: 'Exit interview', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
+      { name: 'Exit interview', note: 'Free CLI tool.', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
     ] },
     { name: 'Prove', tools: [
-      { name: 'Governance export', cmd: 'skillyard governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillyard itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
+      { name: 'Governance export', note: 'Free CLI tool.', cmd: 'skillyard governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillyard itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
     ] },
   ] };
 // BACKLOG.md "Later": planned, not built.
@@ -347,19 +347,19 @@ const PRICING = {
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'forever',
       blurb: 'Open source (MIT). Runs on your machine; nothing leaves it unless you pass --allow-model to use a model.',
-      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge'],
+      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillyard review', href: 'https://github.com/agentwik-labs/skillyard', code: true } },
     { id: 'pro', name: 'Pro', monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month, 1 seat',
       blurb: 'One person\'s private vault.',
       items: ['Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
       cta: { label: 'Join the pilot', href: '#/?s=teams' } },
     { id: 'team', name: 'Team', monthlyUsd: 100, seats: 5, extraSeatUsd: 20, price: '$100', per: 'per month for 5 seats', featured: true,
-      blurb: 'Everything in Pro for five people, plus Protect. Extra seats $20 each.',
-      items: ['Every SKILL.md copy marked for the token holder it is issued to', 'Leak trace + signed evidence pack', 'Revocable streaming', 'Offboarding report', 'Exit-interview agent', 'Governance export: an evidence bundle for your own SOC 2, ISO 42001 or EU AI Act audit (Skillyard itself is not certified)', 'Call-home link: built, off until legal review'],
+      blurb: 'Pro for your whole team: five seats, plus the controls a group needs. Extra seats $20 each.',
+      items: ['Shared private vault', 'Roles: reader, editor, admin', 'Publish approval: checks must pass; admin overrides are logged', 'Every copy marked for the person it is issued to, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Revocable streaming: agents load skills from the vault; nothing installed'],
       cta: { label: 'Become a design partner', href: '#/?s=teams' } },
     { id: 'enterprise', name: 'Enterprise', monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Custom', per: '',
       blurb: 'For security and procurement reviews.',
-      items: ['Support for running it on your own servers', 'Answers for your security review', 'Data processing agreement (not available yet)', 'Single sign-on (roadmap)', 'Onboarding and direct support from the founder'],
+      items: ['Support for running it on your own servers', 'Answers for your security review', 'Data processing agreement (not available yet)', 'Single sign-on (roadmap)', 'Call-home link for leaked copies (after legal review)', 'Onboarding and direct support from the founder'],
       cta: { label: 'Talk to us', href: '#/?s=teams' } },
   ],
   audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes within five working days.' },
