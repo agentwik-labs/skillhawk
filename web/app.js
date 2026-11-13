@@ -325,7 +325,7 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
     { name: 'Trace', tools: [
       { name: 'Marked copies', cmd: 'skillyard trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to; a leaked fragment names who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
       { name: 'Evidence pack', cmd: 'skillyard evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'most likely recipient: alice (code-review v1.0.0, confidence 100.00%)\naudit log chain: verified\nwrote evidence pack to /home/you/evidence' },
-      { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A harmless per-copy link that records when a leaked copy is opened.', out: null, note: 'Opt-in, legal review required.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
+      { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A per-copy link that records when a leaked copy is opened: time, IP address and browser.', out: null, note: 'Built, off by default. Not offered until a lawyer has reviewed it.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
     ] },
     { name: 'Take back', tools: [
       { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; nothing is written to disk.', out: 'Nothing is installed on this machine, and `skillyard revoke` cuts access on the next call.' },
@@ -333,7 +333,7 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
       { name: 'Exit interview', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
     ] },
     { name: 'Prove', tools: [
-      { name: 'Governance export', cmd: 'skillyard governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, mapped to SOC 2, ISO 42001 and the EU AI Act.', out: 'wrote governance bundle (7 skills, audit log verified)' },
+      { name: 'Governance export', cmd: 'skillyard governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillyard itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
     ] },
   ] };
 // BACKLOG.md "Later": planned, not built.
@@ -355,11 +355,11 @@ const PRICING = {
       cta: { label: 'Join the pilot', href: '#/?s=teams' } },
     { id: 'team', name: 'Team', monthlyUsd: 100, seats: 5, extraSeatUsd: 20, price: '$100', per: 'per month for 5 seats', featured: true,
       blurb: 'Everything in Pro for five people, plus Protect. Extra seats $20 each.',
-      items: ['Every SKILL.md copy marked for the token holder it is issued to', 'Leak trace + signed evidence pack', 'Revocable streaming', 'Offboarding report', 'Exit-interview agent', 'Governance export (SOC 2, ISO 42001, EU AI Act evidence)', 'Call-home link: opt-in, legal review required'],
+      items: ['Every SKILL.md copy marked for the token holder it is issued to', 'Leak trace + signed evidence pack', 'Revocable streaming', 'Offboarding report', 'Exit-interview agent', 'Governance export: an evidence bundle for your own SOC 2, ISO 42001 or EU AI Act audit (Skillyard itself is not certified)', 'Call-home link: built, off until legal review'],
       cta: { label: 'Become a design partner', href: '#/?s=teams' } },
     { id: 'enterprise', name: 'Enterprise', monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Custom', per: '',
       blurb: 'For security and procurement reviews.',
-      items: ['Support for running it on your own servers', 'Security review', 'DPA (in legal review)', 'Single sign-on (roadmap)', 'Onboarding and priority support'],
+      items: ['Support for running it on your own servers', 'Answers for your security review', 'Data processing agreement (not available yet)', 'Single sign-on (roadmap)', 'Onboarding and direct support from the founder'],
       cta: { label: 'Talk to us', href: '#/?s=teams' } },
   ],
   audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes within five working days.' },
