@@ -38,6 +38,16 @@ test('beacon is off by default and enabling needs the legal flag', async () => {
   assert.throws(() => execFileSync('node', [BIN, 'org', 'settings', 'acme', '--beacon', 'on', '--data', path.join(tmp, 'data')], { stdio: 'pipe' }), /legal-review/);
 });
 
+test('org settings --beacon on succeeds with --i-have-legal-review', () => {
+  const data = path.join(tmp, 'cli-data');
+  new Store(data).createOrg({ slug: 'beta' });
+  const out = execFileSync('node', [BIN, 'org', 'settings', 'beta', '--beacon', 'on', '--i-have-legal-review', '--data', data]).toString();
+  assert.match(out, /@beta: beacon on/);
+  assert.equal(new Store(data).getOrg('beta').beacon.enabled, true);
+  execFileSync('node', [BIN, 'org', 'settings', 'beta', '--beacon', 'off', '--data', data]);
+  assert.equal(new Store(data).getOrg('beta').beacon.enabled, false);
+});
+
 test('enabled beacon adds one reference link; a hit is recorded; unknown token is not', async () => {
   store.setBeacon('acme', true, true);
   const text = await pullText(alice);

@@ -133,13 +133,20 @@ Leak tracing
                                                  Auditor bundle: inventory, approval trail, access, integrity, control mapping (admin)
 
 Running a registry
-  serve [--port 7420] [--host 127.0.0.1] [--data ./data] [--log]
+  serve [--port 7420] [--host 127.0.0.1] [--data ./data] [--log] [--plans enforce]
+                                                 --plans enforce (or SKILLYARD_PLANS=enforce): seat limits and plan gates
+                                                 for a hosted vault; STRIPE_* env vars turn on checkout (docs/plans-and-seats.md)
   seed [--data ./data] [--community]             Load registry/public and seed/orgs demo content (+ free public skills)
   import <owner/repo...> [--scope community] [--data ./data]
                                                  Import openly licensed skills from public GitHub repos (scanned,
                                                  licence kept, source recorded); no args = sources/community.json
   org create <slug> [--name "Acme"] [--data ./data]
-  token create --org <org> [--role admin|editor|reader | --scopes read,publish] [--name n] [--data ./data]
+  org key <org> > org.pem                        The org's public key; verify a pulled copy with: verify <dir> --pub org.pem
+  org billing <org> [--data ./data] [--json]     Plan, seats used / purchased, billing status, enforcement mode
+  org plan <org> --plan pro|team|enterprise [--seats n] [--status active|pilot|past_due|canceled] [--pilot-ends date]
+                                                 Operator: set an org's plan (server-admin token, or --data with the server stopped)
+  token create --org <org> [--role admin|editor|reader | --scopes read,publish] [--name n] [--service] [--data ./data]
+                                                 One seat per distinct --name; --service (CI, bots) takes no seat, reads public skills only
   token list --org <org> | token revoke <id>
   export site --out <dir> [--data ./data] [--site-url u]  Static read-only demo of a registry (for GitHub Pages)
   export claude-marketplace --out <dir> [--from <dir> | --scope <org>]
@@ -228,7 +235,7 @@ async function serve(_args, f) {
   const port = Number(f.port || process.env.PORT || 7420);
   const host = f.host || process.env.HOST || '127.0.0.1';
   const allowedOrigins = (process.env.SKILLYARD_ALLOWED_ORIGINS || '').split(',').filter(Boolean);
-  const server = createServer({ dataDir: dataDir(f), allowedOrigins, log: !!f.log });
+  const server = createServer({ dataDir: dataDir(f), allowedOrigins, log: !!f.log, plans: f.plans || process.env.SKILLYARD_PLANS || 'off' });
   const stats = server.store.stats({ admin: true, scopes: ['read'] });
   await new Promise((r) => server.listen(port, host, r));
   console.log(`skillyard registry on http://${host}:${port}  (${stats.skills} skills, data: ${server.store.dataDir})`);
@@ -381,11 +388,47 @@ async function importCmd(args, f) {
 async function org(args, f) {
   const sub = args.shift();
   if (sub === 'settings') return (await import('./beacon.js')).orgSettings(args, f);
+  if (sub === 'billing' || sub === 'plan') return orgPlan(sub, args, f);
+  if (sub === 'key') {
+    // Public key that signs every copy the vault serves: skillyard org key acme > org.pem; skillyard verify <dir> --pub org.pem
+    if (!args[0]) throw new Error('usage: skillyard org key <org> > org.pem');
+    const { RemoteRegistry, loadConfig } = await import('./client.js');
+    const cfg = loadConfig();
+    const o = f.data ? new Store(dataDir(f)).getOrg(args[0]) : await new RemoteRegistry({ registry: f.registry || process.env.SKILLYARD_REGISTRY || cfg.registry, token: cfg.token }).request('GET', `/api/orgs/${args[0]}`);
+    if (!o?.publicKey) throw new Error(`@${args[0]} has no public key`);
+    return process.stdout.write(o.publicKey);
+  }
   if (sub !== 'create' || !args[0]) throw new Error('usage: skillyard org create <slug> [--name "Acme"] [--description ...]');
   const store = new Store(dataDir(f));
   const o = store.createOrg({ slug: args[0], name: f.name, description: f.description || '', website: f.website || '' });
   const t = store.createToken({ org: o.slug, name: 'owner', role: 'admin' });
   console.log(`created org @${o.slug}\nowner token (admin), shown once:\n  ${t.token}`);
+}
+
+/**
+ * org billing <org> | org plan <org> --plan team --seats 7 [--status active] [--pilot-ends <date>] [--period-end <date>]
+ * With --data: edits that data dir directly (stop the server first, or it overwrites the change on its next save).
+ * Otherwise: calls the configured registry (skillyard login) with a server-admin token.
+ */
+async function orgPlan(sub, args, f) {
+  const slug = args[0];
+  if (!slug) throw new Error(`usage: skillyard org ${sub} <org>${sub === 'plan' ? ' --plan free|pro|team|enterprise [--seats n] [--status pilot|active|past_due|canceled] [--pilot-ends <date>]' : ''}`);
+  const patch = { plan: f.plan, seats: f.seats === undefined ? undefined : Number(f.seats), status: f.status, pilotEndsAt: f.pilotEnds, periodEnd: f.periodEnd };
+  let st;
+  if (f.data) {
+    const store = new Store(dataDir(f));
+    st = sub === 'plan' ? store.setPlan(slug, patch, { name: 'cli' }) : store.billingState(slug);
+  } else {
+    const { RemoteRegistry, loadConfig } = await import('./client.js');
+    const cfg = loadConfig();
+    const reg = new RemoteRegistry({ registry: f.registry || process.env.SKILLYARD_REGISTRY || cfg.registry, token: f.token || process.env.SKILLYARD_TOKEN || cfg.token });
+    st = sub === 'plan' ? await reg.request('PATCH', `/api/orgs/${slug}/plan`, patch) : await reg.request('GET', `/api/orgs/${slug}/billing`);
+  }
+  if (f.json) return console.log(JSON.stringify(st, null, 2));
+  const price = st.monthlyUsd === null ? 'custom price' : `$${st.monthlyUsd}/month`;
+  console.log(`@${st.org}: ${st.planName}, ${st.seatsUsed} of ${st.seats} seats used, ${price}`);
+  console.log(`billing: ${st.status || 'none'}${st.pilotEndsAt ? `, pilot ends ${st.pilotEndsAt.slice(0, 10)}` : ''}${st.periodEnd ? `, period ends ${st.periodEnd.slice(0, 10)}` : ''}; access ${st.access}; enforcement ${st.enforcement}`);
+  if (st.seatsUsed > st.seats) console.log('over the limit: new members are blocked until seats are added or members revoked');
 }
 
 async function token(args, f) {
@@ -394,8 +437,8 @@ async function token(args, f) {
   if (sub === 'create') {
     if (!f.org && !f.admin) throw new Error('usage: skillyard token create --org <org> [--scopes read,publish] | --admin');
     const scopes = f.admin ? ['admin', 'read', 'publish'] : String(f.scopes || 'read').split(',');
-    const t = store.createToken({ org: f.admin ? null : f.org, name: f.name || 'token', ...(f.role ? { role: f.role } : { scopes }) });
-    console.log(`token ${t.id} (${t.scopes.join(',')}${t.org ? ` for @${t.org}` : ', admin'}), shown once:\n  ${t.token}`);
+    const t = store.createToken({ org: f.admin ? null : f.org, name: f.name || 'token', kind: f.service ? 'service' : 'member', ...(f.role ? { role: f.role } : { scopes }) }, { name: 'cli' });
+    console.log(`token ${t.id} (${t.scopes.join(',')}${t.org ? ` for @${t.org}` : ', admin'}${t.kind === 'service' ? ', service: no seat, public skills only' : ''}), shown once:\n  ${t.token}`);
   } else if (sub === 'list') {
     for (const t of store.listTokens(f.org || null)) console.log(`${t.id}  ${t.name.padEnd(16)} ${t.scopes.join(',').padEnd(14)} created ${t.createdAt.slice(0, 10)}  last used ${t.lastUsedAt?.slice(0, 10) || 'never'}`);
   } else if (sub === 'revoke' && args[0]) {

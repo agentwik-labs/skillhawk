@@ -8,7 +8,7 @@
   "tokens": { "source": "skillyard tokens, one developer's Claude Code logs, 2026-11-05..12, 89 sessions", "total_m": 843.3,
     "split_m": { "cache_read": 819.3, "cache_write": 20.1, "output": 3.6, "input": 0.26 },
     "daily_m": [["11-05", 82.6], ["11-06", 13.9], ["11-07", 45.4], ["11-08", 69.8], ["11-09", 86.7], ["11-10", 237.3], ["11-11", 216.1], ["11-12", 91.4]] },
-  "trace": { "source": "scripts/trace-demo.mjs, 10 recipients, code-review skill; LLM row = real Haiku rewrite", "correct": "10/10 in every scenario",
+  "trace": { "source": "scripts/trace-demo.mjs, 10 recipients, code-review skill; LLM row = real Haiku rewrite", "correct": "10/10 in each simulated scenario; 1 of 1 real AI rewrite",
     "bits": [["Full copy", 111], ["Invisible marks stripped", 79], ["Paraphrased (simulated)", 60], ["Real AI rewrite (Haiku)", 48], ["30% fragment", 46]] },
   "scan": { "source": "reports/2026-10-top-skills-scan.md", "skills": 511, "ship_scripts": 96, "network_calls": 85, "fail_format": 33, "confirmed_malicious": 0 },
   "reviewer_precision": { "source": "ibelick/ui-skills (MIT) as a false-positive corpus", "skills": ["baseline-ui", "fixing-accessibility", "fixing-metadata", "fixing-motion-performance", "improve-ui", "ui-skills-root"],

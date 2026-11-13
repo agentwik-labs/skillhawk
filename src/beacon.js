@@ -15,7 +15,8 @@ export async function orgSettings(args, f) {
     return void console.log(`@${slug}: beacon ${b?.enabled ? 'ON' : 'off'}${b?.changedAt ? ` (changed ${b.changedAt})` : ''}`);
   }
   if (!['on', 'off'].includes(f.beacon)) throw new Error('--beacon must be on or off');
-  store.setBeacon(slug, f.beacon === 'on', !!f.legalReview, ADMIN);
+  // args.js camelCases --i-have-legal-review to iHaveLegalReview; legalReview is the programmatic name.
+  store.setBeacon(slug, f.beacon === 'on', !!(f.iHaveLegalReview || f.legalReview), ADMIN);
   console.log(`@${slug}: beacon ${f.beacon}${f.beacon === 'on' ? '. Disclose it in your employee policy (docs/beacon.md).' : ''}`);
 }
 

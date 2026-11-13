@@ -8,6 +8,7 @@ import { createMcpHandler } from './mcp.js';
 import { createStreamHandler, StreamRegistry } from './stream.js';
 import { safeRelPath } from './skill.js';
 import { finalizePull, signFiles } from './vault.js';
+import { billingConfig, createCheckout, handleStripeEvent, verifyStripeSignature } from './billing.js';
 
 const WEB_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');
 const MAX_BODY = 8 * 1024 * 1024;
@@ -28,14 +29,14 @@ export class LocalRegistry {
   readFile(scope, name, version, p) { return this.store.readFile(scope, name, version, p, this.auth).toString('utf8'); }
 }
 
-export function createServer({ dataDir = 'data', adminToken = process.env.SKILLYARD_ADMIN_TOKEN, allowedOrigins = [], log = false, publicUrl = process.env.SKILLYARD_PUBLIC_URL } = {}) {
-  const store = new Store(dataDir);
+export function createServer({ dataDir = 'data', adminToken = process.env.SKILLYARD_ADMIN_TOKEN, allowedOrigins = [], log = false, publicUrl = process.env.SKILLYARD_PUBLIC_URL, plans = 'off', billing = billingConfig(), stripe } = {}) {
+  const store = new Store(dataDir, { plans });
   const routes = [];
-  const route = (method, pattern, fn) => routes.push({ method, re: new RegExp(`^${pattern}$`), fn });
+  const route = (method, pattern, fn, opts = {}) => routes.push({ method, re: new RegExp(`^${pattern}$`), fn, ...opts });
   const baseOf = (req) => (publicUrl || `http://${req.headers.host}`).replace(/\/+$/, '');
   const SKILL = '/api/skills/@([a-z0-9-]+)/([a-z0-9-]+)';
 
-  route('GET', '/api/health', () => ({ ok: true }));
+  route('GET', '/api/health', () => ({ ok: true, plans: store.enforce ? 'enforce' : 'off', billing: billing.configured ? 'stripe' : 'operator' }));
   route('GET', '/api/whoami', ({ auth }) => auth ? { org: auth.org, scopes: auth.scopes, admin: auth.admin, role: auth.role, name: auth.name } : { anonymous: true });
   route('GET', '/api/stats', ({ auth }) => store.stats(auth));
   route('GET', '/api/skills', ({ auth, query }) => ({
@@ -106,7 +107,9 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
     orgManager(auth, m[1]);
     const scopes = Array.isArray(body?.scopes) ? body.scopes : ['read'];
     if (scopes.includes('admin')) throw new HttpError(400, 'org tokens cannot have the admin scope');
-    return { status: 201, body: store.createToken({ org: m[1], name: body?.name || 'token', scopes }) };
+    const kind = body?.kind === 'service' ? 'service' : 'member';
+    if (kind === 'service' && !store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'only an org admin can create service tokens');
+    return { status: 201, body: store.createToken({ org: m[1], name: body?.name || 'token', scopes, kind }, auth) };
   });
   route('DELETE', '/api/orgs/([a-z0-9-]+)/tokens/([a-f0-9]+)', ({ auth, m }) => {
     orgManager(auth, m[1]);
@@ -124,8 +127,30 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
     return store.holdings(m[1], decodeURIComponent(m[2]));
   });
 
+  // ---- plans and billing (docs/plans-and-seats.md)
+  route('GET', '/api/orgs/([a-z0-9-]+)/billing', ({ auth, m }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    return store.billingState(m[1]);
+  });
+  route('PATCH', '/api/orgs/([a-z0-9-]+)/plan', ({ auth, m, body }) => {
+    if (!auth?.admin) throw new HttpError(403, 'only the server admin (operator) sets plans directly');
+    const { plan, seats, status, pilotEndsAt, periodEnd } = body || {};
+    return store.setPlan(m[1], { plan, seats, status, pilotEndsAt, periodEnd }, auth);
+  });
+  route('POST', '/api/orgs/([a-z0-9-]+)/billing/checkout', ({ auth, m, body, req }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    return createCheckout(store, m[1], { plan: body?.plan, seats: body?.seats }, { cfg: billing, client: stripe, baseUrl: baseOf(req) });
+  });
+  route('POST', '/api/billing/webhook', async ({ raw, req }) => {
+    verifyStripeSignature(raw, req.headers['stripe-signature'], billing.webhookSecret);
+    let event;
+    try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'invalid JSON body'); }
+    return { received: true, ...(await handleStripeEvent(store, event, { cfg: billing, client: stripe })) };
+  }, { raw: true });
+
   route('POST', '/mcp', async ({ auth, body, query }) => {
     if (query.get('stream') === '1' && !auth) throw new HttpError(401, 'stream mode needs your org token');
+    if (query.get('stream') === '1' && auth.org) store.assertFeature(auth.org, 'stream');
     const handle = query.get('stream') === '1' ? createStreamHandler(new StreamRegistry(store, auth)) : createMcpHandler(new LocalRegistry(store, auth));
     const res = await handle(body);
     return res === null ? { status: 202, empty: true } : res;
@@ -152,12 +177,14 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
       if (req.method === 'GET' && /^\/r\/[A-Za-z0-9_-]{16,64}$/.test(url.pathname)) return beaconHit(req, res, url.pathname.slice(3));
       if (!isApi) return serveStatic(url.pathname, res);
 
-      const auth = store.authenticate(bearer(req), adminToken);
+      const r0 = routes.find((x) => x.method === req.method && x.re.test(url.pathname));
+      const auth = r0?.raw ? null : store.authenticate(bearer(req), adminToken); // the webhook authenticates by signature
       if (auth) auth.host = String(req.headers['x-skillyard-host'] || '').slice(0, 100) || null;
-      const r = routes.find((x) => x.method === req.method && x.re.test(url.pathname));
+      const r = r0;
       if (!r) throw new HttpError(404, 'not found');
-      const body = ['POST', 'PATCH'].includes(req.method) ? await readJson(req) : undefined;
-      const out = await r.fn({ auth, m: r.re.exec(url.pathname), query: url.searchParams, body, req });
+      const raw = r.raw ? await readBody(req) : undefined;
+      const body = !r.raw && ['POST', 'PATCH'].includes(req.method) ? await readJson(req) : undefined;
+      const out = await r.fn({ auth, m: r.re.exec(url.pathname), query: url.searchParams, body, raw, req });
       if (out?.raw) return send(res, 200, out.raw, out.type);
       if (out?.empty) return send(res, out.status);
       if (out?.status && out.body) return sendJson(res, out.status, out.body);
@@ -165,7 +192,7 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
     } catch (e) {
       const status = e.status || 500;
       if (status === 500) console.error(e);
-      if (url.pathname === '/mcp' && status !== 401 && status !== 403 && status !== 405) {
+      if (url.pathname === '/mcp' && ![401, 402, 403, 405].includes(status)) {
         return sendJson(res, 200, { jsonrpc: '2.0', id: null, error: { code: -32700, message: e.message } });
       }
       if (status === 401) res.setHeader('WWW-Authenticate', 'Bearer realm="skillyard"');
@@ -209,6 +236,13 @@ function bearer(req) {
 }
 
 function readJson(req) {
+  return readBody(req).then((buf) => {
+    if (!buf.length) return undefined;
+    try { return JSON.parse(buf.toString('utf8')); } catch { throw new HttpError(400, 'invalid JSON body'); }
+  });
+}
+
+function readBody(req) {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
@@ -217,10 +251,7 @@ function readJson(req) {
       if (size > MAX_BODY) { reject(new HttpError(413, 'body too large')); req.destroy(); return; }
       chunks.push(c);
     });
-    req.on('end', () => {
-      if (!size) return resolve(undefined);
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch { reject(new HttpError(400, 'invalid JSON body')); }
-    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }

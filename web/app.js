@@ -278,9 +278,10 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
        fix: pin a version, e.g. @1.2.3`;
 
 // The landing is one journey: build, check, improve, save, protect. Every command below exists in src/cli.js, and
-// every output line was copied from a real run on registry/public, examples/ or test/fixtures (trimmed, not edited).
+// every output line comes from a real run on registry/public, examples/, test/fixtures or the seeded demo data
+// (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
-const PILOT = 'For teams. In pilot with design partners.';
+const PILOT = 'For teams. Open source; the hosted vault is in pilot with design partners.';
 const JOURNEY = [
   { id: 'build', step: 'Build', h: 'Write a skill once. Run it in five agents.', tier: FREE,
     promise: 'Turn an interview, a runbook or a document into a skill with trigger tests, then compile it to each agent\'s own format.',
@@ -309,7 +310,7 @@ const JOURNEY = [
     promise: 'Give agents a map to query instead of opening every file, see where the tokens go, and estimate what each skill saves.',
     tools: [
       { name: 'Map', cmd: 'skillyard map', what: 'Indexes files, symbols, imports and skills; agents ask the map and read one section.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
-      { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.' },
+      { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.', noOut: 'Reads your own Claude Code logs, so the output is yours. A summary of one developer\'s measured week is in the Proof section of the home page.' },
       { name: 'Savings ledger', cmd: 'skillyard savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
     ] },
 ];
@@ -317,18 +318,18 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
   promise: 'A private vault with roles and an audit trail, copies that name the person they were issued to, and access you can take back.',
   groups: [
     { name: 'Keep', tools: [
-      { name: 'Vault and roles', cmd: 'skillyard token create --org acme --role editor', what: 'Versions, diffs and rollback; publishing must pass review and security.', out: 'token d840e76f297e (read,publish for @acme), shown once' },
-      { name: 'Audit log', cmd: 'skillyard audit verify', what: 'Every pull, publish and rollback, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
-      { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub key.pem', what: 'What runs is what was approved.', out: 'FAIL ds: files differ from what was signed  changed: SKILL.md' },
+      { name: 'Vault and roles', cmd: 'skillyard token create --org acme --role editor', what: 'Versions, diffs and rollback; publishing must pass review and security (an org admin can override; it is logged).', out: 'token d840e76f297e (read,publish for @acme), shown once' },
+      { name: 'Audit log', cmd: 'skillyard audit verify', what: 'Pulls, publishes, rollbacks and access changes, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
+      { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub org.pem', what: 'What runs is what was approved.', out: 'FAIL deploy-safely: files differ from what was signed\n  changed: SKILL.md' },
     ] },
     { name: 'Trace', tools: [
-      { name: 'Every copy marked', cmd: 'skillyard trace leaked.md --marks marks.json', what: 'Each person gets their own copy; a leaked fragment names who it was issued to.', out: 'alice  v1.0.0  confidence 1.0000  (86 bits)' },
-      { name: 'Evidence pack', cmd: 'skillyard evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'ok   evidence.json signature valid' },
+      { name: 'Marked copies', cmd: 'skillyard trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to; a leaked fragment names who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
+      { name: 'Evidence pack', cmd: 'skillyard evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'most likely recipient: alice (code-review v1.0.0, confidence 100.00%)\naudit log chain: verified\nwrote evidence pack to /home/you/evidence' },
       { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A harmless per-copy link that records when a leaked copy is opened.', out: null, note: 'Opt-in, legal review required.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
     ] },
     { name: 'Take back', tools: [
       { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; nothing is written to disk.', out: 'Nothing is installed on this machine, and `skillyard revoke` cuts access on the next call.' },
-      { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
+      { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
       { name: 'Exit interview', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
     ] },
     { name: 'Prove', tools: [
@@ -336,22 +337,29 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
     ] },
   ] };
 // BACKLOG.md "Later": planned, not built.
-const ROADMAP = ['Leak-watch crawler', 'Collusion-resistant marks', 'Single sign-on', 'Slack alerts', 'VS Code extension', 'Self-hosted vault'];
+// Self-hosting is not here: `skillyard serve` runs the vault on your own server (docs/self-hosting.md).
+const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged copies already rank both colluders)', 'Single sign-on', 'Slack alerts for vault events (Studio already posts review proposals to a Slack webhook)', 'VS Code extension'];
 
+// Prices mirror src/plans.js PLANS (monthlyUsd, includedSeats, extraSeatUsd); test/pricing.test.js keeps them equal.
 const PRICING = {
+  heading: 'Free for developers. $20 for one, $100 for a team of five.',
   note: 'Prices in USD. Paid plans start after a free pilot; nothing is charged today.',
   plans: [
-    { id: 'free', name: 'Free', price: '$0', per: 'forever', blurb: 'Open source (MIT). Runs on your machine; nothing leaves it.',
-      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'map, tokens, savings ledger', 'test, dev, ci, badge'],
+    { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'forever',
+      blurb: 'Open source (MIT). Runs on your machine; nothing leaves it unless you pass --allow-model to use a model.',
+      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge'],
       cta: { label: 'npx skillyard review', href: 'https://github.com/agentwik-labs/skillyard', code: true } },
-    { id: 'team', name: 'Team', price: '$15', per: 'per seat / month', blurb: 'One private vault for every skill your company runs.',
-      items: ['Vault: roles, versions, diffs, rollback', 'Publishing gated by Reviewer + Security', 'Audit log, lockfile, signed skills', 'Team radar, A/B skills, model-release watch', 'Monthly savings statement'],
+    { id: 'pro', name: 'Pro', monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month, 1 seat',
+      blurb: 'One person\'s private vault.',
+      items: ['Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
+      cta: { label: 'Join the pilot', href: '#/?s=teams' } },
+    { id: 'team', name: 'Team', monthlyUsd: 100, seats: 5, extraSeatUsd: 20, price: '$100', per: 'per month for 5 seats', featured: true,
+      blurb: 'Everything in Pro for five people, plus Protect. Extra seats $20 each.',
+      items: ['Every SKILL.md copy marked for the token holder it is issued to', 'Leak trace + signed evidence pack', 'Revocable streaming', 'Offboarding report', 'Exit-interview agent', 'Governance export (SOC 2, ISO 42001, EU AI Act evidence)', 'Call-home link: opt-in, legal review required'],
       cta: { label: 'Become a design partner', href: '#/?s=teams' } },
-    { id: 'protect', name: 'Protect', price: '$30', per: 'per seat / month', featured: true, blurb: 'Everything in Team, and every copy traceable.',
-      items: ['Every copy marked for its recipient', 'Leak trace + signed evidence pack', 'Revocable streaming, offboarding report', 'Exit-interview agent', 'Governance export (SOC 2, ISO 42001, EU AI Act evidence)', 'Call-home link: opt-in, legal review required'],
-      cta: { label: 'Become a design partner', href: '#/?s=teams' } },
-    { id: 'enterprise', name: 'Enterprise', price: 'Custom', per: '', blurb: 'For security and procurement reviews.',
-      items: ['Self-hosted vault', 'Data processing agreement + security review', 'Single sign-on (roadmap)', 'Onboarding and priority support'],
+    { id: 'enterprise', name: 'Enterprise', monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Custom', per: '',
+      blurb: 'For security and procurement reviews.',
+      items: ['Support for running it on your own servers', 'Security review', 'DPA (in legal review)', 'Single sign-on (roadmap)', 'Onboarding and priority support'],
       cta: { label: 'Talk to us', href: '#/?s=teams' } },
   ],
   audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes within five working days.' },
@@ -379,7 +387,7 @@ function lpFooter() {
 function toolRow(t) {
   return `<li><div class="jr-a"><b>${esc(t.name)}</b><span>${esc(t.what)}</span>${t.note ? `<em class="jr-note">${esc(t.note)}</em>` : ''}</div>
     <code class="jr-cmd">${esc(t.cmd)}</code>
-    ${t.live ? `<pre class="jr-out" aria-label="Output from one developer's logs" data-live="${t.live}">Loading the measured week…</pre>` : t.out ? `<pre class="jr-out" aria-label="Example output">${esc(t.out)}</pre>` : `<span class="jr-out none">${esc(t.noOut || '')}</span>`}</li>`;
+    ${t.live ? `<pre class="jr-out" aria-label="Summary of one developer's measured week" data-live="${t.live}">Loading the measured week…</pre>` : t.out ? `<pre class="jr-out" aria-label="Example output">${esc(t.out)}</pre>` : `<span class="jr-out none">${esc(t.noOut || '')}</span>`}</li>`;
 }
 
 function stepHead(s, extra = '') {
@@ -414,7 +422,7 @@ function pricingSection(id = 'pricing') {
   const P = PRICING;
   return `<section class="v-sec pr" id="${id}" aria-labelledby="${id}-h">
       <p class="v-eyebrow">Pricing</p>
-      <h2 class="lp-h" id="${id}-h">Free for developers. Per seat for teams.</h2>
+      <h2 class="lp-h" id="${id}-h">${esc(P.heading)}</h2>
       <ul class="pr-grid">${P.plans.map((p) => `<li class="pr-card${p.featured ? ' pr-featured' : ''}">
         <h3>${esc(p.name)}</h3>
         <p class="pr-price"><b>${esc(p.price)}</b>${p.per ? `<span>${esc(p.per)}</span>` : ''}</p>
@@ -430,7 +438,7 @@ function pricingSection(id = 'pricing') {
 function teamsCta(id) {
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="${id === 'su-home' ? 'teams' : 'ask'}">
       <h2 class="lp-h" id="${id}-h">For teams: become a design partner.</h2>
-      <p class="v-lede">The developer tools above are free. The vault and the team features are in pilot: we set them up with a few companies, starting with a free audit of the skills you already use.</p>
+      <p class="v-lede">The developer tools above are free. All of the code is open source; the hosted vault, with seats, setup and support, is in pilot with a few design partners, starting with a free audit of the skills you already use.</p>
       ${signupSentence({ lead: 'Reply to', button: 'Request', tag: 'audit', id, note: 'We reply within two working days to set up a 20-minute call and a free audit of your skills.' })}
     </section>`;
 }
@@ -578,13 +586,13 @@ function chartScan(d) {
     body, table: numTable(['Finding', 'Skills', `Share of ${d.skills}`], facts.map(([v, t]) => [t, v, `${Math.round(v / d.skills * 100)}%`])), source: d.source });
 }
 
-// A `skillyard tokens` excerpt rebuilt only from the measured numbers in proof.json (no cost: it is not recorded there).
+// A summary of the measured week, built only from the numbers in proof.json. It is not `skillyard tokens` output.
 function tokensExcerpt(d) {
   const f = (m) => (m >= 1 ? `${m.toFixed(1)}M` : `${(m * 1000).toFixed(1)}k`);
   const peak = d.daily_m.reduce((a, b) => (b[1] > a[1] ? b : a));
   const sessions = (d.source.match(/(\d+) sessions/) || [])[1];
   const s = d.split_m;
-  const txt = `Token usage, last 7 days: ${f(d.total_m)} tokens
+  const txt = `Summary of one developer's measured week: ${f(d.total_m)} tokens
 ${sessions ? `${sessions} sessions · ` : ''}cache reads ${Math.round(s.cache_read / d.total_m * 100)}% of all tokens
 input ${f(s.input)} · output ${f(s.output)}
 cache wr ${f(s.cache_write)} · cache rd ${f(s.cache_read)}
@@ -643,7 +651,7 @@ async function viewShowcase() {
 
     <section class="v-sec x-proof" id="proof" aria-labelledby="proof-h">
       <div class="x-head"><h2 id="proof-h" class="lp-h">Measured, not claimed.</h2>
-      <div class="j-side"><p class="v-lede">Every number below comes from a run you can repeat from the repository. Small samples are labelled as small.</p></div></div>
+      <div class="j-side"><p class="v-lede">The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository. The token week is one developer's own logs, so yours will differ. Small samples are labelled as small.</p></div></div>
       <div class="pf-grid" data-proof><p class="pf-k">Loading the measurements…</p></div>
     </section>
 
@@ -668,7 +676,7 @@ function viewTeams() {
     ${lpNav()}
     <section class="lp-hero v-hero">
       <h1 class="lp-sentence v-h1">Design partners for the Skillyard vault.</h1>
-      <p class="lp-lede">The developer tools are free and open source. The vault and the team features below are in pilot. Work with us before they open: you get a free audit of the skills your team already uses, and a say in what we build next.</p>
+      <p class="lp-lede">The developer tools are free, and all of the code is open source. The hosted vault, with seats, setup and support, is in pilot with design partners. Work with us before it opens: you get a free audit of the skills your team already uses, and a say in what we build next.</p>
     </section>
     ${protectSection('vault')}
     ${pricingSection('pricing-teams')}

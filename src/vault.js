@@ -131,6 +131,16 @@ export async function finalizePull(store, bundle, auth, { baseUrl = null } = {})
     store.recordMark({ recipient: who, skill: bundle.id, version: bundle.version, fingerprint });
     if (r.fingerprint?.beacon) store.registerBeacon({ org: bundle.scope, recipient: who, skill: bundle.id, version: bundle.version, token: r.fingerprint.beacon.token });
   }
+  // Re-sign what this recipient actually receives (the marked copy), so `skillyard verify --pub <org key>` passes on
+  // an installed copy and fails if anyone edits it afterwards. The publish-time signature was checked above.
+  if (org.privateKey) {
+    const s = await import('./sign.js').catch(() => null);
+    if (s?.signFiles && s.SIGNATURE_FILE) {
+      delete bundle.files[s.SIGNATURE_FILE];
+      const list = Object.entries(bundle.files).map(([path, v]) => ({ path, content: Buffer.from(v, 'base64') }));
+      bundle.files[s.SIGNATURE_FILE] = Buffer.from(`${JSON.stringify(await s.signFiles(list, org.privateKey), null, 2)}\n`).toString('base64');
+    }
+  }
   store.audit({ action: 'pull', org: bundle.scope, skill: bundle.id, version: bundle.version, marked: !!fingerprint }, auth);
   // Installed copies of private skills carry a lease; `skillyard sync` removes them once it runs out.
   if (store.db.skills[bundle.id].visibility === 'private') {

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { scanFiles } from './scan.js';
+import { accessLevel, BILLING_STATUSES, FEATURES, monthlyPrice, pilotBilling, planAtLeast, PLANS, TOKENS_PER_MEMBER, validatePlan } from './plans.js';
 import { diffFiles, GRADES, newOrgKeys, roleOf, ROLE_SCOPES, ROLES, runChecks } from './vault.js';
 import { checksum, compareSemver, resolveVersion, safeRelPath, SCOPE_RE, skillId, validateFiles } from './skill.js';
 
@@ -18,7 +19,9 @@ export class HttpError extends Error {
 }
 
 export class Store {
-  constructor(dataDir) {
+  /** plans: 'enforce' turns on seat limits, feature gates and read-only billing states (hosted vault); default off. */
+  constructor(dataDir, { plans = 'off' } = {}) {
+    this.enforce = plans === 'enforce';
     this.dataDir = path.resolve(dataDir);
     this.dbPath = path.join(this.dataDir, 'db.json');
     this.blobDir = path.join(this.dataDir, 'blobs');
@@ -28,6 +31,77 @@ export class Store {
     this.db.beacons ||= {};
     this.db.alerts ||= [];
     this.auditPath = path.join(this.dataDir, 'audit.jsonl');
+    // Orgs from before plans existed become a Team pilot sized to the members they already have; saved once.
+    const legacy = Object.values(this.db.orgs).filter((o) => o.plan === undefined);
+    for (const o of legacy) Object.assign(o, pilotBilling(this.seatsUsed(o.slug)));
+    if (legacy.length && fs.existsSync(this.dbPath)) this.save();
+  }
+
+  // ---- plans and seats (docs/plans-and-seats.md) ----------------------------
+
+  /** Active tokens that hold a seat: org tokens that are not revoked and not service tokens. */
+  memberTokens(org) {
+    return Object.values(this.db.tokens).filter((t) => t.org === org && !t.revoked && t.kind !== 'service');
+  }
+
+  /** A seat is one distinct member name with at least one active member token. */
+  seatsUsed(org) {
+    return new Set(this.memberTokens(org).map((t) => t.name)).size;
+  }
+
+  billingState(slug) {
+    const o = this.db.orgs[slug];
+    if (!o) throw new HttpError(404, `org ${slug} not found`);
+    const b = o.billing || {};
+    return {
+      org: slug, plan: o.plan, planName: PLANS[o.plan]?.name || o.plan, seats: o.seats, seatsUsed: this.seatsUsed(slug),
+      status: b.status || null, pilotEndsAt: b.pilotEndsAt || null, periodEnd: b.periodEnd || null,
+      monthlyUsd: monthlyPrice(o.plan, o.seats), access: accessLevel(o), enforcement: this.enforce ? 'enforce' : 'off',
+      subscription: b.subscriptionId ? { provider: b.provider || null, id: b.subscriptionId } : null,
+    };
+  }
+
+  /** Under enforcement, a read-only org (ended pilot, canceled, past due beyond grace) keeps pulls but loses writes. */
+  assertWritable(slug) {
+    const o = this.db.orgs[slug];
+    if (!this.enforce || !o || accessLevel(o) === 'full') return;
+    const why = o.billing?.status === 'pilot' ? 'the pilot has ended' : `billing is ${o.billing?.status || 'not set up'}`;
+    throw new HttpError(402, `@${slug} is read-only because ${why}. Pulls and revokes still work. See: skillyard org billing ${slug}`);
+  }
+
+  assertFeature(slug, feature) {
+    if (!this.enforce || !this.db.orgs[slug]) return;
+    const plan = this.db.orgs[slug].plan || 'free';
+    const min = FEATURES[feature];
+    if (!planAtLeast(plan, min)) throw new HttpError(402, `${feature} needs the ${PLANS[min].name} plan or higher; @${slug} is on ${PLANS[plan]?.name || plan}`);
+  }
+
+  /**
+   * Set an org's plan, seats and billing fields. Callers: the server admin (operator, PATCH /api/orgs/:org/plan) and
+   * the billing webhook. Seats below the number in use are allowed; nobody is revoked, new members are just blocked.
+   */
+  setPlan(slug, { plan, seats, status, pilotEndsAt, periodEnd, provider, customerId, subscriptionId, lastEventAt } = {}, auth) {
+    const o = this.db.orgs[slug];
+    if (!o) throw new HttpError(404, `org ${slug} not found`);
+    let next;
+    try {
+      next = validatePlan(plan ?? o.plan, seats ?? (plan && plan !== o.plan ? undefined : o.seats));
+    } catch (e) {
+      throw new HttpError(400, e.message);
+    }
+    if (status !== undefined && !BILLING_STATUSES.includes(status)) throw new HttpError(400, `status must be one of ${BILLING_STATUSES.join(', ')}`);
+    for (const [k, v] of Object.entries({ pilotEndsAt, periodEnd })) {
+      if (v !== undefined && v !== null && Number.isNaN(Date.parse(v))) throw new HttpError(400, `${k} must be an ISO date`);
+    }
+    const before = { plan: o.plan, seats: o.seats, status: o.billing?.status || null };
+    o.plan = next.plan;
+    o.seats = next.seats;
+    o.billing = { ...(o.billing || {}) };
+    const fields = { status, pilotEndsAt, periodEnd, provider, customerId, subscriptionId, lastEventAt };
+    for (const [k, v] of Object.entries(fields)) if (v !== undefined) { if (v === null) delete o.billing[k]; else o.billing[k] = v; }
+    this.save();
+    this.audit({ action: 'plan.change', org: slug, before, after: { plan: o.plan, seats: o.seats, status: o.billing.status || null } }, auth);
+    return this.billingState(slug);
   }
 
   /**
@@ -129,7 +203,7 @@ export class Store {
     if (!GRADES.includes(minGrade)) throw new HttpError(400, `minGrade must be one of ${GRADES.join(', ')}`);
     if (!SCOPE_RE.test(slug || '') || slug.length > 40) throw new HttpError(400, 'org slug must be lowercase-hyphenated, <= 40 chars');
     if (this.db.orgs[slug]) throw new HttpError(409, `org ${slug} already exists`);
-    const org = { slug, name: name || slug, description, website, createdAt: new Date().toISOString(), minGrade, ...newOrgKeys() };
+    const org = { slug, name: name || slug, description, website, createdAt: new Date().toISOString(), minGrade, ...pilotBilling(), ...newOrgKeys() };
     this.db.orgs[slug] = org;
     this.log('org.create', { org: slug });
     this.save();
@@ -138,6 +212,7 @@ export class Store {
 
   setMinGrade(slug, minGrade) {
     if (!GRADES.includes(minGrade)) throw new HttpError(400, `minGrade must be one of ${GRADES.join(', ')}`);
+    this.assertWritable(slug);
     this.db.orgs[slug].minGrade = minGrade;
     this.save();
     return this.publicOrg(this.db.orgs[slug]);
@@ -157,7 +232,8 @@ export class Store {
 
   // ---- tokens -------------------------------------------------------------
 
-  createToken({ org, name = 'token', scopes = ['read'], role }) {
+  createToken({ org, name = 'token', scopes = ['read'], role, kind = 'member' }, auth) {
+    if (!['member', 'service'].includes(kind)) throw new HttpError(400, 'kind must be member or service');
     if (role) {
       if (!ROLES.includes(role)) throw new HttpError(400, `role must be one of ${ROLES.join(', ')}`);
       if (!org) throw new HttpError(400, 'roles apply to org tokens');
@@ -167,12 +243,27 @@ export class Store {
     const bad = scopes.filter((s) => !SCOPES.includes(s));
     if (bad.length) throw new HttpError(400, `unknown scopes: ${bad.join(', ')}`);
     if (scopes.includes('admin') && org) throw new HttpError(400, 'admin tokens are not tied to an org');
+    if (kind === 'service' && !org) throw new HttpError(400, 'service tokens belong to an org');
+    if (org && this.enforce) {
+      this.assertWritable(org);
+      if (kind === 'member') {
+        const mine = this.memberTokens(org).filter((t) => t.name === name).length;
+        if (mine >= TOKENS_PER_MEMBER) throw new HttpError(409, `${name} already has ${mine} active tokens (limit ${TOKENS_PER_MEMBER}); revoke one first`);
+        const used = this.seatsUsed(org);
+        const o = this.db.orgs[org];
+        if (!mine && used >= o.seats) {
+          this.log('seat.blocked', { org, member: name, used, seats: o.seats });
+          throw new HttpError(402, `seat limit reached: ${used} of ${o.seats} seats on ${PLANS[o.plan]?.name || o.plan}. Revoke a member (skillyard revoke) or add seats (skillyard org billing ${org})`);
+        }
+      }
+    }
     const secret = `sy_${crypto.randomBytes(24).toString('base64url')}`;
     const id = crypto.randomBytes(6).toString('hex');
-    this.db.tokens[id] = { id, org: org || null, name, scopes, role: role || (scopes.includes('publish') ? 'editor' : scopes.includes('admin') ? 'admin' : 'reader'), hash: hashToken(secret), createdAt: new Date().toISOString(), lastUsedAt: null };
+    this.db.tokens[id] = { id, org: org || null, name, scopes, role: role || (scopes.includes('publish') ? 'editor' : scopes.includes('admin') ? 'admin' : 'reader'), ...(kind === 'service' ? { kind } : {}), hash: hashToken(secret), createdAt: new Date().toISOString(), lastUsedAt: null };
     this.log('token.create', { org, tokenId: id, scopes, role });
     this.save();
-    return { id, token: secret, org: org || null, name, scopes, role: this.db.tokens[id].role };
+    if (org) this.audit({ action: 'token.create', org, tokenId: id, member: name, kind, scopes }, auth);
+    return { id, token: secret, org: org || null, name, scopes, kind, role: this.db.tokens[id].role };
   }
 
   listTokens(org) {
@@ -184,6 +275,7 @@ export class Store {
     if (!t || (org !== undefined && t.org !== org)) throw new HttpError(404, 'token not found');
     delete this.db.tokens[id];
     this.log('token.revoke', { org: t.org, tokenId: id });
+    if (t.org) this.audit({ action: 'token.revoke', org: t.org, tokenId: id, member: t.name }, null);
     this.save();
   }
 
@@ -202,6 +294,7 @@ export class Store {
   setLeaseDays(slug, days) {
     const n = Number(days);
     if (!Number.isInteger(n) || n < 1 || n > 365) throw new HttpError(400, 'leaseDays must be a whole number from 1 to 365');
+    this.assertWritable(slug);
     this.db.orgs[slug].leaseDays = n;
     this.save();
     return this.publicOrg(this.db.orgs[slug]);
@@ -252,13 +345,15 @@ export class Store {
       t.lastUsedAt = new Date().toISOString();
       this.save();
     }
-    return { admin: t.scopes.includes('admin'), org: t.org, scopes: t.scopes, role: roleOf(t), name: t.name, tokenId: t.id };
+    return { admin: t.scopes.includes('admin'), org: t.org, scopes: t.scopes, role: roleOf(t), name: t.name, tokenId: t.id, kind: t.kind || 'member' };
   }
 
   // ---- access -------------------------------------------------------------
 
   canRead(skill, auth) {
-    return skill.visibility === 'public' || !!auth?.admin || (auth?.org === skill.scope && auth.scopes.includes('read'));
+    if (skill.visibility === 'public' || auth?.admin) return true;
+    // Service tokens (CI, bots) take no seat, so they never receive private content: a copy must be marked for a person.
+    return auth?.org === skill.scope && auth.scopes.includes('read') && auth.kind !== 'service';
   }
 
   canPublish(scope, auth) {
@@ -273,6 +368,7 @@ export class Store {
    */
   publish({ scope, files, visibility, auth, publishedBy, force = false, signature = null }) {
     if (!this.db.orgs[scope]) throw new HttpError(404, `org ${scope} not found`);
+    if (!publishedBy) this.assertWritable(scope);
     if (!this.canPublish(scope, auth)) throw new HttpError(403, `token cannot publish to @${scope}`);
     const v = validateFiles(files);
     if (!v.ok) throw new HttpError(422, `invalid skill: ${v.errors.join('; ')}`);
@@ -302,6 +398,7 @@ export class Store {
     if (existing?.versions[manifest.version]) throw new HttpError(409, `${id}@${manifest.version} already exists; bump the version in skill.json`);
     const vis = visibility || manifest.visibility || existing?.visibility || 'private';
     if (!['public', 'private'].includes(vis)) throw new HttpError(400, 'visibility must be public or private');
+    if (vis === 'private' && !publishedBy) this.assertFeature(scope, 'private-skills');
 
     const dir = this.versionDir(scope, manifest.name, manifest.version);
     fs.mkdirSync(dir, { recursive: true });
@@ -338,7 +435,10 @@ export class Store {
     if (!rec) throw new HttpError(404, 'skill not found');
     if (!this.canPublish(scope, auth)) throw new HttpError(403, 'forbidden');
     if (!['public', 'private'].includes(visibility)) throw new HttpError(400, 'visibility must be public or private');
+    this.assertWritable(scope);
+    if (visibility === 'private') this.assertFeature(scope, 'private-skills');
     rec.visibility = visibility;
+    this.audit({ action: 'skill.visibility', org: scope, skill: rec.id, visibility }, auth);
     this.log('skill.visibility', { skill: rec.id, visibility });
     this.save();
     return this.summary(rec);
@@ -348,6 +448,8 @@ export class Store {
     const rec = this.db.skills[skillId(scope, name)];
     if (!rec) throw new HttpError(404, 'skill not found');
     if (!this.canPublish(scope, auth)) throw new HttpError(403, 'forbidden');
+    this.assertWritable(scope);
+    this.audit({ action: 'skill.delete', org: scope, skill: rec.id }, auth);
     delete this.db.skills[rec.id];
     fs.rmSync(path.join(this.blobDir, scope, name), { recursive: true, force: true });
     this.log('skill.delete', { skill: rec.id });
@@ -393,6 +495,7 @@ export class Store {
   rollback(scope, name, version, auth) {
     const rec = this.find(scope, name, auth);
     if (!this.canPublish(scope, auth)) throw new HttpError(403, 'rollback needs an editor or admin token');
+    this.assertWritable(scope);
     if (!rec.versions[version]) throw new HttpError(404, `${rec.id} has no version ${version}`);
     const from = rec.latest;
     rec.latest = version;

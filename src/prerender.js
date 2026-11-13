@@ -137,13 +137,15 @@ ${body(b)}
 `);
 
   // ---- tools --------------------------------------------------------------------------------------------------
-  const toolText = (t) => `${t.name} (${t.step})\n${t.what}\nCommand: ${t.cmd}\n${t.out ? `Example output:\n${t.out}` : t.noOut}\n${t.note ? `${t.note}\n` : ''}`;
+  const NO_OUT = 'Run the command to see its output; no sample is shown here.';
+  const noOutOf = (t) => t.noOut || NO_OUT;
+  const toolText = (t) => `${t.name} (${t.step})\n${t.what}\nCommand: ${t.cmd}\n${t.out ? `Example output:\n${t.out}` : noOutOf(t)}\n${t.note ? `${t.note}\n` : ''}`;
   for (const t of tools) {
     const p = `/tools/${t.slug}/`;
     const title = `Skillyard ${t.name}: ${t.what.split(/(?<=\.)\s/)[0].replace(/\.$/, '')}`;
     const ld = [crumbs([['Skillyard', '/'], ['Tools', '/tools/'], [t.name, p]]), {
       '@context': 'https://schema.org', '@type': 'HowTo', name: `Use skillyard: ${t.name}`,
-      step: [{ '@type': 'HowToStep', name: 'Run the command', text: `Run: ${npx(t.cmd)}` }, { '@type': 'HowToStep', name: 'Read the output', text: t.out || t.noOut }],
+      step: [{ '@type': 'HowToStep', name: 'Run the command', text: `Run: ${npx(t.cmd)}` }, { '@type': 'HowToStep', name: 'Read the output', text: t.out || noOutOf(t) }],
     }];
     page({ p, title, description: `${t.what} Command: ${t.cmd}`.slice(0, 300), ld, body: (b) => `${trail(b, [['Skillyard', ''], ['Tools', 'tools/'], [t.name]])}
     <h1>${esc(t.name)}</h1>
@@ -152,7 +154,7 @@ ${body(b)}
     <h2>The command</h2>
     ${code(npx(t.cmd))}
     <h2>${t.out ? 'Example output' : 'Output'}</h2>
-    ${t.out ? `<p>Copied from a real run on the repository's own examples and test fixtures, trimmed.</p>${code(t.out)}` : `<p>${esc(t.noOut)}</p>`}
+    ${t.out ? `<p>From a real run on the repository's examples, test fixtures or demo data; long output shortened.</p>${code(t.out)}` : `<p>${esc(noOutOf(t))}</p>`}
     ${t.note ? `<p>${esc(t.note)}</p>` : ''}
     <p><a href="${b}tools/">All tools</a> · <a href="${b}#/?s=${t.stepId}">See it in the app</a> · <a href="https://github.com/agentwik-labs/skillyard">Source on GitHub</a></p>` });
     texts[p] = toolText(t);
@@ -160,23 +162,28 @@ ${body(b)}
   page({ p: '/tools/', title: 'Skillyard tools: build, check, improve, save and protect AI skills', description: 'Every Skillyard command with what it does, how to run it and real example output.', ld: [crumbs([['Skillyard', '/'], ['Tools', '/tools/']])],
     body: (b) => `${trail(b, [['Skillyard', ''], ['Tools']])}
     <h1>Skillyard tools</h1>
-    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine; the protect tools are for teams and in pilot.</p>
+    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools are open source too; the hosted vault, with seats, setup and support, is in pilot with design partners.</p>
     ${[...journey.JOURNEY, journey.PROTECT].map((s) => `<h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)}</p><ul class="sp-grid">${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="${b}tools/${t.slug}/">${esc(t.name)}</a><p>${esc(t.what)}</p></li>`).join('')}</ul>`).join('\n')}` });
 
   // ---- pricing ------------------------------------------------------------------------------------------------
   const P = journey.PRICING;
   if (P) {
-    const num = (x) => (/^\$\d+/.test(x) ? x.slice(1) : null);
-    const offers = P.plans.filter((x) => num(x.price) !== null).map((x) => ({ '@type': 'Offer', name: x.name, price: num(x.price), priceCurrency: 'USD', description: `${x.price} ${x.per}. ${x.blurb}` }));
-    page({ p: '/pricing/', title: 'Skillyard pricing: free for developers, per seat for teams', description: `Free open-source developer tools. Team ${P.plans[1].price} and Protect ${P.plans[2].price} per seat per month. ${P.note}`,
+    const plan = (id) => P.plans.find((x) => x.id === id);
+    const [pro, team] = [plan('pro'), plan('team')];
+    if (!pro || !team) throw new Error('prerender: PRICING needs plans with id "pro" and "team"');
+    const perOf = (x) => (x.per ? ` ${x.per}` : '');
+    // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
+    const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
+    const summary = `Free open-source developer tools. Pro ${pro.price}${perOf(pro)}; Team ${team.price}${perOf(team)}, extra seats $${team.extraSeatUsd} each.`;
+    page({ p: '/pricing/', title: 'Skillyard pricing: free for developers, $20 for one, $100 for a team of five', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillyard', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillyard', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillyard', ''], ['Pricing']])}
-    <h1>Skillyard pricing</h1>
-    <p class="sp-answer">The developer tools are free and open source. Teams pay per seat for the private vault (Team, ${esc(P.plans[1].price)}) and for leak tracing and offboarding (Protect, ${esc(P.plans[2].price)}). ${esc(P.note)}</p>
-    ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${x.per ? ` ${esc(x.per)}` : ''}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
+    <h1>${esc(P.heading || 'Skillyard pricing')}</h1>
+    <p class="sp-answer">The developer tools are free and open source. Pro (${esc(pro.price)}${esc(perOf(pro))}) is one person's private vault. Team (${esc(team.price)}${esc(perOf(team))}, extra seats $${esc(team.extraSeatUsd)} each) adds Protect: marked copies, leak tracing, revocable streaming and offboarding. ${esc(P.note)}</p>
+    ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
     <p><a href="${b}#/?s=teams">Become a design partner</a></p>` });
-    texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price} ${x.per}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
+    texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
   }
 
   // ---- skills -------------------------------------------------------------------------------------------------
@@ -278,7 +285,7 @@ ${body(b)}
   page({ p: '/proof/', title: 'Skillyard proof: measured results, with method', description: 'Skill scan of 511 skills, lift evals, reviewer accuracy and library grades. Dated, with method and limits.', ld: [crumbs([['Skillyard', '/'], ['Proof', '/proof/']])],
     body: (b) => `${trail(b, [['Skillyard', ''], ['Proof']])}
     <h1>Measured, not claimed</h1>
-    <p class="sp-answer">Every number comes from a run you can repeat from the repository. Small samples are labelled as small.</p>
+    <p class="sp-answer">The scan, lift, reviewer and library numbers come from runs you can repeat from the repository. The token week on the landing page is one developer's own logs. Small samples are labelled as small.</p>
     <ul class="sp-grid">${proofPages.map((x) => `<li><a href="${b}proof/${x.slug}/">${esc(x.title)}</a><p>${esc(x.description)}</p></li>`).join('')}</ul>` });
 
   // ---- learn --------------------------------------------------------------------------------------------------
@@ -323,7 +330,7 @@ ${body(b)}
     <p class="sp-answer">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, spend fewer tokens on them, and keep them yours.</p>
     <p><code>npx skillyard review</code> <a class="sp-cta" href="#/teams">Become a design partner</a></p>
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
-    <section><h2>Measured, not claimed</h2><p>Every number comes from a run you can repeat from the repository.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>
+    <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>
     <section><h2>Skill library</h2><p>${libSkills.length} public skills graded A to F and security-checked: ${['A', 'B', 'C', 'D', 'F'].map((k) => `${g[k] ?? 0} grade ${k}`).join(', ')}. <a href="skills/">Browse the library</a>.</p></section>
     <section><h2>Answers</h2><ul>${LEARN.map((l) => `<li><a href="learn/${l.slug}/">${esc(l.title)}</a></li>`).join('')}</ul></section>
     <section><h2>Planned, not built</h2><p>${journey.ROADMAP.map(esc).join(', ')}.</p></section>
@@ -359,7 +366,13 @@ ${L('Learn', '/learn/', 'Sourced answers about skills and instruction files')}
 ${LEARN.map((l) => L(l.title, `/learn/${l.slug}/`, l.desc)).join('\n')}
 
 ## Commands
-${['review', 'secure', 'scan', 'compile', 'tokens', 'eval', 'optimize'].map((c) => `- npx skillyard ${c} <dir>`).join('\n')}
+- npx skillyard review <dir>
+- npx skillyard secure <dir>
+- npx skillyard scan <dir>
+- npx skillyard compile <skill-dir> --to all
+- npx skillyard tokens --days 7 [--logs <dir>]
+- npx skillyard eval <skill-dir>
+- npx skillyard optimize <skill-dir>
 - npx skillyard install <skill> --agent claude
 
 ## Source

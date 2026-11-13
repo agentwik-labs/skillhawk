@@ -46,7 +46,9 @@ W1 site rebuilt for vault positioning [x]
 | D1 | `init`/`test`/trigger tests (`tests/cases.yaml`), `dev` live reload, PR lift-diff comment | [x] |
 
 ## Later (after design partners ask)
-Leak watch crawler · collusion-resistant codes · offboarding report · SSO · Slack alerts · VS Code extension · self-host · model-release regression · site visitor counter
+Leak watch crawler · stronger collusion resistance (merged copies already rank both colluders, src/mark.js) · SSO · Slack alerts for vault events (Studio already posts review proposals to a Slack-compatible webhook, src/studio/engine.js) · VS Code extension · site visitor counter
+
+Shipped since this list was written: offboarding report (`skillyard offboard`, src/offboard.js), model-release regression (`skillyard watch`, src/watch.js), self-hosting (`skillyard serve`, docs/self-hosting.md).
 
 ## Follow-ups found while integrating
 - Marked copies use U+200D/U+200E, which `scan` does not flag; teach `scan`/`secure` to recognise the Skillyard mark pattern and still flag other invisible characters.
@@ -66,3 +68,4 @@ Leak watch crawler · collusion-resistant codes · offboarding report · SSO · 
 | X8 | Governance pack: SOC 2 / ISO 42001 / EU AI Act evidence export (`skillyard governance export`) | govern | [x] |
 | X9 | Skillyard Verified badge: SVG badge with grade, lift and security for READMEs (`skillyard badge`) | portable | [x] |
 | X10 | Write once, run everywhere: compile a skill to Claude, Codex AGENTS.md, Cursor rules, Copilot, Gemini with per-target checks (`skillyard compile`) | portable | [x] |
+| X11 | Plans and seats: Free, Pro $20 (1 seat), Team $100 (5 seats, +$20 each), Enterprise; feature gates and pilot billing (src/plans.js, [docs/plans-and-seats.md](docs/plans-and-seats.md)) | govern | [x] |
