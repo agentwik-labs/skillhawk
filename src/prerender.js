@@ -189,15 +189,15 @@ ${body(b)}
     // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
     const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
     const watch = plan('watch');
-    const summary = `Free open-source developer tools.${watch ? ` Watch ${watch.price}${perOf(watch)} (pre-order).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (pre-order).${team ? ' Teams by request.' : ''}`;
-    page({ p: '/pricing/', title: 'Skillhawk pricing: free checks today, Watch on pre-order at $9 a month', description: `${summary} ${P.note}`,
+    const summary = `Free open-source developer tools.${watch ? ` Watch ${watch.price}${perOf(watch)} (waitlist, not built).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (waitlist).${team ? ' Teams by request.' : ''}`;
+    page({ p: '/pricing/', title: 'Skillhawk pricing: free checks today, Watch planned at $9 a month', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillhawk', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillhawk', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillhawk', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillhawk pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))}, pre-order, not built yet) is planned to re-run your checks when a model, an agent or a tool you use changes. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, pre-order) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))}, planned, not built yet) is planned to alert you when an agent runs unattended or keeps spending with no human, and to re-check your skills when a model or agent changes. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
-    <p><a href="${b}#/?s=pilot">Pre-order Watch or Pro</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
+    <p><a href="${b}#/?s=pilot">Join the Watch waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
   }
 
@@ -343,7 +343,7 @@ ${body(b)}
   const landing = `<div class="sp-landing">
     <h1>Your agents keep running after you stop watching.</h1>
     <p class="sp-answer">One free command lists every coding agent, unattended session and dev server still running, and what a session has cost since you last typed. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Watch, on pre-order and not built yet, is planned to send those alerts for you.</p>
-    <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=pilot">Pre-order Watch</a></p>
+    <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=su-hero">Join the Watch waitlist</a></p>
     ${journey.WATCH ? `<section><h2>${esc(journey.WATCH.step)}: ${esc(journey.WATCH.h)}</h2><p>${esc(journey.WATCH.promise)} <span class="sp-meta">${esc(journey.WATCH.tier)}</span></p><ul>${journey.WATCH.tools.map((t) => `<li><b>${esc(t.name)}</b>: ${esc(t.what)}</li>`).join('')}</ul></section>` : ''}
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
     <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>

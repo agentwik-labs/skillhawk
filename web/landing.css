@@ -732,6 +732,7 @@ body.is-landing main { max-width: none; padding: 0; }
 .lp2 .hf-row button { height: 48px; padding: 0 18px; border: 0; border-radius: 6px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .lp2 .hf-row button:hover { filter: brightness(.92); }
 .lp2 .hr-note { margin: 8px 0 0; font-size: var(--step-small); color: var(--muted); max-width: 30rem; }
+.lp2 .hf-bonus { margin: 10px 0 0; font-size: var(--step-small); color: var(--ink); }
 .lp2 .h2-own { margin: 12px 0 24px; max-width: 52ch; font-size: var(--step-small); color: var(--muted); line-height: 1.5; }
 .lp2 .h2-own b { color: var(--ink); }
 .lp2 .h2-term { margin: 0; background: var(--field); color: var(--field-ink); border-radius: 10px; padding: 20px 22px; overflow: auto; }

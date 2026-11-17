@@ -13,13 +13,13 @@ test('site shows Free, Watch, Pro and a Teams inquiry card, in that order', () =
   assert.deepEqual(PRICING.plans.map((p) => p.id), ['free', 'watch', 'pro', 'team']);
 });
 
-test('pre-order cards say so, and Watch matches src/plans.js PREORDERS', () => {
+test('waitlist cards say so, and Watch matches src/plans.js PREORDERS', () => {
   const w = PRICING.plans.find((p) => p.id === 'watch');
   assert.equal(w.monthlyUsd, PREORDERS.watch.monthlyUsd);
   assert.equal(w.yearlyUsd, PREORDERS.watch.yearlyUsd);
   assert.equal(w.price, `$${PREORDERS.watch.monthlyUsd}`);
   assert.match(w.per, new RegExp(`\\$${PREORDERS.watch.yearlyUsd} a year`));
-  for (const p of PRICING.plans.filter((x) => x.preorder)) assert.match(p.blurb, /^Pre-order\./, `${p.id} says pre-order`);
+  for (const p of PRICING.plans.filter((x) => x.preorder)) assert.match(p.blurb, /^Waitlist\./, `${p.id} says waitlist`);
   assert.match(PRICING.note, /not built/);
   assert.match(w.blurb, /Not built yet/);
 });

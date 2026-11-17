@@ -281,9 +281,9 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 // every output line comes from a real run on registry/public, examples/, test/fixtures or the seeded demo data
 // (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
-const PILOT = 'Pro: $20 a month, on pre-order; the hosted vault is not running yet. The vault is open source. Team features by request.';
+const PILOT = 'Pro: $20 a month, waitlist; the hosted vault is not running yet. The vault is open source. Team features by request.';
 // Watch is planned and not built. Each row states what the free command does today and what Watch is planned to add.
-const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: alerts for agents nobody is watching, and skills that break.', tier: 'Watch: not built. Planned at $9 a month; pre-orders are not open yet, but you can reserve a place. The commands below work today.',
+const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: alerts for agents nobody is watching, and skills that break.', tier: 'Watch: not built. Planned at $9 a month. Join the waitlist (free, no payment); the commands below work today.',
   promise: 'Agents keep running after you stop watching, and models, agents and tools change under your skills. Today you can run these checks yourself. Watch is our plan to alert you when an agent runs unattended or keeps spending with no human, and to re-check your skills when something changes, sending any fix as a pull request.',
   tools: [
     { name: 'Agent alerts', cmd: 'skillhawk agents --notify desktop', what: 'Today: run it yourself, or on a schedule you set up; --notify sends a desktop or Slack alert. Planned for Watch: the alerts set up for you, for agents running unattended, sessions spending with no human and dev servers left running.', out: '! claude  up 3d 4h  no terminal  1 child process\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
@@ -354,20 +354,20 @@ const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged co
 // Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
 const PRICING = {
   heading: 'Free checks today. Watch planned at $9 a month.',
-  note: 'Prices in USD. Watch is not built, and the hosted Pro vault is not running yet; both are on pre-order. Teams: tell us what you need.',
+  note: 'Prices in USD. Watch is not built, and the hosted Pro vault is not running yet: join a waitlist, no payment collected. Teams: tell us what you need.',
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
       blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
       items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
-      blurb: 'Pre-order. Not built yet. Planned: alerts when an agent runs unattended or keeps spending with no human, and re-checks of your skills when a model, an agent or a tool changes.',
+      blurb: 'Waitlist. Not built yet. Planned: alerts when an agent runs unattended or keeps spending with no human, and re-checks of your skills when a model, an agent or a tool changes.',
       items: ['Agent alerts: unattended agents, sessions spending with no human, dev servers left running', 'New-model check', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
-      cta: { label: 'Pre-order Watch', preorder: 'watch' } },
+      cta: { label: 'Join the waitlist', preorder: 'watch' } },
     { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
-      blurb: 'Pre-order. The vault software is built and open source; the hosted vault is not running yet.',
+      blurb: 'Waitlist. The vault software is built and open source; the hosted vault is not running yet.',
       items: ['Private skills, installable into Claude Code, Codex, Cursor and AGENTS.md agents', 'Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
-      cta: { label: 'Pre-order Pro', preorder: 'pro' } },
+      cta: { label: 'Join the Pro waitlist', preorder: 'pro' } },
     { id: 'team', name: 'Teams', inquiry: true, monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Talk to us', per: '',
       blurb: 'A shared vault for several people is set up by request for now. Tell us your team size and what you want to protect.',
       items: ['Shared private vault with roles', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Help running it on your own servers'],
@@ -379,14 +379,14 @@ function lpNav() {
   return `<header class="lp-nav">
     <a class="lp-word" href="#/">skillhawk</a>
     <nav aria-label="Site"><a href="#/?s=checks">Checks</a><a href="#/?s=proof">Proof</a><a href="#/?s=pricing">Pricing</a><a href="#/browse">Library</a><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></nav>
-    <a class="lp-action" href="#/?s=su-hero">Reserve Watch</a>
+    <a class="lp-action" href="#/?s=su-hero">Join the waitlist</a>
   </header>`;
 }
 
 function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
-      <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
+      <div><h2 class="lp-h">See what your agents are doing.</h2><p class="lp-install"><code>npx skillhawk agents</code> · <a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
       <ul class="jf"><li><a href="tools/">All commands</a></li><li><a href="proof/">Proof</a></li><li><a href="#/browse">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li><li><a href="learn/">Answers</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
@@ -450,14 +450,13 @@ function pricingSection(id = 'pricing') {
 }
 
 function preorderCta(id) {
-  const offer = (key, name, price, line) => CFG.preorder?.[key]
-    ? `<p class="po-row" id="reserve-${key}"><b>${name}, ${price}.</b> ${line} <a class="lp-action" href="${esc(CFG.preorder[key])}">Pre-order ${name}</a></p>`
-    : `<div class="po-row" id="reserve-${key}"><p><b>${name}, ${price}.</b> ${line}</p>${signupSentence({ lead: 'Reserve:', button: 'Reserve', tag: `preorder-${key}`, id: `${id}-${key}`, note: 'Adds your email to our list. No payment is collected on this form.' })}</div>`;
+  const paid = CFG.preorder?.watch;
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="pilot">
-      <h2 class="lp-h" id="${id}-h">Pre-order, and tell us what to build first.</h2>
-      <p class="v-lede">The developer tools above are free and open source (MIT). Watch is not built, and the hosted Pro vault is not running yet. Reservations tell us which one people want.</p>
-      ${offer('watch', 'Watch', '$9 a month', 'Not built. Planned: your checks re-run when a model, an agent or a tool you use changes, with fixes as pull requests.')}
-      ${offer('pro', 'Pro', '$20 a month', 'A private vault for your skills: versions, publish checks, signatures and an audit log. Built and open source; the hosted version is not running yet.')}
+      <h2 class="lp-h" id="${id}-h">Want to know when an agent is running with nobody watching?</h2>
+      <p class="v-lede">Watch is planned: an alert when a coding agent runs unattended, a session keeps spending with no human message, or a dev server is left running; and a re-check of your skills when a model or agent changes. Not built yet; planned at $9 a month. The free command above does the check on demand today.</p>
+      <div class="po-row" id="reserve-watch">${paid
+        ? `<a class="lp-action" href="${esc(paid)}">Pre-order Watch, $9 a month</a>`
+        : signupSentence({ lead: 'Join the waitlist:', button: 'Join', tag: 'preorder-watch', id: `${id}-watch`, note: 'Free to join; no payment is collected. First 10 on the list: a free written review of your agent setup and skills, by email.' })}</div>
     </section>`;
 }
 
@@ -683,11 +682,12 @@ const CHECKS = [
 ];
 
 function heroReserve(id) {
-  const note = 'Watch is planned and not built. This adds your email to the list; no payment is collected. The first 10 people on the list are offered a free written review of their skills, by email.';
+  const note = 'Free to join; no payment is collected. Watch is not built yet; we email you when it is.';
   if (!signupOn()) return `<p class="hr-alt"><a class="lp-action" href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></p><p class="hr-note">${note}</p>`;
   return `<form class="hero-form signup" data-tag="preorder-watch" id="${id}">
-      <label for="${id}-email">Get Watch when it ships: alerts for agents nobody is watching. Planned at $9 a month.</label>
-      <div class="hf-row"><input id="${id}-email" name="email" type="email" required placeholder="you@company.com" autocomplete="email"><button type="submit">Reserve my spot</button></div>
+      <label for="${id}-email">Watch: an alert when an agent runs unattended or keeps spending with no one watching. Planned at $9 a month. Join the waitlist:</label>
+      <div class="hf-row"><input id="${id}-email" name="email" type="email" required placeholder="you@company.com" autocomplete="email"><button type="submit">Join the waitlist</button></div>
+      <p class="hf-bonus"><b>First 10 on the list:</b> a free written review of your agent setup and skills, by email.</p>
     </form>
     <p class="hr-note" data-note>${note}</p>`;
 }
