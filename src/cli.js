@@ -219,8 +219,8 @@ export async function main(argv) {
     revoke: (a, f) => import('./offboard.js').then((m) => m.revokeCmd(a, f)),
     evidence: (a, f) => import('./evidence.js').then((m) => m.evidenceCmd(a, f)),
   };
+  if (cmd === '--version' || cmd === 'version' || (!cmd && flags.version)) return void console.log(JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
   if (!cmd || cmd === 'help' || flags.help) return void process.stdout.write(HELP);
-  if (cmd === '--version' || cmd === 'version') return void console.log('0.1.0');
   if (!cmds[cmd]) throw new Error(`unknown command "${cmd}". Run skillyard help.`);
   await cmds[cmd](args, flags);
 }

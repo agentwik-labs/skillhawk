@@ -10,6 +10,11 @@ export const PLANS = {
   enterprise: { id: 'enterprise', name: 'Enterprise', monthlyUsd: null, includedSeats: null, extraSeatUsd: null, maxSeats: Infinity },
 };
 
+/** Offers on pre-order: priced on the site, not sold or gated by the server yet. */
+export const PREORDERS = {
+  watch: { id: 'watch', name: 'Watch', monthlyUsd: 9, yearlyUsd: 79 },
+};
+
 /**
  * Server-side features and the lowest plan that includes each. Local CLI commands are never gated, and neither is
  * anything that takes access away (revoke, token delete, holdings): offboarding works on every plan and status.

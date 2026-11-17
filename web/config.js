@@ -4,4 +4,6 @@
 window.SKILLYARD_CONFIG = {
   signup: { provider: 'buttondown', action: 'https://buttondown.com/api/emails/embed-subscribe/jalil' },
   contact: { label: 'Follow @agentwik on X', url: 'https://x.com/agentwik' },
+  // Stripe Payment Links for pre-orders. Empty: the buttons go to the reserve form instead.
+  preorder: { watch: '', pro: '' },
 };

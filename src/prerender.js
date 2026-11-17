@@ -16,7 +16,7 @@ const slugify = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').repla
 const npx = (cmd) => `npx ${cmd}`;
 const jsonLd = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 const SECURE_LABEL = { clean: 'No security findings', low: 'Low-severity findings', medium: 'Medium-severity findings to review', high: 'High-severity findings' };
-const SITE_DESC = "Skillyard builds, checks and protects your company's AI skills. Free review and security checks for developers; a private vault for companies.";
+const SITE_DESC = "Free, open-source review, security and test checks for AI agent skills. The vault is open source and runs on your own server; hosted Pro is planned.";
 
 /** Read the landing's journey data out of web/app.js so the static text and the app never disagree. */
 export function loadJourney(webDir) {
@@ -24,7 +24,7 @@ export function loadJourney(webDir) {
   const a = src.indexOf('const FREE');
   const b = src.indexOf('\nfunction lpNav');
   if (a < 0 || b < 0) throw new Error('prerender: cannot find the landing data in web/app.js');
-  return new Function(`${src.slice(a, b)}\nreturn { JOURNEY, PROTECT, ROADMAP, PRICING: typeof PRICING === 'undefined' ? null : PRICING };`)();
+  return new Function(`${src.slice(a, b)}\nreturn { JOURNEY, PROTECT, ROADMAP, PRICING: typeof PRICING === 'undefined' ? null : PRICING, WATCH: typeof WATCH === 'undefined' ? null : WATCH };`)();
 }
 
 function allTools({ JOURNEY, PROTECT }) {
@@ -65,7 +65,7 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
     <a class="brand" href="${b}"><span class="mark" aria-hidden="true"></span>skillyard</a>
     <nav aria-label="Site"><a href="${b}skills/">Skills</a><a href="${b}tools/">Tools</a><a href="${b}proof/">Proof</a><a href="${b}learn/">Learn</a><a href="${b}pricing/">Pricing</a><a href="${b}#/teams">For teams</a><a href="${b}#/browse">Open the app</a></nav>
   </header>`;
-  const FOOT = (b) => `<footer class="foot"><span>Skillyard builds, checks and protects your company's AI skills. Open source (MIT).</span><span><a href="${b}skills/">Skills</a> · <a href="${b}tools/">Tools</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="https://github.com/agentwik-labs/skillyard">GitHub</a></span></footer>`;
+  const FOOT = (b) => `<footer class="foot"><span>Skillyard checks your AI skills before your agents run them. Open source (MIT).</span><span><a href="${b}skills/">Skills</a> · <a href="${b}tools/">Tools</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="https://github.com/agentwik-labs/skillyard">GitHub</a></span></footer>`;
 
   const page = ({ p, title, description, body, ld = [], lastmod = today, type = 'article' }) => {
     const depth = p.split('/').filter(Boolean).length;
@@ -162,7 +162,7 @@ ${body(b)}
   page({ p: '/tools/', title: 'Skillyard tools: build, check, improve, save and protect AI skills', description: 'Every Skillyard command with what it does, how to run it and real example output.', ld: [crumbs([['Skillyard', '/'], ['Tools', '/tools/']])],
     body: (b) => `${trail(b, [['Skillyard', ''], ['Tools']])}
     <h1>Skillyard tools</h1>
-    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools are open source too; Pro, a private vault for one developer, is in pilot, and team vaults are set up by request.</p>
+    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools are open source too and run on your own server; hosted Pro is planned and not running yet, and team vaults are by request.</p>
     ${[...journey.JOURNEY, journey.PROTECT].map((s) => `<h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)}</p><ul class="sp-grid">${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="${b}tools/${t.slug}/">${esc(t.name)}</a><p>${esc(t.what)}</p></li>`).join('')}</ul>`).join('\n')}` });
 
   // ---- pricing ------------------------------------------------------------------------------------------------
@@ -174,15 +174,16 @@ ${body(b)}
     const perOf = (x) => (x.per ? ` ${x.per}` : '');
     // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
     const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
-    const summary = `Free open-source developer tools. Pro ${pro.price}${perOf(pro)} for your own private vault.${team ? ' Teams by request.' : ''}`;
-    page({ p: '/pricing/', title: 'Skillyard pricing: free for developers, $20 a month for your private vault', description: `${summary} ${P.note}`,
+    const watch = plan('watch');
+    const summary = `Free open-source developer tools.${watch ? ` Watch ${watch.price}${perOf(watch)} (pre-order).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (pre-order).${team ? ' Teams by request.' : ''}`;
+    page({ p: '/pricing/', title: 'Skillyard pricing: free checks today, Watch on pre-order at $9 a month', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillyard', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillyard', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillyard', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillyard pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. Pro (${esc(pro.price)}${esc(perOf(pro))}) is your own private vault for the skills you write. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))}, pre-order, not built yet) is planned to re-run your checks when a model, an agent or a tool you use changes. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, pre-order) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
-    <p><a href="${b}#/?s=pilot">Join the Pro pilot</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
+    <p><a href="${b}#/?s=pilot">Pre-order Watch or Pro</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
   }
 
@@ -215,7 +216,7 @@ ${body(b)}
     <p><a class="sp-cta" href="${b}#/skill/${esc(s.id)}">Open the full skill in the app</a><a href="${b}skills/">All skills</a></p>` });
   }
   const byGrade = (g) => libSkills.filter((s) => s.grade === g).length;
-  page({ p: '/skills/', title: `Agent skill library: ${libSkills.length} skills graded A to F and security-checked | Skillyard`, description: `${libSkills.length} public agent skills with Skillyard's grade, findings and security status. Install any of them with one command.`, lastmod: libDate, ld: [crumbs([['Skillyard', '/'], ['Skills', '/skills/']])],
+  page({ p: '/skills/', title: `Agent skill library: ${libSkills.length} skills graded A to F and security-checked | Skillyard`, description: `${libSkills.length} public agent skills with Skillyard's grade, findings and security status. Install them from a registry you run yourself (skillyard serve).`, lastmod: libDate, ld: [crumbs([['Skillyard', '/'], ['Skills', '/skills/']])],
     body: (b) => `${trail(b, [['Skillyard', ''], ['Skills']])}
     <h1>Skill library</h1>
     <p class="sp-answer">${libSkills.length} public skills, each graded A to F by <code>skillyard review</code> and checked by <code>skillyard secure</code>. Judged ${esc(libDate)}. <a href="${b}proof/library/">How we grade</a>.</p>
@@ -233,8 +234,8 @@ ${body(b)}
   const sc = proof.scan || {};
   const scanMd = report('2026-10-top-skills-scan.md');
   const scanRows = parseTable((scanMd.match(/\| Flag \|[\s\S]*?(?=\n\n)/) || [''])[0]);
-  proofPage('scan', 'We scanned the 511 most-installed agent skills: what we found', 'Scan of 511 unique skills from 34 GitHub repos (2026-10-29): 96 ship scripts, 85 make network calls, 0 confirmed malicious. Method and limits included.', '2026-10-29', () => `
-    <h1>We scanned the ${sc.skills || 511} most-installed agent skills</h1>
+  proofPage('scan', 'We scanned 511 skills from the skills.sh leaderboard repos: what we found', 'Scan of 511 unique skills from 34 GitHub repos (2026-10-29): 96 ship scripts, 85 make network calls, 0 confirmed malicious. Method and limits included.', '2026-10-29', () => `
+    <h1>We scanned ${sc.skills || 511} skills from the 34 repositories linked from the skills.sh leaderboard</h1>
     <p class="sp-answer">On 2026-10-29 we scanned ${sc.skills || 511} unique skills from the 34 GitHub repositories linked from the skills.sh all-time leaderboard. ${sc.confirmed_malicious ?? 0} were confirmed malicious after we hand-read every critical flag. ${sc.ship_scripts || 96} ship executable scripts, ${sc.network_calls || 85} make network calls from their scripts, and ${sc.fail_format || 33} fail the Agent Skills format.</p>
     <h2>Numbers</h2>
     ${table([['Measure', 'Count'], ['Unique skills scanned', String(sc.skills || 511)], ['Source repositories', '34'], ['Skills that ship executable scripts', String(sc.ship_scripts || 96)], ['Skills with network calls in scripts', String(sc.network_calls || 85)], ['Skills failing the Agent Skills format', String(sc.fail_format || 33)], ['Confirmed malicious (by this method)', String(sc.confirmed_malicious ?? 0)]])}
@@ -326,9 +327,10 @@ ${body(b)}
   const indexFile = path.join(out, 'index.html');
   const stepHtml = (s) => `<section id="${s.id}-static"><h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)} <span class="sp-meta">${esc(s.tier)}</span></p><ul>${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="tools/${t.slug}/"><b>${esc(t.name)}</b></a>: ${esc(t.what)} <code>${esc(t.cmd)}</code></li>`).join('')}</ul></section>`;
   const landing = `<div class="sp-landing">
-    <h1>Skillyard builds, checks and protects your company's AI skills.</h1>
-    <p class="sp-answer">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, see what they cost, and keep them yours.</p>
-    <p><code>npx skillyard review</code> <a class="sp-cta" href="#/?s=pilot">Join the Pro pilot</a></p>
+    <h1>Check your AI skills before your agents run them.</h1>
+    <p class="sp-answer">Skills are the instructions your agents follow. The free CLI grades them, scans them for security problems, tests them and compiles them for five agents. Watch, on pre-order and not built yet, is planned to re-run those checks when a model, an agent or a tool you use changes.</p>
+    <p><code>npx skillyard review</code> <a class="sp-cta" href="#/?s=pilot">Pre-order Watch</a></p>
+    ${journey.WATCH ? `<section><h2>${esc(journey.WATCH.step)}: ${esc(journey.WATCH.h)}</h2><p>${esc(journey.WATCH.promise)} <span class="sp-meta">${esc(journey.WATCH.tier)}</span></p><ul>${journey.WATCH.tools.map((t) => `<li><b>${esc(t.name)}</b>: ${esc(t.what)}</li>`).join('')}</ul></section>` : ''}
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
     <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>
     <section><h2>Skill library</h2><p>${libSkills.length} public skills graded A to F and security-checked: ${['A', 'B', 'C', 'D', 'F'].map((k) => `${g[k] ?? 0} grade ${k}`).join(', ')}. <a href="skills/">Browse the library</a>.</p></section>

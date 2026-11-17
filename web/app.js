@@ -281,7 +281,15 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 // every output line comes from a real run on registry/public, examples/, test/fixtures or the seeded demo data
 // (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
-const PILOT = 'Pro: your own private vault, $20 a month, in pilot. Open source. Team features by request.';
+const PILOT = 'Pro: $20 a month, on pre-order; the hosted vault is not running yet. The vault is open source. Team features by request.';
+// Watch is planned and not built. Each row states what the free command does today and what Watch is planned to add.
+const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: re-run these checks when things change.', tier: 'Watch: not built. Planned at $9 a month; pre-orders are not open yet, but you can reserve a place. The commands below work today.',
+  promise: 'Models, agents and the tools you install change. Today you can re-run these checks yourself. Watch is our plan to run them for you when something changes and send any fix as a pull request.',
+  tools: [
+    { name: 'New-model check', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Watch: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
+    { name: 'Supply-chain check', cmd: 'skillyard secure . --gate high', what: 'Today: scan the skills, MCP servers, hooks and scripts you use. Planned for Watch: re-scan them when they change upstream.', out: null, noOut: 'Full output in the Check section.' },
+    { name: 'Agent format check', cmd: 'skillyard compile release-notes --to all', what: 'Today: compile to five agents and check each file against its limits. Planned for Watch: re-check when an agent changes its format or limits, and open a pull request.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
+  ] };
 const JOURNEY = [
   { id: 'build', step: 'Build', h: 'Write a skill once. Run it in five agents.', tier: FREE,
     promise: 'Turn an interview, a runbook or a document into a skill with trigger tests, then compile it to each agent\'s own format.',
@@ -304,12 +312,12 @@ const JOURNEY = [
       { name: 'Optimize', cmd: 'skillyard optimize notes-v2', what: 'Cuts tokens and keeps the rewrite only if the grade and trigger cases hold.', out: 'notes-v2: tokens 811 -> 783 (-3%)  grade C -> C' },
       { name: 'Radar', cmd: 'skillyard radar logs/ --team', what: 'Corrections repeated across people become a drafted, tested skill, ready for a pull request.', out: 'Cluster 85fd6553: 2 people, 6 corrections in 4 sessions' },
       { name: 'A/B', cmd: 'skillyard ab report deploy', what: 'Split sessions between two versions; promote B only at p < 0.05 with 30 sessions per arm.', out: 'Decision: promote B (p=0.0000 ... (56/78 vs 9/82))' },
-      { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'When a new model ships, re-run every skill\'s evals on old and new, report drops and draft fixes.', out: null, noOut: 'Runs when a new model ships; needs --allow-model and an API key, so no sample output here.' },
+      { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'Re-run every skill\'s evals on a model you name and an older one, report the drops and draft fixes.', out: null, noOut: 'Runs when you start it; needs --allow-model and an API key, so no sample output here.' },
     ] },
   { id: 'save', step: 'Save', h: 'See where your tokens go.', tier: FREE,
     promise: 'Give agents a map to query instead of opening every file, see where the tokens go, and estimate what each skill saves.',
     tools: [
-      { name: 'Map', cmd: 'skillyard map', what: 'Indexes files, symbols, imports and skills; agents ask the map and read one section.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
+      { name: 'Map', cmd: 'skillyard map', what: 'Writes an index of files, symbols, imports and skills (map.json, MAP.md) that agents can query.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
       { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.', noOut: 'Reads your own Claude Code logs, so the output is yours. A summary of one developer\'s measured week is in the Proof section of the home page.' },
       { name: 'Savings ledger', cmd: 'skillyard savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
     ] },
@@ -320,7 +328,7 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
     { name: 'Keep', tools: [
       { name: 'Vault and roles', cmd: 'skillyard token create --org acme --role editor', what: 'Versions, diffs and rollback; publishing must pass review and security (an org admin can override; it is logged).', out: 'token d840e76f297e (read,publish for @acme), shown once' },
       { name: 'Audit log', cmd: 'skillyard audit verify', what: 'Pulls, publishes, rollbacks and access changes, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
-      { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub org.pem', what: 'What runs is what was approved.', out: 'FAIL deploy-safely: files differ from what was signed\n  changed: SKILL.md' },
+      { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub org.pem', what: '`skillyard verify` fails if the files differ from what the org signed.', out: 'FAIL deploy-safely: files differ from what was signed\n  changed: SKILL.md' },
     ] },
     { name: 'Trace (teams)', tools: [
       { name: 'Marked copies', cmd: 'skillyard trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to, so a leaked fragment can often be traced to who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
@@ -328,7 +336,7 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
       { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A per-copy link that records when a leaked copy is opened: time, IP address and browser.', out: null, note: 'Built, off by default. Not offered until a lawyer has reviewed it.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
     ] },
     { name: 'Take back (teams)', tools: [
-      { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; nothing is written to disk.', out: 'Nothing is installed on this machine, and `skillyard revoke` cuts access on the next call.' },
+      { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; Skillyard installs no skill files (the agent\'s own session logs may still hold text it loaded).', out: 'No skill files are installed on this machine, and `skillyard revoke` cuts access on the next call.' },
       { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
       { name: 'Exit interview', note: 'Free CLI tool.', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
     ] },
@@ -342,29 +350,33 @@ const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged co
 
 // Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
 const PRICING = {
-  heading: 'Free for developers. $20 a month for your private vault.',
-  note: 'Prices in USD. Pro starts after a free pilot; nothing is charged today. Teams: tell us what you need.',
+  heading: 'Free checks today. Watch planned at $9 a month.',
+  note: 'Prices in USD. Watch is not built, and the hosted Pro vault is not running yet; both are on pre-order. Teams: tell us what you need.',
   plans: [
-    { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'forever',
-      blurb: 'Open source (MIT). Runs on your machine; nothing leaves it unless you pass --allow-model to use a model.',
+    { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
+      blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
       items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillyard review', href: 'https://github.com/agentwik-labs/skillyard', code: true } },
-    { id: 'pro', name: 'Pro', monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month', featured: true,
-      blurb: 'Your own private vault for the skills you write.',
-      items: ['Private skills, available to every agent you use', 'Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
-      cta: { label: 'Join the Pro pilot', href: '#/?s=pilot' } },
+    { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
+      blurb: 'Pre-order. Not built yet. Planned: re-run your checks when a model, an agent or a tool you use changes, and send fixes as pull requests.',
+      items: ['New-model check', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
+      cta: { label: 'Pre-order Watch', preorder: 'watch' } },
+    { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
+      blurb: 'Pre-order. The vault software is built and open source; the hosted vault is not running yet.',
+      items: ['Private skills, installable into Claude Code, Codex, Cursor and AGENTS.md agents', 'Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
+      cta: { label: 'Pre-order Pro', preorder: 'pro' } },
     { id: 'team', name: 'Teams', inquiry: true, monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Talk to us', per: '',
       blurb: 'A shared vault for several people is set up by request for now. Tell us your team size and what you want to protect.',
       items: ['Shared private vault with roles', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Help running it on your own servers'],
       cta: { label: 'Ask about teams', href: '#/teams' } },
   ],
-  audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes, usually within a week.' },
+  audit: { name: 'Skills audit', price: '$750', extra: 'by request', text: 'Reviewer, Security and chat review run over the skills you already use: the same commands as the free CLI, run by us, with a written report.' },
 };
 function lpNav() {
   return `<header class="lp-nav">
     <a class="lp-word" href="#/">skillyard</a>
-    <nav aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a><a href="#/?s=pricing">Pricing</a></nav>
-    <a class="lp-action" href="#/?s=pilot">Join the Pro pilot</a>
+    <nav aria-label="The journey">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a><a href="#/?s=pricing">Pricing</a></nav>
+    <a class="lp-action" href="#/?s=watch">Pre-order Watch</a>
   </header>`;
 }
 
@@ -372,7 +384,7 @@ function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
       <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillyard#readme">Install guide on GitHub →</a></p></div>
-      <ul class="jf">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li></ul>
+      <ul class="jf">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillyard">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
     ${LEGAL_LIVE ? `<nav class="lp-legal-links" aria-label="Legal"><a href="legal/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="legal/terms.html">Terms</a><span aria-hidden="true">·</span><a href="legal/security.html">Security</a><span aria-hidden="true">·</span><a href="legal/contact.html">Contact</a></nav>` : ''}
@@ -409,10 +421,13 @@ function protectSection(id = 'protect') {
 
 function roadmapStrip() {
   return `<section class="v-sec rm" aria-labelledby="rm-h">
-      <h2 id="rm-h" class="rm-h">Roadmap, built when users ask for it</h2>
+      <h2 id="rm-h" class="rm-h">Planned, not built</h2>
       <ul class="rm-list">${ROADMAP.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
     </section>`;
 }
+
+// A pre-order button goes to its Stripe Payment Link once web/config.js has one; until then, to the reserve form.
+const preorderHref = (id) => CFG.preorder?.[id] || `#/?s=reserve-${id}`;
 
 function pricingSection(id = 'pricing') {
   const P = PRICING;
@@ -424,18 +439,22 @@ function pricingSection(id = 'pricing') {
         <p class="pr-price"><b>${esc(p.price)}</b>${p.per ? `<span>${esc(p.per)}</span>` : ''}</p>
         <p class="pr-blurb">${esc(p.blurb)}</p>
         <ul class="pr-items">${p.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
-        <a class="${p.cta.code ? 'pr-code' : 'lp-action'}" href="${esc(p.cta.href)}">${p.cta.code ? `<code>${esc(p.cta.label)}</code>` : esc(p.cta.label)}</a>
+        <a class="${p.cta.code ? 'pr-code' : 'lp-action'}" href="${esc(p.cta.preorder ? preorderHref(p.cta.preorder) : p.cta.href)}">${p.cta.code ? `<code>${esc(p.cta.label)}</code>` : esc(p.cta.label)}</a>
       </li>`).join('')}</ul>
       <p class="pr-audit"><b>${esc(P.audit.name)}: ${esc(P.audit.price)}</b>, ${esc(P.audit.extra)}. ${esc(P.audit.text)}</p>
       <p class="pr-note">${esc(P.note)}</p>
     </section>`;
 }
 
-function pilotCta(id) {
+function preorderCta(id) {
+  const offer = (key, name, price, line) => CFG.preorder?.[key]
+    ? `<p class="po-row" id="reserve-${key}"><b>${name}, ${price}.</b> ${line} <a class="lp-action" href="${esc(CFG.preorder[key])}">Pre-order ${name}</a></p>`
+    : `<div class="po-row" id="reserve-${key}"><p><b>${name}, ${price}.</b> ${line}</p>${signupSentence({ lead: 'Reserve:', button: 'Reserve', tag: `preorder-${key}`, id: `${id}-${key}`, note: 'Adds your email to our list. No payment is collected on this form.' })}</div>`;
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="pilot">
-      <h2 class="lp-h" id="${id}-h">Get your own private vault: join the Pro pilot.</h2>
-      <p class="v-lede">The developer tools above are free and open source. Pro is a private vault for the skills you write, with versions, publish checks, signatures and an audit log, for $20 a month. It is in pilot now, and nothing is charged until it opens.</p>
-      ${signupSentence({ lead: 'Reply to', button: 'Join', tag: 'pro', id, note: 'We email you to set up your vault.' })}
+      <h2 class="lp-h" id="${id}-h">Pre-order, and tell us what to build first.</h2>
+      <p class="v-lede">The developer tools above are free and open source (MIT). Watch is not built, and the hosted Pro vault is not running yet. Reservations tell us which one people want.</p>
+      ${offer('watch', 'Watch', '$9 a month', 'Not built. Planned: your checks re-run when a model, an agent or a tool you use changes, with fixes as pull requests.')}
+      ${offer('pro', 'Pro', '$20 a month', 'A private vault for your skills: versions, publish checks, signatures and an audit log. Built and open source; the hosted version is not running yet.')}
     </section>`;
 }
 
@@ -443,7 +462,7 @@ function teamsCta(id) {
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="ask">
       <h2 class="lp-h" id="${id}-h">Teams: tell us what you need.</h2>
       <p class="v-lede">Right now we focus on individual developers. A shared vault for several people, with roles, marked copies and offboarding, is set up by request. Tell us your team size and what you want to protect.</p>
-      ${signupSentence({ lead: 'Reply to', button: 'Ask', tag: 'team', id, note: 'We usually reply within a week.' })}
+      ${signupSentence({ lead: 'Reply to', button: 'Ask', tag: 'team', id, note: 'Adds your email and team note to our list.' })}
     </section>`;
 }
 
@@ -496,7 +515,8 @@ async function librarySection(el) {
   el.innerHTML = `<div class="x-head"><h2 id="library-h" class="lp-h">${l.total} public skills, graded by our own reviewer.</h2>
       <div class="j-side"><p class="v-lede">${l.scopes.public} written by us, ${l.scopes.community} imported from open-source repositories with their licences kept. Every grade comes from the same review and security code you run locally; none is set by hand.</p></div></div>
     <div class="lib">${chartGrades(l)}
-      <div class="lib-picks"><h3 class="lib-h">Worth installing first</h3><ul class="lcs">${picks.map(libCard).join('')}</ul>
+      <p class="lib-note">Installing needs a registry: <code>npx skillyard seed --community &amp;&amp; npx skillyard serve</code>, then the command on each card.</p>
+      <div class="lib-picks"><h3 class="lib-h">Top-graded in each category</h3><ul class="lcs">${picks.map(libCard).join('')}</ul>
       <a class="lp-link" href="#/browse">Browse all ${l.total} with grade and security filters →</a></div></div>`;
   copyButtons(el);
 }
@@ -532,7 +552,7 @@ function chartLift(d) {
     }).join('')}</ol>
     <div class="pf-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>`;
   return proofFigure({ id: 'pf-lift', cls: 'w7', title: 'Same task, same model, with and without the skill',
-    takeaway: 'On three of four tasks the skill raised the score, by up to 90 points. On the fourth the model already scored 100% on its own.',
+    takeaway: 'In 2 runs per task, the skill raised the score on three of four tasks. On the fourth the model already scored 100% on its own. A small sample.',
     body, table: numTable(['Skill', 'Without', 'With', 'Lift'], rows.map((r) => [r.skill, `${r.without}%`, `${r.with}%`, `+${r.with - r.without} pts`])), source: `${d.source}. Graded by fixed checks, no AI judge.` });
 }
 
@@ -566,7 +586,7 @@ function chartTokens(d) {
       <div class="tk-side"><p class="tk-h">Tokens per day, November ${Number(d.daily_m[0][0].slice(3))} to ${Number(d.daily_m[n - 1][0].slice(3))}</p>${daily}</div>
     </div>`;
   return proofFigure({ id: 'pf-tok', cls: 'w12', title: 'Where one developer\'s tokens went in a week',
-    takeaway: `Almost everything was the agent re-reading context it had already seen. New input was ${d.split_m.input}M tokens. That is why a map the agent can query, instead of re-opening files, is where the savings are.`,
+    takeaway: `Almost everything was the agent re-reading context it had already seen. New input was ${d.split_m.input}M tokens. We have not yet measured whether skillyard map reduces that.`,
     body, table: numTable(['Kind or day', 'Tokens (millions)'], [...segs.map(([n, v]) => [n, v]), ...d.daily_m.map(([day, v]) => [`Nov ${Number(day.slice(3))}`, v])]), source: `${d.source}. Measured with skillyard tokens.` });
 }
 
@@ -577,7 +597,7 @@ function chartTrace(d) {
     return `<li class="${ai ? 'ai' : ''}"><span class="tr-n">${esc(name)}</span><span class="tr-v">${bits} bits · ${ai ? 'traced correctly, 1 of 1 rewritten copy' : 'traced correctly 10/10'}</span>${hbar(pc(bits, max), ai ? 'var(--accent)' : GRAY, 14, `${name}: ${bits} bits of evidence`)}</li>`;
   }).join('')}</ul>`;
   return proofFigure({ id: 'pf-trace', cls: 'w7', title: 'Evidence left in a leaked copy, by what was done to it',
-    takeaway: 'Each change wipes out some of the marks, but in every case enough was left to name the person the copy was issued to. That includes a copy a real AI model reworded freely.',
+    takeaway: 'Each change wipes out some of the marks. In each tested case, including one copy a real AI model reworded, the copy still traced to the right person. Small samples, mostly simulated.',
     body, table: numTable(['What was done to the copy', 'Evidence (bits)', 'Result'], d.bits.map(([n, b]) => [n, b, /AI rewrite/.test(n) ? 'traced correctly (1 of 1)' : 'traced correctly (10/10)'])), source: `${d.source.split(';')[0]}. The paraphrase row is simulated; the AI rewrite row is one real Claude Haiku rewrite of one copy.` });
 }
 
@@ -585,7 +605,7 @@ function chartScan(d) {
   const facts = [[d.ship_scripts, 'ship scripts that can run on your machine'], [d.network_calls, 'make network calls'], [d.fail_format, 'fail the skill format'], [d.confirmed_malicious, 'confirmed malicious']];
   const body = `<p class="sc-big"><b>${d.skills}</b> public skills scanned</p>
     <ul class="sc">${facts.map(([v, t]) => `<li><b>${v}</b><span>${esc(t)}</span><span class="sc-p">${Math.round(v / d.skills * 100)}% of ${d.skills}</span>${hbar(pc(v, d.skills), v ? 'var(--ink)' : GRAY, 8, `${v} of ${d.skills}`)}</li>`).join('')}</ul>`;
-  return proofFigure({ id: 'pf-scan', cls: 'w5', title: 'What the most-installed public skills contain',
+  return proofFigure({ id: 'pf-scan', cls: 'w5', title: 'What 511 public skills from 34 leaderboard repos contain',
     takeaway: `We found nothing malicious. But about one in five ships a script, and one in six calls the network, so a skill is code worth checking before it runs.`,
     body, table: numTable(['Finding', 'Skills', `Share of ${d.skills}`], facts.map(([v, t]) => [t, v, `${Math.round(v / d.skills * 100)}%`])), source: d.source });
 }
@@ -638,15 +658,16 @@ async function viewShowcase() {
     ${lpNav()}
 
     <section class="lp-hero v-hero x-hero" aria-labelledby="hero-h">
-      <h1 id="hero-h" class="lp-sentence v-h1 x-h1">Skillyard builds, checks and protects your company's AI skills.</h1>
+      <h1 id="hero-h" class="lp-sentence v-h1 x-h1">Check your AI skills before your agents run them.</h1>
       <div class="x-side">
-        <p class="lp-lede">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, see what they cost, and keep them yours.</p>
-        <div class="v-actions"><a class="lp-action big" href="#/?s=pilot">Join the Pro pilot</a><span class="v-install"><code>npx skillyard review</code></span></div>
+        <p class="lp-lede">Skills are the instructions your agents follow. The free CLI grades them, scans them for security problems, tests them and compiles them for five agents. Watch, on pre-order and not built yet, is planned to re-run those checks when a model, an agent or a tool you use changes.</p>
+        <div class="v-actions"><a class="lp-action big" href="#/?s=watch">Pre-order Watch</a><span class="v-install"><code>npx skillyard review</code></span></div>
       </div>
       ${launchVideo()}
-      <ol class="jmap" aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}"><b>${s.step}</b><span>${esc(s.h)}</span></a></li>`).join('')}</ol>
+      <ol class="jmap" aria-label="The journey">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}"><b>${s.step}</b><span>${esc(s.h)}</span></a></li>`).join('')}</ol>
     </section>
 
+    ${stepSection(WATCH, `<p class="jr-cta"><a class="lp-action" href="${esc(preorderHref('watch'))}">Pre-order Watch, $9 a month</a> <span>Not built yet.</span></p>`)}
     ${stepSection(build)}
     ${stepSection(check, terms)}
     ${stepSection(improve)}
@@ -663,7 +684,7 @@ async function viewShowcase() {
 
     ${roadmapStrip()}
     ${pricingSection()}
-    ${pilotCta('su-home')}
+    ${preorderCta('su-home')}
     ${lpFooter()}
   </div>`;
   bindSignups(app);
@@ -716,7 +737,7 @@ async function viewBrowse(params) {
     <section class="hero">
       <div>
         <h1>Skills your agents can use, from open source and from your own company.</h1>
-        <p>Search ready-made Agent Skills, keep your team's private playbooks next to them, and install either into Claude Code, Codex, Cursor or any AGENTS.md agent with one command. Agents can also search and load skills live over MCP.</p>
+        <p>Search ready-made Agent Skills. On a registry you run yourself (<code>skillyard serve</code>), private skills sit beside public ones, install into Claude Code, Codex, Cursor or any AGENTS.md agent, and load over MCP.</p>
       </div>
       <div class="stats" aria-label="Registry stats">
         <div><b>${stats.skills}</b><span>Skills</span></div>
@@ -924,7 +945,7 @@ function viewConnect() {
     <div class="steps">
       <div class="step"><h3>1 · Point the CLI at this registry</h3><p>Private skills need an org token; public ones don't.</p>${raw(cmd(`npx skillyard login --registry ${ORIGIN} --token sy_…`))}</div>
       <div class="step"><h3>2 · Install skills into your agents</h3><p>Detects Claude Code, Codex, Cursor and AGENTS.md in the current project; pick explicitly with <code>--agent</code>.</p>${raw(cmd('npx skillyard install code-review @acme/deploy-runbook --agent claude,codex --save'))}<p style="margin-top:12px">Teammates then run one command to get the same set:</p>${raw(cmd('npx skillyard sync'))}</div>
-      <div class="step"><h3>3 · Or connect over MCP</h3><p>The registry is an MCP server at <code>${url}</code> with tools <code>search_skills</code>, <code>get_skill</code> and <code>read_skill_file</code>, and every skill as a prompt. <code>npx skillyard connect &lt;agent&gt; --write</code> sets this up for you.</p></div>
+      <div class="step"><h3>3 · Or connect over MCP</h3><p>When you run <code>skillyard serve</code>, your registry also serves MCP at <code>${url}</code> with tools <code>search_skills</code>, <code>get_skill</code> and <code>read_skill_file</code>, and every skill as a prompt. <code>npx skillyard connect &lt;agent&gt; --write</code> sets this up for you.</p></div>
     </div>
     <div class="section-title"><h2>MCP config by agent</h2><span class="muted">export SKILLYARD_TOKEN=sy_… first</span></div>
     <div class="agents-grid">${raw(agents.map(([name, note, snippet]) => h`<div class="panel"><h3>${name}</h3><p class="muted" style="font-size:13px;margin:0 0 8px">${note}</p>${raw(cmd(snippet))}</div>`).join(''))}</div>`;
