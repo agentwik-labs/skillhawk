@@ -8,7 +8,7 @@ import { createMcpHandler } from './mcp.js';
 import { createStreamHandler, StreamRegistry } from './stream.js';
 import { safeRelPath } from './skill.js';
 import { finalizePull, signFiles } from './vault.js';
-import { billingConfig, createCheckout, handleStripeEvent, verifyStripeSignature } from './billing.js';
+import { billingConfig, createCheckout, createPortal, handleStripeEvent, verifyStripeSignature } from './billing.js';
 
 const WEB_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');
 const MAX_BODY = 8 * 1024 * 1024;
@@ -29,11 +29,29 @@ export class LocalRegistry {
   readFile(scope, name, version, p) { return this.store.readFile(scope, name, version, p, this.auth).toString('utf8'); }
 }
 
-export function createServer({ dataDir = 'data', adminToken = process.env.SKILLYARD_ADMIN_TOKEN, allowedOrigins = [], log = false, publicUrl = process.env.SKILLYARD_PUBLIC_URL, plans = 'off', billing = billingConfig(), stripe } = {}) {
+export function createServer({ dataDir = 'data', adminToken = process.env.SKILLYARD_ADMIN_TOKEN, allowedOrigins = [], log = false, publicUrl = process.env.SKILLYARD_PUBLIC_URL, plans = 'off', billing = billingConfig(), stripe, trustProxy = false, rateLimit = 0 } = {}) {
   const store = new Store(dataDir, { plans });
   const routes = [];
   const route = (method, pattern, fn, opts = {}) => routes.push({ method, re: new RegExp(`^${pattern}$`), fn, ...opts });
   const baseOf = (req) => (publicUrl || `http://${req.headers.host}`).replace(/\/+$/, '');
+  // Behind a reverse proxy (Caddy) the socket address is the proxy. With trustProxy, use the address the proxy saw:
+  // the last X-Forwarded-For entry, which the proxy appends (earlier entries are client-supplied and not trusted).
+  const clientIp = (req) => {
+    if (trustProxy) {
+      const xff = String(req.headers['x-forwarded-for'] || '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (xff.length) return xff[xff.length - 1];
+    }
+    return req.socket.remoteAddress || '';
+  };
+  // Fixed-window rate limit per client IP: rateLimit requests a minute on the API, a fifth of that for publishes.
+  const windows = new Map();
+  const overLimit = (key, max) => {
+    const now = Date.now();
+    const w = windows.get(key);
+    if (!w || now - w.start >= 60_000) { windows.set(key, { start: now, n: 1 }); if (windows.size > 20_000) windows.clear(); return false; }
+    w.n += 1;
+    return w.n > max;
+  };
   const SKILL = '/api/skills/@([a-z0-9-]+)/([a-z0-9-]+)';
 
   route('GET', '/api/health', () => ({ ok: true, plans: store.enforce ? 'enforce' : 'off', billing: billing.configured ? 'stripe' : 'operator' }));
@@ -97,7 +115,9 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
   route('GET', '/api/orgs/([a-z0-9-]+)', ({ auth, m }) => {
     const org = store.getOrg(m[1]);
     if (!org) throw new HttpError(404, 'org not found');
-    return { ...store.publicOrg(org), member: auth?.org === m[1] || !!auth?.admin, skills: store.search({ scope: m[1], limit: 500 }, auth) };
+    const pub = store.publicOrg(org);
+    if (!store.isOrgAdmin(auth, m[1])) { delete pub.plan; delete pub.seats; delete pub.billing; }
+    return { ...pub, member: auth?.org === m[1] || !!auth?.admin, skills: store.search({ scope: m[1], limit: 500 }, auth) };
   });
   const orgManager = (auth, org) => {
     if (!(auth?.admin || (auth?.org === org && auth.scopes.includes('publish')))) throw new HttpError(403, 'a publish token for this org is required');
@@ -141,6 +161,20 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
     if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
     return createCheckout(store, m[1], { plan: body?.plan, seats: body?.seats }, { cfg: billing, client: stripe, baseUrl: baseOf(req) });
   });
+  route('POST', '/api/orgs/([a-z0-9-]+)/billing/portal', ({ auth, m, req }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    return createPortal(store, m[1], { cfg: billing, client: stripe, baseUrl: baseOf(req) });
+  });
+  // Everything the org owns, on any plan or billing status: so a customer can always take their data and leave.
+  route('GET', '/api/orgs/([a-z0-9-]+)/export', ({ auth, m }) => {
+    if (!store.isOrgAdmin(auth, m[1])) throw new HttpError(403, 'org admin required');
+    const skills = Object.values(store.db.skills).filter((s) => s.scope === m[1]).map((s) => ({
+      id: s.id, visibility: s.visibility,
+      versions: Object.keys(s.versions).map((v) => { const b = store.bundle(m[1], s.name, v, auth, { audit: false }); return { version: v, files: b.files }; }),
+    }));
+    store.audit({ action: 'org.export', org: m[1], skills: skills.length }, auth);
+    return { org: m[1], exportedAt: new Date().toISOString(), skills };
+  });
   route('POST', '/api/billing/webhook', async ({ raw, req }) => {
     verifyStripeSignature(raw, req.headers['stripe-signature'], billing.webhookSecret);
     let event;
@@ -176,6 +210,14 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
       }
       if (req.method === 'GET' && /^\/r\/[A-Za-z0-9_-]{16,64}$/.test(url.pathname)) return beaconHit(req, res, url.pathname.slice(3));
       if (!isApi) return serveStatic(url.pathname, res);
+      if (rateLimit > 0) {
+        const ip = clientIp(req);
+        const publish = req.method === 'POST' && url.pathname === '/api/skills';
+        if (overLimit(`a:${ip}`, rateLimit) || (publish && overLimit(`p:${ip}`, Math.max(1, Math.floor(rateLimit / 5))))) {
+          res.setHeader('Retry-After', '60');
+          throw new HttpError(429, 'too many requests; try again in a minute');
+        }
+      }
 
       const r0 = routes.find((x) => x.method === req.method && x.re.test(url.pathname));
       const auth = r0?.raw ? null : store.authenticate(bearer(req), adminToken); // the webhook authenticates by signature
@@ -204,7 +246,7 @@ export function createServer({ dataDir = 'data', adminToken = process.env.SKILLY
   // Beacon: neutral text page; records time, ip, user-agent and referer only for known tokens. Rate-limited.
   const hits = new Map();
   const beaconHit = (req, res, token) => {
-    const ip = req.socket.remoteAddress || '';
+    const ip = clientIp(req);
     const now = Date.now();
     const recent = (hits.get(ip) || []).filter((t) => now - t < 60_000);
     if (recent.length >= 20) { hits.set(ip, recent); return send(res, 429, 'Too many requests.', 'text/plain; charset=utf-8'); }

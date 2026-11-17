@@ -19,6 +19,7 @@ const subs = new Map(); // fake Stripe: subscription id -> object
 const stripe = {
   createCheckoutSession: async (p) => ({ url: `https://checkout.example/${p.client_reference_id}`, params: p }),
   getSubscription: async (id) => subs.get(id),
+  createPortalSession: async (p) => ({ url: `https://portal.example/${p.customer}` }),
 };
 let server; let base; let owner;
 
@@ -121,13 +122,17 @@ test('an ended pilot is read-only: pulls and revokes work, writes return 402', a
   assert.match((await pub.json()).error, /pilot has ended/);
   assert.equal((await api('POST', '/api/orgs/acme/tokens', owner, { name: 'b' })).status, 402);
   assert.equal((await api('POST', '/api/orgs/acme/revoke', owner, { member: 'd' })).status, 200);
-  assert.equal((await api('POST', '/api/orgs/acme/billing/checkout', owner, { plan: 'team', seats: 7 })).status, 200, 'a lapsed org can still pay');
+  assert.equal((await api('POST', '/api/orgs/acme/billing/checkout', owner, { plan: 'pro' })).status, 200, 'a lapsed org can still pay');
 });
 
 test('checkout carries the org; webhook verifies the signature, re-fetches the subscription and is idempotent', async () => {
-  const co = await (await api('POST', '/api/orgs/acme/billing/checkout', owner, { plan: 'team', seats: 7 })).json();
+  const team = await api('POST', '/api/orgs/acme/billing/checkout', owner, { plan: 'team', seats: 7 });
+  assert.equal(team.status, 400, 'Team is by inquiry');
+  assert.match((await team.json()).error, /talk to us/);
+  const co = await (await api('POST', '/api/orgs/acme/billing/checkout', owner, { plan: 'pro' })).json();
   assert.equal(co.url, 'https://checkout.example/acme');
-  assert.equal(co.seats, 7);
+  assert.equal(co.seats, 1);
+  // Team subscriptions still apply when the operator sets one up in Stripe:
   subs.set('sub_1', { id: 'sub_1', status: 'active', customer: 'cus_1', metadata: { org: 'acme' }, current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
     items: { data: [{ price: { id: 'price_team' }, quantity: 1 }, { price: { id: 'price_seat' }, quantity: 2 }] } });
   const evt = { id: 'evt_1', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), data: { object: { client_reference_id: 'acme', subscription: 'sub_1' } } };
@@ -141,6 +146,29 @@ test('checkout carries the org; webhook verifies the signature, re-fetches the s
   await signed({ id: 'evt_2', type: 'customer.subscription.updated', created: 1, data: { object: { id: 'sub_1', status: 'active' } } });
   assert.equal(server.store.getOrg('acme').billing.status, 'canceled');
   assert.equal((await (await signed({ id: 'evt_3', type: 'charge.refunded', data: { object: {} } })).json()).ignored, 'charge.refunded');
+});
+
+test('a canceled customer keeps their data: export, delete, portal; outsiders do not see billing', async () => {
+  assert.equal(server.store.getOrg('acme').billing.status, 'canceled');
+  const outsider = await (await api('GET', '/api/orgs/acme')).json();
+  assert.equal(outsider.billing, undefined); assert.equal(outsider.plan, undefined); assert.equal(outsider.seats, undefined);
+  assert.equal((await (await api('GET', '/api/orgs/acme', owner)).json()).billing.status, 'canceled', 'the org admin sees it');
+  assert.equal((await api('GET', '/api/orgs/acme/export')).status, 403);
+  const ex = await (await api('GET', '/api/orgs/acme/export', owner)).json();
+  const sr = ex.skills.find((s) => s.id === '@acme/secret-runbook');
+  assert.ok(sr && sr.versions[0].files['SKILL.md'], 'export includes private skill files');
+  assert.equal((await (await api('POST', '/api/orgs/acme/billing/portal', owner)).json()).url, 'https://portal.example/cus_1');
+  assert.equal((await api('DELETE', '/api/skills/@acme/secret-runbook', owner)).status, 200, 'delete works while read-only');
+});
+
+test('rate limit per client IP; behind a trusted proxy the forwarded address counts', async () => {
+  const s = createServer({ dataDir: path.join(tmp, 'rl'), rateLimit: 3, trustProxy: true });
+  await new Promise((r) => s.listen(0, '127.0.0.1', r));
+  const u = `http://127.0.0.1:${s.address().port}/api/health`;
+  const as = (ip) => fetch(u, { headers: { 'X-Forwarded-For': `9.9.9.9, ${ip}` } }).then((r) => r.status);
+  assert.deepEqual([await as('1.1.1.1'), await as('1.1.1.1'), await as('1.1.1.1'), await as('1.1.1.1')], [200, 200, 200, 429]);
+  assert.equal(await as('2.2.2.2'), 200, 'another client is not affected');
+  s.close();
 });
 
 test('signature helper and subscription mapping', () => {

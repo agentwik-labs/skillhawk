@@ -82,6 +82,7 @@ export function stripeClient(cfg, fetchImpl = globalThis.fetch) {
   return {
     createCheckoutSession: (params) => call('POST', '/checkout/sessions', params),
     getSubscription: (id) => call('GET', `/subscriptions/${encodeURIComponent(id)}`),
+    createPortalSession: (params) => call('POST', '/billing_portal/sessions', params),
   };
 }
 
@@ -90,7 +91,8 @@ export async function createCheckout(store, slug, { plan, seats }, { cfg = billi
   const org = store.getOrg(slug);
   if (!org) throw new HttpError(404, `org ${slug} not found`);
   if (!cfg.configured) throw new HttpError(501, 'billing is not configured on this server; plans are set by the operator during the pilot');
-  if (plan === 'enterprise' || plan === 'free') throw new HttpError(400, `${plan} has no checkout; talk to us`);
+  // Self-serve checkout is Pro only. Team and Enterprise are by inquiry; the operator sets them (`org plan`).
+  if (plan !== 'pro') throw new HttpError(400, `${plan || 'that plan'} has no self-serve checkout; talk to us`);
   let want;
   try { want = validatePlan(plan, seats); } catch (e) { throw new HttpError(400, e.message); }
   if (org.billing?.subscriptionId && org.billing?.status !== 'canceled') throw new HttpError(409, 'this org already has a subscription; seat changes go through the operator for now');
@@ -102,6 +104,16 @@ export async function createCheckout(store, slug, { plan, seats }, { cfg = billi
     success_url: `${baseUrl}/#/teams?billing=ok`, cancel_url: `${baseUrl}/#/teams?billing=cancel`,
   });
   return { url: s.url, plan: want.plan, seats: want.seats };
+}
+
+/** Stripe customer portal: the customer cancels, changes card or sees invoices without emailing anyone. */
+export async function createPortal(store, slug, { cfg = billingConfig(), client, baseUrl }) {
+  const org = store.getOrg(slug);
+  if (!org) throw new HttpError(404, `org ${slug} not found`);
+  if (!cfg.configured) throw new HttpError(501, 'billing is not configured on this server');
+  if (!org.billing?.customerId) throw new HttpError(409, 'this org has no Stripe customer yet');
+  const s = await (client || stripeClient(cfg)).createPortalSession({ customer: org.billing.customerId, return_url: `${baseUrl}/` });
+  return { url: s.url };
 }
 
 /**

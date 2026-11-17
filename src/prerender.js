@@ -162,7 +162,7 @@ ${body(b)}
   page({ p: '/tools/', title: 'Skillyard tools: build, check, improve, save and protect AI skills', description: 'Every Skillyard command with what it does, how to run it and real example output.', ld: [crumbs([['Skillyard', '/'], ['Tools', '/tools/']])],
     body: (b) => `${trail(b, [['Skillyard', ''], ['Tools']])}
     <h1>Skillyard tools</h1>
-    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools are open source too; the hosted vault, with seats, setup and support, is in pilot with design partners.</p>
+    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools are open source too; Pro, a private vault for one developer, is in pilot, and team vaults are set up by request.</p>
     ${[...journey.JOURNEY, journey.PROTECT].map((s) => `<h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)}</p><ul class="sp-grid">${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="${b}tools/${t.slug}/">${esc(t.name)}</a><p>${esc(t.what)}</p></li>`).join('')}</ul>`).join('\n')}` });
 
   // ---- pricing ------------------------------------------------------------------------------------------------
@@ -170,19 +170,19 @@ ${body(b)}
   if (P) {
     const plan = (id) => P.plans.find((x) => x.id === id);
     const [pro, team] = [plan('pro'), plan('team')];
-    if (!pro || !team) throw new Error('prerender: PRICING needs plans with id "pro" and "team"');
+    if (!pro) throw new Error('prerender: PRICING needs a plan with id "pro"');
     const perOf = (x) => (x.per ? ` ${x.per}` : '');
     // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
     const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
-    const summary = `Free open-source developer tools. Pro ${pro.price}${perOf(pro)}; Team ${team.price}${perOf(team)}, extra seats $${team.extraSeatUsd} each.`;
-    page({ p: '/pricing/', title: 'Skillyard pricing: free for developers, $20 for one, $100 for a team of five', description: `${summary} ${P.note}`,
+    const summary = `Free open-source developer tools. Pro ${pro.price}${perOf(pro)} for your own private vault.${team ? ' Teams by request.' : ''}`;
+    page({ p: '/pricing/', title: 'Skillyard pricing: free for developers, $20 a month for your private vault', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillyard', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillyard', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillyard', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillyard pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. Pro (${esc(pro.price)}${esc(perOf(pro))}) is one person's private vault. Team (${esc(team.price)}${esc(perOf(team))}, extra seats $${esc(team.extraSeatUsd)} each) is Pro for the whole team, plus what a group needs: roles, publish approval, copies marked per person with leak trace, offboarding and revocable streaming. ${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. Pro (${esc(pro.price)}${esc(perOf(pro))}) is your own private vault for the skills you write. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
-    <p><a href="${b}#/?s=teams">Become a design partner</a></p>` });
+    <p><a href="${b}#/?s=pilot">Join the Pro pilot</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
   }
 
@@ -327,8 +327,8 @@ ${body(b)}
   const stepHtml = (s) => `<section id="${s.id}-static"><h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)} <span class="sp-meta">${esc(s.tier)}</span></p><ul>${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="tools/${t.slug}/"><b>${esc(t.name)}</b></a>: ${esc(t.what)} <code>${esc(t.cmd)}</code></li>`).join('')}</ul></section>`;
   const landing = `<div class="sp-landing">
     <h1>Skillyard builds, checks and protects your company's AI skills.</h1>
-    <p class="sp-answer">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, spend fewer tokens on them, and keep them yours.</p>
-    <p><code>npx skillyard review</code> <a class="sp-cta" href="#/teams">Become a design partner</a></p>
+    <p class="sp-answer">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, see what they cost, and keep them yours.</p>
+    <p><code>npx skillyard review</code> <a class="sp-cta" href="#/?s=pilot">Join the Pro pilot</a></p>
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
     <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>
     <section><h2>Skill library</h2><p>${libSkills.length} public skills graded A to F and security-checked: ${['A', 'B', 'C', 'D', 'F'].map((k) => `${g[k] ?? 0} grade ${k}`).join(', ')}. <a href="skills/">Browse the library</a>.</p></section>

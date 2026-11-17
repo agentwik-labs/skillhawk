@@ -1,6 +1,6 @@
 # Plans, seats and billing
 
-Status: built 2026-11-13. A goldfish review (design, readiness, scope, codebase) found 12 problems; the fixes are folded in below.
+Status: built 2026-11-13. 2026-11-17: Teams moved to inquiry; self-serve checkout is Pro only. A goldfish review (design, readiness, scope, codebase) found 12 problems; the fixes are folded in below.
 Code: `src/plans.js` (price list, gates), `src/store.js` (seats, plan state, write guard), `src/billing.js` (Stripe), `src/server.js` (routes). Tests: `test/billing.test.js`.
 
 ## Price list (`src/plans.js` is the source; `web/app.js` PRICING is tested against it)
@@ -33,6 +33,7 @@ The price for an extra seat is $20. The owner set the base and Team prices but n
 
 - **Fields:** `org.plan`, `org.seats`, and `org.billing = { status: pilot|active|past_due|canceled, pilotEndsAt?, periodEnd?, provider?, customerId?, subscriptionId?, lastEventAt? }`.
 - **New orgs and migration:** new orgs, and existing orgs with no plan (migrated once on load and saved), become a Team pilot with `seats = max(5, seats in use)` and **no end date**. The operator sets the end date, so no current user is cut off by the deploy.
+- **Who sees plan state:** `GET /api/orgs/:org` shows plan, seats and billing only to the org admin and the operator.
 - **Audit:** `plan.change`, `token.create`, `token.revoke`, `skill.visibility` and `skill.delete` go into the hash-chained audit log. Blocked seat attempts go only to the event log.
 
 ## Billing
@@ -43,13 +44,14 @@ The price for an extra seat is $20. The owner set the base and Team prices but n
   - First customers can pay through a Stripe Payment Link, and the operator then sets their plan by hand.
 - **Stripe path (once the owner creates the account):**
   - **Configuration:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAM`, `STRIPE_PRICE_SEAT`. Without them, checkout returns 501.
-  - **Checkout:** `POST /api/orgs/:org/billing/checkout {plan, seats}` (org admin). It sets `client_reference_id` and `subscription_data.metadata.org`. Seats above five are a quantity of the seat price. It returns 409 if the org already has a live subscription; seat changes go through the operator for now.
+  - **Checkout:** `POST /api/orgs/:org/billing/checkout {plan: 'pro'}` (org admin). Team and Enterprise return 400 ("talk to us"); the operator sets them up. It sets `client_reference_id` and `subscription_data.metadata.org`. Seats above five are a quantity of the seat price. It returns 409 if the org already has a live subscription; seat changes go through the operator for now.
   - **Webhook signature:** `POST /api/billing/webhook` reads the raw body and checks the signature (HMAC-SHA256, any `v1` may match, 5-minute tolerance). A bad signature returns 400.
   - **Webhook processing:**
     - Event ids already seen are skipped; up to 500 are kept.
     - The subscription is **re-fetched** for every handled event, and its current state is applied. Out-of-order or stale events therefore can't revive a canceled org.
     - The org is found from the subscription metadata, then the checkout reference, then the stored subscription id.
     - Event types we don't handle return 200.
+  - **Customer portal:** `POST /api/orgs/:org/billing/portal` (org admin) returns a Stripe portal link to cancel, change card or see invoices.
   - **API version:** pinned to `2024-06-20`.
   - **Status mapping:**
 

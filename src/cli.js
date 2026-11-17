@@ -133,7 +133,7 @@ Leak tracing
                                                  Auditor bundle: inventory, approval trail, access, integrity, control mapping (admin)
 
 Running a registry
-  serve [--port 7420] [--host 127.0.0.1] [--data ./data] [--log] [--plans enforce]
+  serve [--port 7420] [--host 127.0.0.1] [--data ./data] [--log] [--plans enforce] [--trust-proxy] [--rate-limit 300]
                                                  --plans enforce (or SKILLYARD_PLANS=enforce): seat limits and plan gates
                                                  for a hosted vault; STRIPE_* env vars turn on checkout (docs/plans-and-seats.md)
   seed [--data ./data] [--community]             Load registry/public and seed/orgs demo content (+ free public skills)
@@ -235,7 +235,13 @@ async function serve(_args, f) {
   const port = Number(f.port || process.env.PORT || 7420);
   const host = f.host || process.env.HOST || '127.0.0.1';
   const allowedOrigins = (process.env.SKILLYARD_ALLOWED_ORIGINS || '').split(',').filter(Boolean);
-  const server = createServer({ dataDir: dataDir(f), allowedOrigins, log: !!f.log, plans: f.plans || process.env.SKILLYARD_PLANS || 'off' });
+  const server = createServer({
+    dataDir: dataDir(f), allowedOrigins, log: !!f.log, plans: f.plans || process.env.SKILLYARD_PLANS || 'off',
+    trustProxy: !!f.trustProxy || process.env.SKILLYARD_TRUST_PROXY === '1',
+    rateLimit: Number(f.rateLimit ?? process.env.SKILLYARD_RATE_LIMIT ?? 300),
+  });
+  // Docker stop sends SIGTERM; close cleanly so in-flight writes finish.
+  for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => { server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 5000).unref(); });
   const stats = server.store.stats({ admin: true, scopes: ['read'] });
   await new Promise((r) => server.listen(port, host, r));
   console.log(`skillyard registry on http://${host}:${port}  (${stats.skills} skills, data: ${server.store.dataDir})`);

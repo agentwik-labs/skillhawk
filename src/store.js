@@ -448,7 +448,7 @@ export class Store {
     const rec = this.db.skills[skillId(scope, name)];
     if (!rec) throw new HttpError(404, 'skill not found');
     if (!this.canPublish(scope, auth)) throw new HttpError(403, 'forbidden');
-    this.assertWritable(scope);
+    // No assertWritable: a canceled or lapsed customer can always delete their own data.
     this.audit({ action: 'skill.delete', org: scope, skill: rec.id }, auth);
     delete this.db.skills[rec.id];
     fs.rmSync(path.join(this.blobDir, scope, name), { recursive: true, force: true });

@@ -69,3 +69,4 @@ Shipped since this list was written: offboarding report (`skillyard offboard`, s
 | X9 | Skillyard Verified badge: SVG badge with grade, lift and security for READMEs (`skillyard badge`) | portable | [x] |
 | X10 | Write once, run everywhere: compile a skill to Claude, Codex AGENTS.md, Cursor rules, Copilot, Gemini with per-target checks (`skillyard compile`) | portable | [x] |
 | X11 | Plans and seats: Free, Pro $20 (1 seat), Team $100 (5 seats, +$20 each), Enterprise; feature gates and pilot billing (src/plans.js, [docs/plans-and-seats.md](docs/plans-and-seats.md)) | govern | [x] |
+| X12 | Launch readiness (2026-11-17 review): Docker serves only; plan/billing hidden from outsiders; export + delete on any status; Stripe portal; trusted-proxy client IP; rate limit; SIGTERM; Teams by inquiry, Pro-only checkout | govern | [x] |

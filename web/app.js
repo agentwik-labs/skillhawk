@@ -281,7 +281,7 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 // every output line comes from a real run on registry/public, examples/, test/fixtures or the seeded demo data
 // (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
-const PILOT = 'For teams. Open source; the hosted vault is in pilot with design partners.';
+const PILOT = 'Pro: your own private vault, $20 a month, in pilot. Open source. Team features by request.';
 const JOURNEY = [
   { id: 'build', step: 'Build', h: 'Write a skill once. Run it in five agents.', tier: FREE,
     promise: 'Turn an interview, a runbook or a document into a skill with trigger tests, then compile it to each agent\'s own format.',
@@ -306,7 +306,7 @@ const JOURNEY = [
       { name: 'A/B', cmd: 'skillyard ab report deploy', what: 'Split sessions between two versions; promote B only at p < 0.05 with 30 sessions per arm.', out: 'Decision: promote B (p=0.0000 ... (56/78 vs 9/82))' },
       { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'When a new model ships, re-run every skill\'s evals on old and new, report drops and draft fixes.', out: null, noOut: 'Runs when a new model ships; needs --allow-model and an API key, so no sample output here.' },
     ] },
-  { id: 'save', step: 'Save', h: 'Stop paying to re-read files.', tier: FREE,
+  { id: 'save', step: 'Save', h: 'See where your tokens go.', tier: FREE,
     promise: 'Give agents a map to query instead of opening every file, see where the tokens go, and estimate what each skill saves.',
     tools: [
       { name: 'Map', cmd: 'skillyard map', what: 'Indexes files, symbols, imports and skills; agents ask the map and read one section.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
@@ -322,12 +322,12 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
       { name: 'Audit log', cmd: 'skillyard audit verify', what: 'Pulls, publishes, rollbacks and access changes, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
       { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub org.pem', what: 'What runs is what was approved.', out: 'FAIL deploy-safely: files differ from what was signed\n  changed: SKILL.md' },
     ] },
-    { name: 'Trace', tools: [
-      { name: 'Marked copies', cmd: 'skillyard trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to; a leaked fragment names who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
+    { name: 'Trace (teams)', tools: [
+      { name: 'Marked copies', cmd: 'skillyard trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to, so a leaked fragment can often be traced to who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
       { name: 'Evidence pack', cmd: 'skillyard evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'most likely recipient: alice (code-review v1.0.0, confidence 100.00%)\naudit log chain: verified\nwrote evidence pack to /home/you/evidence' },
       { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A per-copy link that records when a leaked copy is opened: time, IP address and browser.', out: null, note: 'Built, off by default. Not offered until a lawyer has reviewed it.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
     ] },
-    { name: 'Take back', tools: [
+    { name: 'Take back (teams)', tools: [
       { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; nothing is written to disk.', out: 'Nothing is installed on this machine, and `skillyard revoke` cuts access on the next call.' },
       { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
       { name: 'Exit interview', note: 'Free CLI tool.', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
@@ -340,35 +340,31 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
 // Self-hosting is not here: `skillyard serve` runs the vault on your own server (docs/self-hosting.md).
 const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged copies already rank both colluders)', 'Single sign-on', 'Slack alerts for vault events (Studio already posts review proposals to a Slack webhook)', 'VS Code extension'];
 
-// Prices mirror src/plans.js PLANS (monthlyUsd, includedSeats, extraSeatUsd); test/pricing.test.js keeps them equal.
+// Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
 const PRICING = {
-  heading: 'Free for developers. $20 for one, $100 for a team of five.',
-  note: 'Prices in USD. Paid plans start after a free pilot; nothing is charged today.',
+  heading: 'Free for developers. $20 a month for your private vault.',
+  note: 'Prices in USD. Pro starts after a free pilot; nothing is charged today. Teams: tell us what you need.',
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'forever',
       blurb: 'Open source (MIT). Runs on your machine; nothing leaves it unless you pass --allow-model to use a model.',
       items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillyard review', href: 'https://github.com/agentwik-labs/skillyard', code: true } },
-    { id: 'pro', name: 'Pro', monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month, 1 seat',
-      blurb: 'One person\'s private vault.',
-      items: ['Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
-      cta: { label: 'Join the pilot', href: '#/?s=teams' } },
-    { id: 'team', name: 'Team', monthlyUsd: 100, seats: 5, extraSeatUsd: 20, price: '$100', per: 'per month for 5 seats', featured: true,
-      blurb: 'Pro for your whole team: five seats, plus the controls a group needs. Extra seats $20 each.',
-      items: ['Shared private vault', 'Roles: reader, editor, admin', 'Publish approval: checks must pass; admin overrides are logged', 'Every copy marked for the person it is issued to, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Revocable streaming: agents load skills from the vault; nothing installed'],
-      cta: { label: 'Become a design partner', href: '#/?s=teams' } },
-    { id: 'enterprise', name: 'Enterprise', monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Custom', per: '',
-      blurb: 'For security and procurement reviews.',
-      items: ['Support for running it on your own servers', 'Answers for your security review', 'Data processing agreement (not available yet)', 'Single sign-on (roadmap)', 'Call-home link for leaked copies (after legal review)', 'Onboarding and direct support from the founder'],
-      cta: { label: 'Talk to us', href: '#/?s=teams' } },
+    { id: 'pro', name: 'Pro', monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month', featured: true,
+      blurb: 'Your own private vault for the skills you write.',
+      items: ['Private skills, available to every agent you use', 'Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
+      cta: { label: 'Join the Pro pilot', href: '#/?s=pilot' } },
+    { id: 'team', name: 'Teams', inquiry: true, monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Talk to us', per: '',
+      blurb: 'A shared vault for several people is set up by request for now. Tell us your team size and what you want to protect.',
+      items: ['Shared private vault with roles', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Help running it on your own servers'],
+      cta: { label: 'Ask about teams', href: '#/teams' } },
   ],
-  audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes within five working days.' },
+  audit: { name: 'Skills audit', price: '$750', extra: 'first three free', text: 'We run Reviewer, Security and chat review over the skills you already use and send a report with fixes, usually within a week.' },
 };
 function lpNav() {
   return `<header class="lp-nav">
     <a class="lp-word" href="#/">skillyard</a>
     <nav aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a><a href="#/?s=pricing">Pricing</a></nav>
-    <a class="lp-action" href="#/?s=teams">For teams</a>
+    <a class="lp-action" href="#/?s=pilot">Join the Pro pilot</a>
   </header>`;
 }
 
@@ -413,7 +409,7 @@ function protectSection(id = 'protect') {
 
 function roadmapStrip() {
   return `<section class="v-sec rm" aria-labelledby="rm-h">
-      <h2 id="rm-h" class="rm-h">Roadmap, built when design partners ask for it</h2>
+      <h2 id="rm-h" class="rm-h">Roadmap, built when users ask for it</h2>
       <ul class="rm-list">${ROADMAP.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
     </section>`;
 }
@@ -435,11 +431,19 @@ function pricingSection(id = 'pricing') {
     </section>`;
 }
 
+function pilotCta(id) {
+  return `<section class="lp-cta" aria-labelledby="${id}-h" id="pilot">
+      <h2 class="lp-h" id="${id}-h">Get your own private vault: join the Pro pilot.</h2>
+      <p class="v-lede">The developer tools above are free and open source. Pro is a private vault for the skills you write, with versions, publish checks, signatures and an audit log, for $20 a month. It is in pilot now, and nothing is charged until it opens.</p>
+      ${signupSentence({ lead: 'Reply to', button: 'Join', tag: 'pro', id, note: 'We email you to set up your vault.' })}
+    </section>`;
+}
+
 function teamsCta(id) {
-  return `<section class="lp-cta" aria-labelledby="${id}-h" id="${id === 'su-home' ? 'teams' : 'ask'}">
-      <h2 class="lp-h" id="${id}-h">For teams: become a design partner.</h2>
-      <p class="v-lede">The developer tools above are free. All of the code is open source; the hosted vault, with seats, setup and support, is in pilot with a few design partners, starting with a free audit of the skills you already use.</p>
-      ${signupSentence({ lead: 'Reply to', button: 'Request', tag: 'audit', id, note: 'We reply within two working days to set up a 20-minute call and a free audit of your skills.' })}
+  return `<section class="lp-cta" aria-labelledby="${id}-h" id="ask">
+      <h2 class="lp-h" id="${id}-h">Teams: tell us what you need.</h2>
+      <p class="v-lede">Right now we focus on individual developers. A shared vault for several people, with roles, marked copies and offboarding, is set up by request. Tell us your team size and what you want to protect.</p>
+      ${signupSentence({ lead: 'Reply to', button: 'Ask', tag: 'team', id, note: 'We usually reply within a week.' })}
     </section>`;
 }
 
@@ -636,8 +640,8 @@ async function viewShowcase() {
     <section class="lp-hero v-hero x-hero" aria-labelledby="hero-h">
       <h1 id="hero-h" class="lp-sentence v-h1 x-h1">Skillyard builds, checks and protects your company's AI skills.</h1>
       <div class="x-side">
-        <p class="lp-lede">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, spend fewer tokens on them, and keep them yours.</p>
-        <div class="v-actions"><a class="lp-action big" href="#/?s=teams">Become a design partner</a><span class="v-install"><code>npx skillyard review</code></span></div>
+        <p class="lp-lede">Skills are the instructions your agents follow. Build them once for every agent, check them, improve them from real use, see what they cost, and keep them yours.</p>
+        <div class="v-actions"><a class="lp-action big" href="#/?s=pilot">Join the Pro pilot</a><span class="v-install"><code>npx skillyard review</code></span></div>
       </div>
       ${launchVideo()}
       <ol class="jmap" aria-label="The journey">${[...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}"><b>${s.step}</b><span>${esc(s.h)}</span></a></li>`).join('')}</ol>
@@ -659,7 +663,7 @@ async function viewShowcase() {
 
     ${roadmapStrip()}
     ${pricingSection()}
-    ${teamsCta('su-home')}
+    ${pilotCta('su-home')}
     ${lpFooter()}
   </div>`;
   bindSignups(app);
@@ -675,12 +679,11 @@ function viewTeams() {
   <div class="lp" data-landing>
     ${lpNav()}
     <section class="lp-hero v-hero">
-      <h1 class="lp-sentence v-h1">Design partners for the Skillyard vault.</h1>
-      <p class="lp-lede">The developer tools are free, and all of the code is open source. The hosted vault, with seats, setup and support, is in pilot with design partners. Work with us before it opens: you get a free audit of the skills your team already uses, and a say in what we build next.</p>
+      <h1 class="lp-sentence v-h1">Skillyard for teams, by request.</h1>
+      <p class="lp-lede">The developer tools are free and all of the code is open source. We focus on individual developers first; a shared vault for several people is set up by request. Tell us what you need.</p>
     </section>
     ${protectSection('vault')}
     ${pricingSection('pricing-teams')}
-    ${roadmapStrip()}
     ${teamsCta('su-teams')}
     ${lpFooter()}
   </div>`;
@@ -1158,6 +1161,7 @@ async function route() {
   const [pathPart, query = ''] = hash.split('?');
   const params = new URLSearchParams(query);
   const want = (pathPart === '/' || pathPart === '') && params.get('s');
+  if (want === 'teams') { location.hash = '#/teams'; return; } // old links: teams moved to its own inquiry page
   if (want && app.querySelector('[data-home]')) { document.getElementById(want)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); return; }
   document.querySelectorAll('.top nav a').forEach((a) => {
     const target = a.getAttribute('href').slice(1);
