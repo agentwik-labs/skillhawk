@@ -283,9 +283,10 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 const FREE = 'Free and open source. Runs on your machine.';
 const PILOT = 'Pro: $20 a month, on pre-order; the hosted vault is not running yet. The vault is open source. Team features by request.';
 // Watch is planned and not built. Each row states what the free command does today and what Watch is planned to add.
-const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: re-run these checks when things change.', tier: 'Watch: not built. Planned at $9 a month; pre-orders are not open yet, but you can reserve a place. The commands below work today.',
-  promise: 'Models, agents and the tools you install change. Today you can re-run these checks yourself. Watch is our plan to run them for you when something changes and send any fix as a pull request.',
+const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: alerts for agents nobody is watching, and skills that break.', tier: 'Watch: not built. Planned at $9 a month; pre-orders are not open yet, but you can reserve a place. The commands below work today.',
+  promise: 'Agents keep running after you stop watching, and models, agents and tools change under your skills. Today you can run these checks yourself. Watch is our plan to alert you when an agent runs unattended or keeps spending with no human, and to re-check your skills when something changes, sending any fix as a pull request.',
   tools: [
+    { name: 'Agent alerts', cmd: 'skillhawk agents --notify desktop', what: 'Today: run it yourself, or on a schedule you set up; --notify sends a desktop or Slack alert. Planned for Watch: the alerts set up for you, for agents running unattended, sessions spending with no human and dev servers left running.', out: '! claude  up 3d 4h  no terminal  1 child process\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
     { name: 'New-model check', cmd: 'skillhawk watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Watch: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
     { name: 'Supply-chain check', cmd: 'skillhawk secure . --gate high', what: 'Today: scan the skills, MCP servers, hooks and scripts you use. Planned for Watch: re-scan them when they change upstream.', out: null, noOut: 'Full output in the Check section.' },
     { name: 'Agent format check', cmd: 'skillhawk compile release-notes --to all', what: 'Today: compile to five agents and check each file against its limits. Planned for Watch: re-check when an agent changes its format or limits, and open a pull request.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
@@ -360,8 +361,8 @@ const PRICING = {
       items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
-      blurb: 'Pre-order. Not built yet. Planned: re-run your checks when a model, an agent or a tool you use changes, and send fixes as pull requests.',
-      items: ['New-model check', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
+      blurb: 'Pre-order. Not built yet. Planned: alerts when an agent runs unattended or keeps spending with no human, and re-checks of your skills when a model, an agent or a tool changes.',
+      items: ['Agent alerts: unattended agents, sessions spending with no human, dev servers left running', 'New-model check', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
       cta: { label: 'Pre-order Watch', preorder: 'watch' } },
     { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
       blurb: 'Pre-order. The vault software is built and open source; the hosted vault is not running yet.',
@@ -660,22 +661,39 @@ C  notes-v2               1 finding
    high  SKILL.md:3   description never says
                       when to use the skill
 A  lint-everything        no findings`;
+const AGENTS_OUT = `$ npx skillhawk agents
+skillhawk agents: 2 need a look
+
+Agent processes
+ !  100  claude  up 3d 4h    no terminal
+          1 child process
+    200  claude  up 1h 10m   ttys003
+
+Dev servers left running
+ !  300  up 26d 1h  port 4400
+          node server.cjs
+
+Nothing was stopped. To stop them
+yourself: kill 100 300`;
 const CHECKS = [
+  { name: 'Agents', what: 'Agents and dev servers still running that nobody is watching, and what a session has cost since a human last wrote. Read-only.', cmd: 'npx skillhawk agents', out: '! claude  up 3d 4h  no terminal  2 child processes   (example data)' },
   { name: 'Review', what: 'Grades every skill A to F with line-level findings: contradictions, vague rules, broken links, skills that crowd each other out.', cmd: 'npx skillhawk review .', out: 'C notes-v2: description never says when to use it' },
   { name: 'Secure', what: 'Audits skills, MCP configs, hooks and scripts. A non-zero exit makes it a CI gate.', cmd: 'npx skillhawk secure .', out: 'HIGH settings.json:2 "Bash(*)" runs any shell command' },
-  { name: 'Agents', what: 'Agents and dev servers still running that nobody is watching, and what a session has cost since a human last wrote. Read-only.', cmd: 'npx skillhawk agents', out: '! claude  up 3d 4h  no terminal  2 child processes   (example data)' },
   { name: 'Compile', what: 'One skill, native files for five agents, each checked against its limits.', cmd: 'npx skillhawk compile ./skill', out: 'copilot: FAIL size 4301/4000 chars' },
 ];
 
 function heroReserve(id) {
-  const note = 'Watch is planned and not built. This adds your email to the list; no payment is collected.';
+  const note = 'Watch is planned and not built. This adds your email to the list; no payment is collected. The first 10 people on the list are offered a free written review of their skills, by email.';
   if (!signupOn()) return `<p class="hr-alt"><a class="lp-action" href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></p><p class="hr-note">${note}</p>`;
   return `<form class="hero-form signup" data-tag="preorder-watch" id="${id}">
-      <label for="${id}-email">Reserve Watch, planned at $9 a month</label>
+      <label for="${id}-email">Get Watch when it ships: alerts for agents nobody is watching. Planned at $9 a month.</label>
       <div class="hf-row"><input id="${id}-email" name="email" type="email" required placeholder="you@company.com" autocomplete="email"><button type="submit">Reserve my spot</button></div>
     </form>
     <p class="hr-note" data-note>${note}</p>`;
 }
+
+// One real run of `skillhawk agents` on the founder's own machine, counts only (no paths or commands).
+const OWN_RUN = { date: 'Nov 17, 2026', flagged: 24, detail: '10 agents up over 12 hours, 13 dev servers left running, 1 session with no human message for 2+ hours' };
 
 async function proofStats(el) {
   const [d, l] = await Promise.all([fetch('media/proof.json').then((r) => (r.ok ? r.json() : null)).catch(() => null), loadLibrary()]);
@@ -693,16 +711,17 @@ async function viewShowcase() {
 
     <section class="h2-hero" aria-labelledby="hero-h">
       <div class="h2-copy">
-        <h1 id="hero-h" class="lp-sentence h2-h1">Check your AI skills before your agents run them.</h1>
-        <p class="h2-lede">A free, open-source CLI that grades your SKILL.md files, finds security problems in skills and MCP configs, and compiles them for five agents.</p>
-        ${cmd('npx skillhawk review .claude/skills')}
+        <h1 id="hero-h" class="lp-sentence h2-h1">Your agents keep running after you stop watching.</h1>
+        <p class="h2-lede">One command lists every coding agent, unattended session and dev server still going, and what a session has cost since you last typed. Free, open source, and nothing leaves your machine.</p>
+        ${cmd('npx skillhawk agents')}
+        <p class="h2-own">On the founder's own machine, one run flagged <b>${OWN_RUN.flagged}</b>: ${esc(OWN_RUN.detail)}. (${OWN_RUN.date})</p>
         ${heroReserve('su-hero')}
       </div>
-      <figure class="h2-term"><figcaption>Real output, trimmed</figcaption><pre tabindex="0" aria-label="Example output of skillhawk review">${esc(HERO_OUT)}</pre></figure>
+      <figure class="h2-term"><figcaption>Real output format, example data, trimmed</figcaption><pre tabindex="0" aria-label="Example output of skillhawk agents">${esc(AGENTS_OUT)}</pre></figure>
     </section>
 
     <section class="h2-sec" id="checks" aria-labelledby="checks-h">
-      <h2 id="checks-h" class="h2-h">Four checks, one command each.</h2>
+      <h2 id="checks-h" class="h2-h">Four free checks, one command each.</h2>
       <ul class="h2-cards">${CHECKS.map((c) => `<li><h3>${esc(c.name)}</h3><p>${esc(c.what)}</p>${cmd(c.cmd)}<pre aria-label="Example output">${esc(c.out)}</pre></li>`).join('')}</ul>
       <p class="h2-more"><a href="tools/">Every command, with example output →</a></p>
     </section>

@@ -331,9 +331,9 @@ ${body(b)}
   const indexFile = path.join(out, 'index.html');
   const stepHtml = (s) => `<section id="${s.id}-static"><h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)} <span class="sp-meta">${esc(s.tier)}</span></p><ul>${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="tools/${t.slug}/"><b>${esc(t.name)}</b></a>: ${esc(t.what)} <code>${esc(t.cmd)}</code></li>`).join('')}</ul></section>`;
   const landing = `<div class="sp-landing">
-    <h1>Check your AI skills before your agents run them.</h1>
-    <p class="sp-answer">Skills are the instructions your agents follow. The free CLI grades them, scans them for security problems, tests them and compiles them for five agents. Watch, on pre-order and not built yet, is planned to re-run those checks when a model, an agent or a tool you use changes.</p>
-    <p><code>npx skillhawk review</code> <a class="sp-cta" href="#/?s=pilot">Pre-order Watch</a></p>
+    <h1>Your agents keep running after you stop watching.</h1>
+    <p class="sp-answer">One free command lists every coding agent, unattended session and dev server still running, and what a session has cost since you last typed. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Watch, on pre-order and not built yet, is planned to send those alerts for you.</p>
+    <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=pilot">Pre-order Watch</a></p>
     ${journey.WATCH ? `<section><h2>${esc(journey.WATCH.step)}: ${esc(journey.WATCH.h)}</h2><p>${esc(journey.WATCH.promise)} <span class="sp-meta">${esc(journey.WATCH.tier)}</span></p><ul>${journey.WATCH.tools.map((t) => `<li><b>${esc(t.name)}</b>: ${esc(t.what)}</li>`).join('')}</ul></section>` : ''}
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
     <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>
