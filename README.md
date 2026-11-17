@@ -1,5 +1,7 @@
 # Skillhawk
 
+> Not affiliated with [Berserk-hub150/skillhawk](https://github.com/Berserk-hub150/skillhawk), a separate SKILL.md security scanner with a similar name.
+
 A skill registry for AI agents. Keep open-source skills and your company's private ones in one place, and install
 them into **Claude Code, OpenAI Codex, Cursor and any AGENTS.md agent** (Gemini CLI, Copilot, Windsurf, Aider), or let
 agents search and load them live over **MCP**.
