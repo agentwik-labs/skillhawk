@@ -1,0 +1,27 @@
+# Publish to npm when a version tag is pushed: git tag v0.2.1 && git push origin v0.2.1
+# Uses npm trusted publishing (OIDC): no npm token is stored in GitHub, and each release carries a provenance
+# statement linking it to this workflow run. One-time setup on npmjs.com: package skillyard -> Settings ->
+# Trusted publisher -> GitHub Actions, organization agentwik-labs, repository skillyard, workflow release.yml.
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest   # trusted publishing needs npm 11.5.1 or later
+      - name: Tag must match package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm test
+      - run: npm publish

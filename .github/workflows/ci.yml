@@ -8,6 +8,23 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+      - run: npm run validate
+
+  # Install the package exactly as npm would ship it and run the commands the website tells people to run.
+  # This catches a published package that is missing files or commands (0.1.0 shipped without `review`).
+  package-smoke:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -15,5 +32,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
-      - run: npm run validate
+      - run: npm pack --pack-destination "$RUNNER_TEMP"
+      - name: Install the packed tarball in an empty project
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir smoke && cd smoke && npm init -y >/dev/null
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/skillyard-*.tgz
+      - name: Run the website's commands
+        working-directory: ${{ runner.temp }}/smoke
+        run: |
+          test "$(npx skillyard --version)" = "$(node -p "require('$GITHUB_WORKSPACE/package.json').version")"
+          npx skillyard review "$GITHUB_WORKSPACE/registry/public"
+          npx skillyard secure "$GITHUB_WORKSPACE/registry/public"
+          npx skillyard validate "$GITHUB_WORKSPACE/registry/public"
+          npx skillyard compile "$GITHUB_WORKSPACE/registry/public/$(ls "$GITHUB_WORKSPACE/registry/public" | head -1)" --to all --out compiled
