@@ -49,6 +49,13 @@
     "skills",
     "ai-agents",
     "agents-md",
-    "llm"
+    "llm",
+    "ai-coding-agents",
+    "unattended-agents",
+    "claude-code-cost",
+    "mcp-server",
+    "agent-security",
+    "skill-md",
+    "developer-tools"
   ]
 }

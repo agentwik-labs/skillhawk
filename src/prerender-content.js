@@ -12,7 +12,137 @@ const REVIEW_FIXED = `$ skillhawk review notes-v2   # after the rewrite above
 
 A  notes-v2  ~ 847 tok  no findings`;
 
+
+const AGENTS_EXAMPLE = `$ npx skillhawk agents
+skillhawk agents: 2 need a look (running over 12h, or working with no human input for 2h)
+
+Agent processes (2)
+ !    100  claude  up 3d 4h    no terminal  cpu 0.1%  200 MB  1 child process
+      200  claude  up 1h 10m   tty ttys003  cpu 2%  300 MB  0 child processes
+
+Dev servers left running (1)
+ !    300  up 26d 1h   port 4400  13 MB  node /home/me/studio/server.cjs
+
+Nothing was stopped. To stop the flagged processes yourself: kill 100 300`;
+
+const AGENT_PAGES = [
+  {
+    slug: 'see-which-ai-coding-agents-are-still-running',
+    title: 'How to see which AI coding agents are still running',
+    desc: 'Find Claude Code, Codex, Gemini and other coding agents still running on your machine, the sessions working with no human, and the dev servers they left behind.',
+    answer: 'List your processes and look for the agent commands (`claude`, `codex`, `gemini`, `aider` and others), note which have no terminal attached and how long they have been up, then check which local ports are still listening. `npx skillhawk agents` does all of this in one read-only command and also finds Claude Code sessions still working with no human message for hours.',
+    sections: [
+      { h: 'Where agents keep running', list: [
+        'Headless runs (`claude -p`, `codex exec`) started by a script, cron, launchd or a CI schedule. They have no terminal, so closing a window does not stop them.',
+        'Interactive sessions left open. Claude Code can start new turns while a session sits idle, for example scheduled tasks, messages from your other sessions and goal check-ins; each one sends the full context again.',
+        'Child processes an agent started: test watchers, dev servers and sub-agents that outlive the session that started them.',
+        'Scheduled agents you set up once and forgot: crontab entries, launchd or systemd user jobs, and GitHub Actions workflows with a `schedule:` trigger.',
+      ] },
+      { h: 'Doing it by hand', list: [
+        '`ps -Ao pid,ppid,etime,tty,command | grep -E "claude|codex|gemini|aider"` lists agent processes with how long each has run (`etime`) and whether it has a terminal (`tty` is `??` when it has none).',
+        '`lsof -nP -iTCP -sTCP:LISTEN` lists processes listening on a port, which is how you find a dev server nobody is using.',
+        '`crontab -l` and `ls ~/Library/LaunchAgents` (macOS) or `~/.config/systemd/user` (Linux) show what is scheduled.',
+      ] },
+    ],
+    example: { intro: 'Output from example data, in the real output format:', code: AGENTS_EXAMPLE },
+    command: { intro: 'One command, read-only; it never stops anything and nothing leaves your machine:',
+      code: 'npx skillhawk agents\nnpx skillhawk agents --running 6 --idle 1     # stricter thresholds\nnpx skillhawk agents --notify desktop          # a desktop alert with counts only',
+      note: 'It reads `ps`, `lsof`, your crontab, launchd or systemd user jobs, the current repo\'s GitHub workflows and Claude Code\'s local session logs.' },
+    faq: [
+      { q: 'Does closing the terminal stop a Claude Code agent?', a: 'Closing the terminal ends an interactive session attached to it, but headless runs started by a script or scheduler have no terminal and keep running, as do servers and watchers they started.' },
+      { q: 'Is it safe to run skillhawk agents?', a: 'It only reads. It lists processes, ports, schedules and session activity, prints the command to stop each flagged process, and stops nothing itself.' },
+    ],
+    howto: { name: 'Find AI coding agents still running', steps: [
+      ['List agent processes', 'Run ps and look for claude, codex, gemini and similar, with their elapsed time and terminal.'],
+      ['Find leftover servers', 'Run lsof to list listening ports and match them to the processes above.'],
+      ['Check schedules', 'Look at crontab, launchd or systemd user jobs and scheduled GitHub workflows.'],
+      ['Or run one command', 'Run npx skillhawk agents to get all of it, flagged by age and inactivity.'],
+    ] },
+    sources: [
+      { label: 'Claude Code docs: Manage costs effectively (what uses tokens while a session is idle)', url: 'https://code.claude.com/docs/en/costs' },
+      { label: 'Claude Code docs: Run Claude Code programmatically (headless)', url: 'https://code.claude.com/docs/en/headless' },
+      { label: 'ps(1) manual page', url: 'https://man7.org/linux/man-pages/man1/ps.1.html' },
+      { label: 'lsof on macOS (SS64)', url: 'https://ss64.com/mac/lsof.html' },
+    ],
+    related: ['how-much-is-claude-code-costing-me', 'stop-a-background-ai-agent-safely'],
+  },
+  {
+    slug: 'how-much-is-claude-code-costing-me',
+    title: 'How much is Claude Code costing me?',
+    desc: 'How to see Claude Code cost per session and per day, what Anthropic reports as typical, and what keeps spending while you are away.',
+    answer: 'Run `/usage` in a session to see its token usage and cost estimate. For history across sessions, read the local session logs: `npx skillhawk tokens --days 7` totals tokens and estimated cost per day, repo and session. Anthropic\'s documentation says the average across enterprise deployments is around $13 per developer per active day, and below $30 per active day for 90% of users.',
+    sections: [
+      { h: 'Ways to see it', list: [
+        '`/usage` inside Claude Code: the current session\'s tokens and a dollar figure computed locally at list price. On a Pro, Max or Ultra plan, usage is included in the subscription, so that dollar figure is not your bill.',
+        'Your session logs: Claude Code writes each session to a JSONL file under `~/.claude/projects/`, with token counts per response. Tools such as `ccusage` and `skillhawk tokens` read them.',
+        '`--max-budget-usd` caps what a headless run may spend.',
+      ] },
+      { h: 'What spends while you are away', list: [
+        'Every new turn re-sends the conversation, so a long session costs more per turn even for a one-line question.',
+        'Idle sessions can still start turns: scheduled tasks, messages from your other sessions and goal check-ins each send the full context, according to the Claude Code docs.',
+        'Headless agents on a schedule run whether or not anyone reads the result.',
+      ] },
+    ],
+    example: { intro: 'For a session still working with no human message, `skillhawk agents` shows the estimated cost since a human last wrote. The line format, from example data:', code: ' ! aaaaaaaa  repo\n     last human message 5h 0m ago; last activity 5m ago; since then 2 turns, 3 tool calls, about $0.85 (estimate)' },
+    command: { intro: 'Read-only, from your own logs; nothing is uploaded:',
+      code: 'npx skillhawk tokens --days 7      # per day, repo, skill and session\nnpx skillhawk agents               # sessions still spending with no human',
+      note: 'Dollar figures are estimates from token counts at list prices; your plan or contract decides what you actually pay.' },
+    faq: [
+      { q: 'What does Claude Code cost per day?', a: 'Anthropic\'s documentation reports an average of around $13 per developer per active day across enterprise deployments, with 90% of users below $30 per active day. Your own logs give your number.' },
+      { q: 'Why did my cost go up when I was not using it?', a: 'An open session can start turns while idle (scheduled tasks, cross-session messages, goal check-ins), and headless agents on a schedule keep running. Each turn re-sends the conversation.' },
+    ],
+    howto: { name: 'Check what Claude Code is costing you', steps: [
+      ['Check the session', 'Run /usage in Claude Code and read the Session block.'],
+      ['Check the week', 'Run npx skillhawk tokens --days 7 to total your local logs per day, repo and session.'],
+      ['Find what spends unattended', 'Run npx skillhawk agents to list sessions working with no human and their cost since.'],
+      ['Cap headless runs', 'Use --max-budget-usd on scripted runs.'],
+    ] },
+    sources: [
+      { label: 'Claude Code docs: Manage costs effectively', url: 'https://code.claude.com/docs/en/costs', quote: 'the average cost is around $13 per developer per active day' },
+      { label: 'Claude Code docs: CLI reference', url: 'https://code.claude.com/docs/en/cli-reference' },
+      { label: 'ccusage on GitHub', url: 'https://github.com/ryoppippi/ccusage' },
+    ],
+    related: ['see-which-ai-coding-agents-are-still-running', 'stop-a-background-ai-agent-safely'],
+  },
+  {
+    slug: 'stop-a-background-ai-agent-safely',
+    title: 'How to stop a background AI agent safely',
+    desc: 'Stop a Claude Code, Codex or other coding agent that is still running, its leftover servers, and the schedule that keeps starting it.',
+    answer: 'Find the process first (`npx skillhawk agents` or `ps`), check its command so you stop the right one, then send it a normal stop signal with `kill <pid>` and use `kill -9` only if it will not exit. If something keeps restarting it, remove the schedule as well: the crontab line, the launchd or systemd job, or the GitHub workflow.',
+    sections: [
+      { h: 'In order', list: [
+        'Interactive session: switch to its terminal and exit it normally, so it can finish writing its log.',
+        'Headless or detached process: `kill <pid>` sends SIGTERM, which lets it clean up. Wait a few seconds; `kill -9 <pid>` is the last resort.',
+        'Leftover dev servers and watchers: stop them by pid the same way; `lsof -nP -iTCP -sTCP:LISTEN` shows which process holds a port.',
+        'Schedules: `crontab -e` to delete the line; `launchctl bootout gui/$(id -u)/<label>` for a launchd job on macOS; `systemctl --user disable --now <unit>` on Linux; `gh workflow disable <workflow>` for a scheduled GitHub Action.',
+        'Idle check-ins in Claude Code: the docs say `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns them off.',
+      ] },
+    ],
+    example: { intro: '`skillhawk agents` ends with the exact command for what it flagged (example data):', code: 'Nothing was stopped. To stop the flagged processes yourself: kill 100 300' },
+    command: { intro: 'See what is running, then stop it yourself:',
+      code: 'npx skillhawk agents\nkill 100 300',
+      note: 'skillhawk never stops anything itself; you decide.' },
+    faq: [
+      { q: 'Is kill -9 safe for an agent?', a: 'Use it last. SIGKILL gives the process no chance to finish writing files or logs; try a plain kill (SIGTERM) first.' },
+      { q: 'I stopped it and it came back. Why?', a: 'A scheduler started it again. Check crontab, launchd or systemd user jobs and scheduled GitHub workflows, and remove the entry.' },
+    ],
+    howto: { name: 'Stop a background AI agent', steps: [
+      ['Find it', 'Run npx skillhawk agents or ps and confirm the command line.'],
+      ['Stop it gently', 'Run kill <pid>; use kill -9 only if it does not exit.'],
+      ['Stop what it left', 'Stop leftover servers and watchers by pid.'],
+      ['Remove the schedule', 'Delete the cron line, launchd or systemd job, or disable the GitHub workflow.'],
+    ] },
+    sources: [
+      { label: 'launchctl on macOS (SS64)', url: 'https://ss64.com/mac/launchctl.html' },
+      { label: 'GitHub CLI: gh workflow disable', url: 'https://cli.github.com/manual/gh_workflow_disable' },
+      { label: 'Claude Code docs: Manage costs effectively (idle check-ins)', url: 'https://code.claude.com/docs/en/costs' },
+    ],
+    related: ['see-which-ai-coding-agents-are-still-running', 'how-much-is-claude-code-costing-me'],
+  },
+];
+
 export const LEARN = [
+  ...AGENT_PAGES,
   {
     slug: 'why-isnt-my-claude-skill-triggering',
     title: "Why isn't my Claude skill triggering?",

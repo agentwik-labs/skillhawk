@@ -724,6 +724,7 @@ async function viewShowcase() {
       <h2 id="checks-h" class="h2-h">Four free checks, one command each.</h2>
       <ul class="h2-cards">${CHECKS.map((c) => `<li><h3>${esc(c.name)}</h3><p>${esc(c.what)}</p>${cmd(c.cmd)}<pre aria-label="Example output">${esc(c.out)}</pre></li>`).join('')}</ul>
       <p class="h2-more"><a href="tools/">Every command, with example output →</a></p>
+      <p class="h2-more">Answers: <a href="learn/see-which-ai-coding-agents-are-still-running/">which agents are still running</a> · <a href="learn/how-much-is-claude-code-costing-me/">what Claude Code is costing you</a> · <a href="learn/stop-a-background-ai-agent-safely/">stopping one safely</a></p>
     </section>
 
     <section class="h2-sec" id="proof" aria-labelledby="proof-h">

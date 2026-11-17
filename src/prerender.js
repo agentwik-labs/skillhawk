@@ -92,7 +92,11 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:url" content="${esc(url)}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="${siteUrl}/media/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${siteUrl}/media/og.png">
   <meta name="twitter:title" content="${esc(title)}">
   <meta name="twitter:description" content="${esc(description)}">
   <link rel="icon" href="${b}favicon.svg" type="image/svg+xml">
@@ -165,6 +169,7 @@ ${body(b)}
     <h2>${t.out ? 'Example output' : 'Output'}</h2>
     ${t.out ? `<p>From a real run on the repository's examples, test fixtures or demo data; long output shortened.</p>${code(t.out)}` : `<p>${esc(noOutOf(t))}</p>`}
     ${t.note ? `<p>${esc(t.note)}</p>` : ''}
+    ${(() => { const w = t.cmd.split(' ')[1]; const rel = LEARN.filter((l) => new RegExp(`skillhawk ${w}\\b`).test(l.command?.code || '')); return rel.length ? `<h2>Answers</h2><ul>${rel.map((l) => `<li><a href="${b}learn/${l.slug}/">${esc(l.title)}</a></li>`).join('')}</ul>` : ''; })()}
     <p><a href="${b}tools/">All tools</a> · <a href="${b}#/?s=${t.stepId}">See it in the app</a> · <a href="https://github.com/agentwik-labs/skillhawk">Source on GitHub</a></p>` });
     texts[p] = toolText(t);
   }
@@ -349,7 +354,7 @@ ${body(b)}
   if (fs.existsSync(indexFile)) {
     const ldApp = { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Skillhawk', applicationCategory: 'DeveloperApplication', operatingSystem: 'macOS, Linux, Windows (Node.js 18+)', description: SITE_DESC, url: `${siteUrl}/`, license: 'https://opensource.org/license/mit', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, codeRepository: 'https://github.com/agentwik-labs/skillhawk' };
     let html = fs.readFileSync(indexFile, 'utf8');
-    html = html.replace(/(<link rel="canonical" href=")[^"]*(">)/, `$1${siteUrl}/$2`).replace(/(<meta property="og:url" content=")[^"]*(">)/, `$1${siteUrl}/$2`)
+    html = html.replace(/(<link rel="canonical" href=")[^"]*(">)/, `$1${siteUrl}/$2`).replace(/(<meta property="og:url" content=")[^"]*(">)/, `$1${siteUrl}/$2`).replace(/https:\/\/skillhawk\.ai\/media\/og\.png/g, `${siteUrl}/media/og.png`)
       .replace('</head>', `  <link rel="stylesheet" href="static.css">\n  ${jsonLd(ldApp)}\n  ${beaconTag(siteUrl)}\n</head>`)
       .replace(/<main id="app" tabindex="-1"><\/main>/, `<main id="app" tabindex="-1">\n${landing}\n  </main>`);
     html = html.replace('<nav aria-label="The journey">', '<nav aria-label="The journey">').replace(/(<a href="#\/browse">Library<\/a>)/, '$1\n      <a href="tools/">Tools</a>\n      <a href="learn/">Learn</a>');

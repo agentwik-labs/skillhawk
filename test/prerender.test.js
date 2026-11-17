@@ -54,9 +54,9 @@ test('static pages exist with title, description, canonical and real text', () =
   assert.match(textOf(read('proof/scan/index.html')), /511 unique skills/);
 });
 
-test('five learn pages answer first, cite sources, and carry FAQPage JSON-LD', () => {
+test('eight learn pages answer first, cite sources, and carry FAQPage JSON-LD', () => {
   const dirs = fs.readdirSync(path.join(out, 'learn')).filter((d) => fs.statSync(path.join(out, 'learn', d)).isDirectory());
-  assert.equal(dirs.length, 5);
+  assert.equal(dirs.length, 8);
   const painpoints = '/private/tmp/claude-501/painpoints.md';
   for (const d of dirs) {
     const html = read(`learn/${d}/index.html`);
