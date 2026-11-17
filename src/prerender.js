@@ -68,6 +68,10 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
   const FOOT = (b) => `<footer class="foot"><span>Skillhawk checks your AI skills before your agents run them. Open source (MIT).</span><span><a href="${b}skills/">Skills</a> · <a href="${b}tools/">Tools</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></span></footer>`;
 
   const page = ({ p, title, description, body, ld = [], lastmod = today, type = 'article' }) => {
+    // Search results show about 60 characters of a title and 155 of a description; cut at a word, never mid-word.
+    const clip = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); if (t.length <= n) return t; const c = t.slice(0, n - 1); return `${c.slice(0, Math.max(c.lastIndexOf(' '), n * 0.6)).replace(/[\s,;:.\u2013\u2014-]+$/, '')}…`; };
+    { const m = / \| Skillhawk$/.exec(title || ''); title = m ? `${clip(title.slice(0, m.index), 65 - m[0].length)}${m[0]}` : clip(title, 65); } // keep the brand suffix
+    description = clip(description, 158);
     const depth = p.split('/').filter(Boolean).length;
     const b = depth ? '../'.repeat(depth) : '';
     const url = `${siteUrl}${p}`;
