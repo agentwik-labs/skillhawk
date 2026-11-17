@@ -718,3 +718,48 @@ body.is-landing main { max-width: none; padding: 0; }
 .jr-cta { margin: 28px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
 .jr-cta span { color: var(--muted, #666); font-size: .95rem; }
 .lib-note { grid-column: 1 / -1; margin: 0 0 8px; font-size: .95rem; color: var(--muted, #666); }
+
+/* ---- Home v2: one story, one conversion (hero reserve form) ---- */
+.lp2 .h2-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 56px; align-items: center; padding-top: 72px; padding-bottom: 96px; }
+.lp2 .h2-h1 { font-size: clamp(2.6rem, 5.6vw, 5.2rem); line-height: .98; }
+.lp2 .h2-lede { margin: 24px 0 28px; max-width: 44ch; font-size: var(--step-lead); line-height: 1.4; color: var(--ink); }
+.lp2 .h2-copy .cmd { max-width: 30rem; }
+.lp2 .hero-form { margin-top: 28px; max-width: 30rem; }
+.lp2 .hero-form label { display: block; font-weight: 600; margin-bottom: 8px; }
+.lp2 .hf-row { display: flex; gap: 8px; }
+.lp2 .hf-row input { flex: 1; min-width: 0; height: 48px; padding: 0 14px; font: inherit; border: 1px solid #cfcfcf; border-radius: 6px; background: var(--bg); color: var(--ink); }
+.lp2 .hf-row input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+.lp2 .hf-row button { height: 48px; padding: 0 18px; border: 0; border-radius: 6px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.lp2 .hf-row button:hover { filter: brightness(.92); }
+.lp2 .hr-note { margin: 8px 0 0; font-size: var(--step-small); color: var(--muted); max-width: 30rem; }
+.lp2 .h2-term { margin: 0; background: var(--field); color: var(--field-ink); border-radius: 10px; padding: 20px 22px; overflow: auto; }
+.lp2 .h2-term figcaption { font-size: var(--step-small); color: #a8a8a8; margin-bottom: 10px; }
+.lp2 .h2-term pre { margin: 0; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+.lp2 .h2-sec { padding-top: 88px; padding-bottom: 24px; }
+.lp2 .h2-h { margin: 0 0 28px; font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+.lp2 .h2-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.lp2 .h2-cards li { background: var(--surface); border-radius: 10px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.lp2 .h2-cards h3 { margin: 0; font-size: 1.25rem; }
+.lp2 .h2-cards p { margin: 0; color: var(--dim); }
+.lp2 .h2-cards pre { margin: 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; color: var(--dim); }
+.lp2 .h2-more { margin: 20px 0 0; }
+.lp2 .h2-more a { color: var(--ink); font-weight: 500; text-underline-offset: 3px; }
+.lp2 .h2-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.lp2 .ps { display: flex; flex-direction: column; gap: 6px; padding: 22px; border: 1px solid #e2e2e2; border-radius: 10px; color: var(--ink); text-decoration: none; }
+.lp2 .ps:hover { border-color: var(--ink); }
+.lp2 .ps b { font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+.lp2 .ps-k { font-weight: 600; }
+.lp2 .ps-s { color: var(--dim); font-size: var(--step-small); }
+.lp2 .ps-l { margin-top: auto; padding-top: 8px; font-size: var(--step-small); color: var(--muted); }
+.lp2 .pr { padding-top: 88px; }
+.lp2 .pr .lp-h { font-size: clamp(1.8rem, 3vw, 2.6rem); line-height: 1.1; }
+.lp2 .lp-cta { padding-top: 88px; padding-bottom: 88px; }
+.lp2 .lp-cta .lp-h { font-size: clamp(1.8rem, 3vw, 2.6rem); line-height: 1.1; }
+.lp2 .po-row .cta-sentence { font-size: clamp(1.2rem, 2vw, 1.6rem); }
+.lp2 .lp-foot .lp-h { font-size: clamp(1.6rem, 2.6vw, 2.2rem); }
+@media (max-width: 900px) {
+  .lp2 .h2-hero { grid-template-columns: 1fr; gap: 32px; padding-top: 40px; padding-bottom: 56px; }
+  .lp2 .h2-cards, .lp2 .h2-stats { grid-template-columns: 1fr; }
+  .lp2 .h2-sec, .lp2 .pr, .lp2 .lp-cta { padding-top: 56px; }
+}
+@media (max-width: 480px) { .lp2 .hf-row { flex-direction: column; } .lp2 .hf-row button { width: 100%; } .lp2 .h2-term pre { font-size: 11.5px; } }

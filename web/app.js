@@ -375,8 +375,8 @@ const PRICING = {
 function lpNav() {
   return `<header class="lp-nav">
     <a class="lp-word" href="#/">skillhawk</a>
-    <nav aria-label="The journey">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a><a href="#/?s=pricing">Pricing</a></nav>
-    <a class="lp-action" href="#/?s=watch">Pre-order Watch</a>
+    <nav aria-label="Site"><a href="#/?s=checks">Checks</a><a href="#/?s=proof">Proof</a><a href="#/?s=pricing">Pricing</a><a href="#/browse">Library</a><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></nav>
+    <a class="lp-action" href="#/?s=su-hero">Reserve Watch</a>
   </header>`;
 }
 
@@ -384,7 +384,7 @@ function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
       <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
-      <ul class="jf">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li></ul>
+      <ul class="jf"><li><a href="tools/">All commands</a></li><li><a href="proof/">Proof</a></li><li><a href="#/browse">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li><li><a href="learn/">Answers</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
     ${LEGAL_LIVE ? `<nav class="lp-legal-links" aria-label="Legal"><a href="legal/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="legal/terms.html">Terms</a><span aria-hidden="true">·</span><a href="legal/security.html">Security</a><span aria-hidden="true">·</span><a href="legal/contact.html">Contact</a></nav>` : ''}
@@ -647,52 +647,76 @@ function launchVideo() {
     </figure>`;
 }
 
+// Home: one story for conversion. Hook = the free check (works today); conversion = a Watch reservation (email).
+// Everything else lives on its own page: /tools/ (every command), /teams (vault), /#/browse (library).
+const HERO_OUT = `$ npx skillhawk review .claude/skills
+
+F  engineering-handbook   6 findings
+   high  SKILL.md:13  contradicts line 12:
+         "indent with tabs" vs "2-space indentation"
+C  notes-v2               1 finding
+   high  SKILL.md:3   description never says
+                      when to use the skill
+A  lint-everything        no findings`;
+const CHECKS = [
+  { name: 'Review', what: 'Grades every skill A to F with line-level findings: contradictions, vague rules, broken links, skills that crowd each other out.', cmd: 'npx skillhawk review .', out: 'C notes-v2: description never says when to use it' },
+  { name: 'Secure', what: 'Audits skills, MCP configs, hooks and scripts. A non-zero exit makes it a CI gate.', cmd: 'npx skillhawk secure .', out: 'HIGH settings.json:2 "Bash(*)" runs any shell command' },
+  { name: 'Compile', what: 'One skill, native files for Claude Code, Codex, Cursor, Copilot and Gemini, each checked against its limits.', cmd: 'npx skillhawk compile ./skill', out: 'copilot: FAIL size 4301/4000 chars' },
+];
+
+function heroReserve(id) {
+  const note = 'Watch is planned and not built. This adds your email to the list; no payment is collected.';
+  if (!signupOn()) return `<p class="hr-alt"><a class="lp-action" href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></p><p class="hr-note">${note}</p>`;
+  return `<form class="hero-form signup" data-tag="preorder-watch" id="${id}">
+      <label for="${id}-email">Reserve Watch, planned at $9 a month</label>
+      <div class="hf-row"><input id="${id}-email" name="email" type="email" required placeholder="you@company.com" autocomplete="email"><button type="submit">Reserve my spot</button></div>
+    </form>
+    <p class="hr-note" data-note>${note}</p>`;
+}
+
+async function proofStats(el) {
+  const [d, l] = await Promise.all([fetch('media/proof.json').then((r) => (r.ok ? r.json() : null)).catch(() => null), loadLibrary()]);
+  const tiles = [];
+  if (d?.scan) tiles.push({ n: d.scan.skills, k: 'public skills scanned', s: `${d.scan.ship_scripts} ship scripts, ${d.scan.network_calls} make network calls, ${d.scan.confirmed_malicious} confirmed malicious.`, href: 'proof/scan/' });
+  if (l) tiles.push({ n: l.total, k: 'public skills graded', s: `${l.grades?.A ?? ''} got an A; ${(l.grades?.D ?? 0) + (l.grades?.F ?? 0)} got a D or F.`, href: 'proof/library/' });
+  if (d?.lift) { const up = d.lift.rows.filter((r) => r.with > r.without).length; tiles.push({ n: `${up} of ${d.lift.rows.length}`, k: 'tasks scored higher with a skill installed', s: 'Claude Haiku, 2 runs per task. A small sample.', href: 'proof/lift/' }); }
+  el.innerHTML = tiles.length ? tiles.map((t) => `<a class="ps" href="${t.href}"><b>${esc(String(t.n))}</b><span class="ps-k">${esc(t.k)}</span><span class="ps-s">${esc(t.s)}</span><span class="ps-l">Method and data →</span></a>`).join('') : '';
+}
+
 async function viewShowcase() {
-  const [build, check, improve, save] = JOURNEY;
-  const terms = `<div class="v-terms">
-        <figure><figcaption>Review, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillhawk review">${esc(TERM_REVIEW)}</pre></figure>
-        <figure><figcaption>Secure, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillhawk secure">${esc(TERM_SECURE)}</pre></figure>
-      </div>`;
   app.innerHTML = `
-  <div class="lp" data-landing data-home>
+  <div class="lp lp2" data-landing data-home>
     ${lpNav()}
 
-    <section class="lp-hero v-hero x-hero" aria-labelledby="hero-h">
-      <h1 id="hero-h" class="lp-sentence v-h1 x-h1">Check your AI skills before your agents run them.</h1>
-      <div class="x-side">
-        <p class="lp-lede">Skills are the instructions your agents follow. The free CLI grades them, scans them for security problems, tests them and compiles them for five agents. Watch, on pre-order and not built yet, is planned to re-run those checks when a model, an agent or a tool you use changes.</p>
-        <div class="v-actions"><a class="lp-action big" href="#/?s=watch">Pre-order Watch</a><span class="v-install"><code>npx skillhawk review</code></span></div>
+    <section class="h2-hero" aria-labelledby="hero-h">
+      <div class="h2-copy">
+        <h1 id="hero-h" class="lp-sentence h2-h1">Check your AI skills before your agents run them.</h1>
+        <p class="h2-lede">A free, open-source CLI that grades your SKILL.md files, finds security problems in skills and MCP configs, and compiles them for five agents.</p>
+        ${cmd('npx skillhawk review .claude/skills')}
+        ${heroReserve('su-hero')}
       </div>
-      ${launchVideo()}
-      <ol class="jmap" aria-label="The journey">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}"><b>${s.step}</b><span>${esc(s.h)}</span></a></li>`).join('')}</ol>
+      <figure class="h2-term"><figcaption>Real output, trimmed</figcaption><pre tabindex="0" aria-label="Example output of skillhawk review">${esc(HERO_OUT)}</pre></figure>
     </section>
 
-    ${stepSection(WATCH, `<p class="jr-cta"><a class="lp-action" href="${esc(preorderHref('watch'))}">Pre-order Watch, $9 a month</a> <span>Not built yet.</span></p>`)}
-    ${stepSection(build)}
-    ${stepSection(check, terms)}
-    ${stepSection(improve)}
-    ${stepSection(save)}
-    ${protectSection()}
-
-    <section class="v-sec x-proof" id="proof" aria-labelledby="proof-h">
-      <div class="x-head"><h2 id="proof-h" class="lp-h">Measured, not claimed.</h2>
-      <div class="j-side"><p class="v-lede">The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository. The token week is one developer's own logs, so yours will differ. Small samples are labelled as small.</p></div></div>
-      <div class="pf-grid" data-proof><p class="pf-k">Loading the measurements…</p></div>
+    <section class="h2-sec" id="checks" aria-labelledby="checks-h">
+      <h2 id="checks-h" class="h2-h">Three checks, one command each.</h2>
+      <ul class="h2-cards">${CHECKS.map((c) => `<li><h3>${esc(c.name)}</h3><p>${esc(c.what)}</p>${cmd(c.cmd)}<pre aria-label="Example output">${esc(c.out)}</pre></li>`).join('')}</ul>
+      <p class="h2-more"><a href="tools/">All 24 commands, with real output →</a></p>
     </section>
 
-    <section class="v-sec" id="library" aria-labelledby="library-h" data-library><p class="pf-k">Loading the library…</p></section>
+    <section class="h2-sec" id="proof" aria-labelledby="proof-h">
+      <h2 id="proof-h" class="h2-h">Measured, not claimed.</h2>
+      <div class="h2-stats" data-stats></div>
+      <p class="h2-more"><a href="proof/">Every measurement, with method and limits →</a></p>
+    </section>
 
-    ${roadmapStrip()}
     ${pricingSection()}
     ${preorderCta('su-home')}
     ${lpFooter()}
   </div>`;
   bindSignups(app);
   copyButtons(app);
-  // Play the tour on its own only when the visitor has not asked for less motion; controls stay either way.
-  const v = document.getElementById('launch-video');
-  if (v && !matchMedia('(prefers-reduced-motion: reduce)').matches) { v.loop = true; v.autoplay = true; v.play?.().catch(() => {}); }
-  await Promise.all([proofCharts(app.querySelector('[data-proof]')), librarySection(app.querySelector('[data-library]'))]);
+  await proofStats(app.querySelector('[data-stats]'));
 }
 
 function viewTeams() {
@@ -1183,7 +1207,11 @@ async function route() {
   const params = new URLSearchParams(query);
   const want = (pathPart === '/' || pathPart === '') && params.get('s');
   if (want === 'teams') { location.hash = '#/teams'; return; } // old links: teams moved to its own inquiry page
-  if (want && app.querySelector('[data-home]')) { document.getElementById(want)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); return; }
+  // Old section links from before the home page was shortened.
+  if (['protect', 'vault'].includes(want)) { location.hash = '#/teams'; return; }
+  if (want === 'library') { location.hash = '#/browse'; return; }
+  const ALIAS = { watch: 'su-hero', build: 'checks', check: 'checks', improve: 'checks', save: 'checks' };
+  if (want && app.querySelector('[data-home]')) { document.getElementById(ALIAS[want] || want)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); return; }
   document.querySelectorAll('.top nav a').forEach((a) => {
     const target = a.getAttribute('href').slice(1);
     a.classList.toggle('on', target === '/' ? pathPart === '/' : target === '/browse' ? pathPart.startsWith('/browse') || pathPart.startsWith('/skill') : pathPart.startsWith(target));
@@ -1207,7 +1235,7 @@ async function route() {
   } catch (e) {
     app.innerHTML = h`<div class="empty"><strong>${e.status === 404 ? 'Not found' : 'Something went wrong'}</strong><p>${e.message}</p>${raw(e.status === 404 && me.anonymous ? '<p>If this is a private skill, sign in with your org token.</p>' : '')}<p><a href="#/">Back to all skills</a></p></div>`;
   }
-  if (want) document.getElementById(want)?.scrollIntoView();
+  if (want) document.getElementById(ALIAS[want] || want)?.scrollIntoView();
   else if (!location.hash.includes('/file/')) window.scrollTo(0, 0);
 }
 
