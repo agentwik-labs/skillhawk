@@ -303,6 +303,7 @@ const JOURNEY = [
     tools: [
       { name: 'Review', cmd: 'skillhawk review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: null, noOut: 'Full output below.' },
       { name: 'Secure', cmd: 'skillhawk secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: null, noOut: 'Full output below.' },
+      { name: 'MCP', cmd: 'skillhawk connect claude --write', what: 'A local MCP server that gives your agent the checks as tools: review_skill, secure_scan, compile_skill and check_agents. They run on your machine over stdio, with no account and no server. connect also takes codex, cursor, vscode, gemini and claude-desktop.', out: 'Run:\n  claude mcp add --scope user skillhawk -- npx -y skillhawk mcp\n\nTools: review_skill, secure_scan, compile_skill, check_agents. They run on this machine; no account needed.', note: 'Printed by connect without --write. Any MCP client can start the same server with: npx -y skillhawk mcp' },
       { name: 'Clean', cmd: 'skillhawk clean scripts skills/', what: 'Scripts shipped inside skills: error handling, hard-coded paths, exec bits.', out: 'high scripts/fetch.sh:2 no `set -e`: a failed command is ignored' },
     ] },
   { id: 'improve', step: 'Improve', h: 'Learn from how your team really works.', tier: FREE,

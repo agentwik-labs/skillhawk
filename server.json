@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.agentwik-labs/skillhawk",
+  "title": "Skillhawk",
+  "description": "Check AI agent skills locally: grade SKILL.md files, security-scan agent config, compile skills, find unwatched agents.",
+  "repository": {
+    "url": "https://github.com/agentwik-labs/skillhawk",
+    "source": "github"
+  },
+  "websiteUrl": "https://skillhawk.ai/tools/mcp/",
+  "version": "0.4.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "skillhawk",
+      "version": "0.4.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}

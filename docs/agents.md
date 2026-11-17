@@ -22,6 +22,21 @@ Project-level configs reference the token through an environment variable, so th
 - Scripts under `scripts/` are made executable; nothing is run at install time.
 - `AGENTS.md` is edited only between `<!-- skillyard:start -->` and `<!-- skillyard:end -->`.
 
+## Local checks over MCP (no registry)
+
+`npx -y skillhawk mcp` with no registry configured (or with `--local`) serves only checks that run on this machine:
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `review_skill` | `{path?}` | Grades every SKILL.md under `path` A-F with line-level findings; checks several skills together for duplicates, overlaps and contradictions. Read-only. |
+| `secure_scan` | `{path?}` | Same scan as `skillhawk secure`: skills, `.mcp.json`, `.claude/settings.json`, hooks, skill dependencies. Read-only. |
+| `compile_skill` | `{path, targets?, out?}` | Same as `skillhawk compile`; writes only inside the folder the server started in (default `.skillyard/compiled`). |
+| `check_agents` | `{running_hours?, idle_hours?}` | Same as `skillhawk agents`: agent processes, unattended sessions, leftover dev servers, scheduled agents. Never stops anything. |
+
+Relative paths resolve from the folder the server was started in. `skillhawk connect <agent>` without a registry
+prints (or, with `--write`, applies) this stdio setup under the server name `skillhawk`. The HTTP `/mcp` endpoint
+never offers these tools, because they would read the server's own disk.
+
 ## MCP surface
 
 | Kind | Name | Purpose |

@@ -5,9 +5,18 @@
 // LocalRegistry (server side) and RemoteRegistry (CLI side) both implement it.
 import { parseSkillRef } from './skill.js';
 import { loadMap, queryMap, formatHits, sectionOf, localSkillText } from './map.js';
+import { LOCAL_TOOLS, callLocalTool } from './localtools.js';
+import { readFileSync } from 'node:fs';
+
+const PKG_VERSION = (() => { try { return JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version; } catch { return '0.0.0'; } })();
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
-const SERVER_INFO = { name: 'skillyard', title: 'Skillhawk skill registry', version: '0.1.0' };
+const SERVER_INFO = { name: 'skillhawk', title: 'Skillhawk', version: PKG_VERSION };
+const LOCAL_INSTRUCTIONS = [
+  'Skillhawk checks AI agent skills and agent setup on this machine. Nothing leaves the machine.',
+  'Call review_skill before installing or publishing a skill, secure_scan on a repo or skill before trusting it,',
+  'compile_skill to convert a skill for another agent, and check_agents to find agents and sessions nobody is watching.',
+].join(' ');
 const INSTRUCTIONS = [
   'Skillhawk holds reusable skills: tested instructions for specific kinds of work, including your organization\'s private',
   'playbooks (deploy runbooks, code standards, compliance rules, brand voice).',
@@ -77,20 +86,26 @@ const SECTION_TOOL = {
   annotations: { readOnlyHint: true },
 };
 
-/** opts.root: a local folder holding .skillyard/map (stdio mode); enables map_query and local skill lookup. */
+/**
+ * opts.root: a local folder holding .skillyard/map (stdio mode); enables map_query and local skill lookup.
+ * opts.local: add the local check tools (review_skill, secure_scan, compile_skill, check_agents); stdio only.
+ * registry null: no registry tools, prompts or resources (local checks only).
+ */
 export function createMcpHandler(registry, opts = {}) {
-  const tools = opts.root ? [...TOOLS, MAP_TOOL, SECTION_TOOL] : TOOLS;
+  const tools = [...(registry ? TOOLS : []), ...(opts.root ? [MAP_TOOL, SECTION_TOOL] : []), ...(opts.local ? LOCAL_TOOLS : [])];
+  const instructions = registry ? (opts.local ? `${INSTRUCTIONS} ${LOCAL_INSTRUCTIONS}` : INSTRUCTIONS) : LOCAL_INSTRUCTIONS;
   const handlers = {
     initialize: (params = {}) => ({
       protocolVersion: PROTOCOL_VERSIONS.includes(params.protocolVersion) ? params.protocolVersion : PROTOCOL_VERSIONS[0],
       capabilities: { tools: { listChanged: false }, prompts: { listChanged: false }, resources: { listChanged: false } },
       serverInfo: SERVER_INFO,
-      instructions: INSTRUCTIONS,
+      instructions,
     }),
     ping: () => ({}),
     'tools/list': () => ({ tools }),
     'tools/call': (params = {}) => callTool(registry, params.name, params.arguments || {}, opts),
     'prompts/list': async () => {
+      if (!registry) return { prompts: [] };
       const skills = await registry.search({ limit: 500 });
       return {
         prompts: skills.map((s) => ({
@@ -110,6 +125,7 @@ export function createMcpHandler(registry, opts = {}) {
       };
     },
     'resources/list': async () => {
+      if (!registry) return { resources: [] };
       const skills = await registry.search({ limit: 500 });
       return {
         resources: skills.map((s) => ({
@@ -121,7 +137,7 @@ export function createMcpHandler(registry, opts = {}) {
         })),
       };
     },
-    'resources/templates/list': () => ({
+    'resources/templates/list': () => (!registry ? { resourceTemplates: [] } : {
       resourceTemplates: [{ uriTemplate: 'skill://@{scope}/{name}/{path}', name: 'skill-file', title: 'A file inside a skill', mimeType: 'text/plain' }],
     }),
     'resources/read': async (params = {}) => {
@@ -160,6 +176,11 @@ export function createMcpHandler(registry, opts = {}) {
 }
 
 async function callTool(registry, name, args, opts = {}) {
+  if (opts.local) {
+    const local = await callLocalTool(name, args, { root: opts.root || process.cwd(), agentsFixtures: opts.agentsFixtures });
+    if (local) return local;
+  }
+  if (!registry && name !== 'map_query' && name !== 'skill_section') throw rpcError(-32602, `unknown tool: ${name}`);
   try {
     if (name === 'map_query' && opts.root) {
       const map = loadMap(opts.root);
@@ -168,6 +189,7 @@ async function callTool(registry, name, args, opts = {}) {
     }
     if (name === 'skill_section') {
       let md = opts.root ? localSkillText(opts.root, args.skill) : null;
+      if (!md && !registry) return text(`No local skill "${args.skill}" found under ${opts.root}.`, true);
       if (!md) {
         const ref = parseSkillRef(args.skill);
         if (!ref) return text(`Invalid skill id "${args.skill}".`, true);

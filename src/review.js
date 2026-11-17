@@ -382,6 +382,19 @@ const pct = (n) => `${Math.round(n * 100)}%`;
 
 // ---- command --------------------------------------------------------------
 
+/** Review skill folders and, when there are several, the library as a whole. */
+export function reviewDirs(dirs) {
+  const reviews = dirs.map(reviewDir);
+  const library = reviews.length > 1 ? reviewLibrary(dirs.map((d, i) => {
+    const text = fs.readFileSync(path.join(d, 'SKILL.md'), 'utf8').replace(/^﻿/, '');
+    const fm = locateFrontmatter(text);
+    return { dir: d, name: reviews[i].name, description: reviews[i].description, body: fm.body, lines: text.split('\n'), fm: fm.endLine >= 0 ? fm.endLine + 1 : 0 };
+  })) : { duplicates: [], overlaps: [], contradictions: [] };
+  const grades = {};
+  for (const r of reviews) grades[r.grade] = (grades[r.grade] || 0) + 1;
+  return { reviews, library, grades };
+}
+
 export async function run(args, flags = {}) {
   if (flags.chats) return (await import('./review-chats.js')).run(args, flags);
   const dirs = findSkillDirs(args.length ? args : ['.']);
@@ -393,15 +406,7 @@ export async function run(args, flags = {}) {
       if (changes.length) fixed.push({ dir: d, changes });
     }
   }
-  const reviews = dirs.map(reviewDir);
-  const library = reviews.length > 1 ? reviewLibrary(dirs.map((d, i) => {
-    const text = fs.readFileSync(path.join(d, 'SKILL.md'), 'utf8').replace(/^﻿/, '');
-    const fm = locateFrontmatter(text);
-    return { dir: d, name: reviews[i].name, description: reviews[i].description, body: fm.body, lines: text.split('\n'), fm: fm.endLine >= 0 ? fm.endLine + 1 : 0 };
-  })) : { duplicates: [], overlaps: [], contradictions: [] };
-
-  const grades = {};
-  for (const r of reviews) grades[r.grade] = (grades[r.grade] || 0) + 1;
+  const { reviews, library, grades } = reviewDirs(dirs);
   if (flags.json && flags.json !== true) {
     fs.writeFileSync(flags.json, `${JSON.stringify({ skills: reviews, library, fixed, summary: { skills: reviews.length, grades } }, null, 2)}\n`);
   }

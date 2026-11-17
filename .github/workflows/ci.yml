@@ -47,3 +47,4 @@ jobs:
           npx skillhawk validate "$GITHUB_WORKSPACE/registry/public"
           test "$(npx skillyard --version)" = "$(npx skillhawk --version)"   # the old command name still works
           npx skillhawk compile "$GITHUB_WORKSPACE/registry/public/$(ls "$GITHUB_WORKSPACE/registry/public" | head -1)" --to all --out compiled
+          echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | npx skillhawk mcp | grep -q '"review_skill"'   # local MCP server answers with no registry

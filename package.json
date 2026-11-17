@@ -1,7 +1,8 @@
 {
   "name": "skillhawk",
-  "version": "0.3.0",
-  "description": "A skill registry for AI agents: open-source and company-private Agent Skills, installable into Claude Code, Codex, Cursor and any AGENTS.md agent, and served over MCP.",
+  "version": "0.4.0",
+  "description": "Check your AI agent skills before your agents run them: grade, security-scan and compile SKILL.md files, find agents nobody is watching. CLI and local MCP server.",
+  "mcpName": "io.github.agentwik-labs/skillhawk",
   "type": "module",
   "bin": {
     "skillhawk": "bin/skillyard.js",

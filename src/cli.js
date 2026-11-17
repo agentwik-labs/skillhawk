@@ -43,7 +43,10 @@ Using skills
 Connecting agents over MCP
   connect <claude|codex|cursor|vscode|gemini|claude-desktop> [--write]
                                                  Print (or write) the MCP config for an agent
-  mcp                                            Run a stdio MCP server against the configured registry
+  mcp [--local]                                  Run a stdio MCP server: local checks (review_skill, secure_scan,
+                                                 compile_skill, check_agents), plus the registry's skills when one
+                                                 is configured. --local: checks only. connect without a registry
+                                                 sets agents up with the local checks
   connect <agent> --stream | mcp --stream        Stream skills from the company vault on demand: no files on disk,
                                                  each response marked and audit-logged, revocable mid-session
 
@@ -205,7 +208,7 @@ export async function main(argv) {
     rollback: (a, f) => import('./vault-cli.js').then((m) => m.rollback(a, f)),
     audit: (a, f) => (a[0] === 'verify' ? import('./evidence.js').then((m) => m.auditVerifyCmd(a, f)) : import('./vault-cli.js').then((m) => m.audit(a, f))),
     connect: (a, f) => (f.stream ? import('./stream.js').then((m) => m.connectStream(a, f)) : connect(a, f)),
-    mcp: (a, f) => (f.stream ? import('./stream.js').then((m) => m.mcpStdio()) : mcp()),
+    mcp: (a, f) => (f.stream ? import('./stream.js').then((m) => m.mcpStdio()) : mcp(f)),
     export: exportCmd,
     watch: (a, f) => import('./watch.js').then((m) => m.run(a, f)),
     badge: (a, f) => import('./badge.js').then((m) => m.run(a, f)),
@@ -663,8 +666,17 @@ async function syncInner(f) {
 
 // ---- MCP --------------------------------------------------------------------
 
-async function mcp() {
-  const handle = createMcpHandler(registry(), { root: process.cwd() });
+/** True when the user pointed the CLI at a registry (env, config file, a token, or --registry). */
+function registryConfigured(f = {}) {
+  if (f.registry) return true;
+  if (process.env.SKILLYARD_REGISTRY || process.env.SKILLYARD_TOKEN) return true;
+  try { const c = JSON.parse(fs.readFileSync(path.join(process.env.SKILLYARD_HOME || path.join(os.homedir(), '.skillyard'), 'config.json'), 'utf8')); return !!(c.registry || c.token); } catch { return false; }
+}
+
+async function mcp(f = {}) {
+  // Local checks are always on. Registry tools only when a registry is configured and --local is not set.
+  const reg = !f.local && registryConfigured(f) ? new RemoteRegistry(f.registry && f.registry !== true ? { ...loadConfig(), registry: f.registry } : loadConfig()) : null;
+  const handle = createMcpHandler(reg, { root: process.cwd(), local: true });
   const rl = readline.createInterface({ input: process.stdin });
   rl.on('line', async (line) => {
     if (!line.trim()) return;
@@ -684,7 +696,8 @@ async function connect(args, f) {
   const cfg = loadConfig();
   const url = `${cfg.registry}/mcp`;
   const fromCheckout = !BIN.includes(`${path.sep}node_modules${path.sep}`);
-  const stdio = fromCheckout ? { command: 'node', args: [BIN, 'mcp'] } : { command: 'npx', args: ['-y', 'skillyard', 'mcp'] };
+  const stdio = fromCheckout ? { command: 'node', args: [BIN, 'mcp'] } : { command: 'npx', args: ['-y', 'skillhawk', 'mcp'] };
+  if (f.local || !registryConfigured(f)) return connectLocal(agent, f, stdio);
   const tokenNote = cfg.token
     ? 'Your token is read from the SKILLYARD_TOKEN environment variable; export it in your shell profile:\n  export SKILLYARD_TOKEN=<your token>'
     : 'No token configured: only public skills will be visible. Run `skillhawk login --token ...` for private skills.';
@@ -738,12 +751,42 @@ function writeOrPrintJson(file, keyPath, value, write, note) {
   return `wrote skillhawk MCP server to ${tilde(file)}${note ? `\n${note}` : ''}`;
 }
 
-function appendToml(file, block) {
+function appendToml(file, block, name = 'skillyard') {
   const cur = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  if (/^\[mcp_servers\.skillyard\]/m.test(cur)) return `${tilde(file)} already has [mcp_servers.skillyard]; edit it by hand`;
+  if (new RegExp(`^\\[mcp_servers\\.${name}\\]`, 'm').test(cur)) return `${tilde(file)} already has [mcp_servers.${name}]; edit it by hand`;
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, cur + block);
-  return `added [mcp_servers.skillyard] to ${tilde(file)}`;
+  return `added [mcp_servers.${name}] to ${tilde(file)}`;
+}
+
+/** No registry configured: connect the agent to the local checks server (stdio, no account, nothing leaves the machine). */
+function connectLocal(agent, f, stdio) {
+  const desktop = process.platform === 'darwin'
+    ? path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
+    : path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json');
+  const configs = {
+    claude: () => {
+      const cmd = ['claude', 'mcp', 'add', '--scope', 'user', 'skillhawk', '--', stdio.command, ...stdio.args];
+      if (f.write) {
+        const r = spawnSync(cmd[0], cmd.slice(1), { stdio: 'inherit' });
+        if (r.error) throw new Error('`claude` not found on PATH; run the command below by hand');
+        return null;
+      }
+      return `Run:\n  ${cmd.map(shq).join(' ')}\n\nOr, for a project, add to .mcp.json:\n${JSON.stringify({ mcpServers: { skillhawk: stdio } }, null, 2)}`;
+    },
+    codex: () => {
+      const file = path.join(os.homedir(), '.codex', 'config.toml');
+      const block = `\n[mcp_servers.skillhawk]\ncommand = "${stdio.command}"\nargs = ${JSON.stringify(stdio.args)}\n`;
+      return f.write ? appendToml(file, block, 'skillhawk') : `Add to ${tilde(file)}:\n${block}`;
+    },
+    cursor: () => writeOrPrintJson(path.join(process.cwd(), '.cursor', 'mcp.json'), ['mcpServers', 'skillhawk'], stdio, f.write, ''),
+    vscode: () => writeOrPrintJson(path.join(process.cwd(), '.vscode', 'mcp.json'), ['servers', 'skillhawk'], { type: 'stdio', ...stdio }, f.write, ''),
+    gemini: () => writeOrPrintJson(path.join(os.homedir(), '.gemini', 'settings.json'), ['mcpServers', 'skillhawk'], stdio, f.write, ''),
+    'claude-desktop': () => writeOrPrintJson(desktop, ['mcpServers', 'skillhawk'], stdio, f.write, ''),
+  };
+  if (!configs[agent]) throw new Error(`usage: skillhawk connect <${Object.keys(configs).join('|')}> [--write]`);
+  const out = configs[agent]();
+  if (out) console.log(`${out}\n\nTools: review_skill, secure_scan, compile_skill, check_agents. They run on this machine; no account needed.`);
 }
 
 // ---- authoring ------------------------------------------------------------

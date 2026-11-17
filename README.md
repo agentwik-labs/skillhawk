@@ -70,7 +70,7 @@ your team's defect rate for AI work, with the pipeline from corrections to prove
 | **Private skills** | Every skill lives under a scope (`@acme/…`). Org skills are private by default, visible only to that org's tokens; a company can still publish selected skills publicly. |
 | **Security scan** | Every publish is scanned for prompt-injection phrasing, instructions to hide actions from the user, invisible Unicode, embedded secrets, `curl \| sh`, credential-file reads and secret exfiltration. Critical findings block the publish; warnings are shown on the skill page. |
 | **Cross-agent install** | `skillhawk install` writes each skill where each agent looks: `.claude/skills/`, `.codex/skills/`, `.cursor/rules/*.mdc` (+ files), and `.agents/skills/` with a managed index in `AGENTS.md`. |
-| **MCP server** | Tools `search_skills`, `get_skill`, `read_skill_file`; every skill as an MCP prompt and resource. Over HTTP from the registry, or as a stdio bridge (`skillhawk mcp`). |
+| **MCP server** | `skillhawk mcp` (stdio): local checks `review_skill`, `secure_scan`, `compile_skill`, `check_agents` with no account; plus `search_skills`, `get_skill`, `read_skill_file` and every skill as a prompt and resource when a registry is configured. The registry also serves the skill tools over HTTP at `/mcp`. |
 | **Lift evals** | `skillhawk eval <skill>` runs the skill's `evals/evals.json` tasks through Claude Code or Codex with and without the skill, grades both with fixed checks, and reports the lift. Skills that don't help are context you pay for on every task. |
 | **Skill reviewer** | `skillhawk review <dir>` grades every skill A-F with line-level findings and fixes, `--fix` applies safe mechanical fixes, and a library pass flags duplicates, overlapping triggers and contradictions; also a Claude Code skill + subagent in `plugins/review`. |
 | **Skill optimizer** | `skillhawk optimize <dir>` cuts tokens with a static pass (filler, repeats, whitespace) that must keep the review grade and trigger cases; `--allow-model` adds model rewrites kept only if lift holds; `--all <dir>` summarizes a library; plugin in `plugins/optimize`. |
@@ -111,11 +111,20 @@ skillhawk install sql-review --agent cursor      # writes .cursor/rules/sql-revi
 skillhawk list && skillhawk update
 ```
 
-**MCP** lets the agent search everything your token can see and pull in a skill when a task calls for it:
+**MCP, local checks (no account):** give any MCP client the checks as tools: `review_skill`, `secure_scan`,
+`compile_skill` and `check_agents`. They run on your machine over stdio; nothing is sent anywhere.
+
+```sh
+claude mcp add --scope user skillhawk -- npx -y skillhawk mcp   # or: npx skillhawk connect claude --write
+npx skillhawk connect codex|cursor|vscode|gemini|claude-desktop  # prints the config for that agent
+```
+
+**MCP, with a registry:** once a registry is configured (`skillhawk login`), the same server also lets the agent
+search everything your token can see and pull in a skill when a task calls for it:
 
 ```sh
 skillhawk connect claude --write    # runs `claude mcp add --transport http skillhawk <registry>/mcp …`
-skillhawk connect codex --write     # adds [mcp_servers.skillyard] to ~/.codex/config.toml
+skillhawk connect codex --write     # adds [mcp_servers.skillyard] to ~/.codex/config.toml (registry mode)
 skillhawk connect cursor --write    # .cursor/mcp.json (token read from ${env:SKILLYARD_TOKEN})
 skillhawk connect vscode | gemini | claude-desktop
 ```
