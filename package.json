@@ -1,6 +1,6 @@
 {
   "name": "skillhawk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A skill registry for AI agents: open-source and company-private Agent Skills, installable into Claude Code, Codex, Cursor and any AGENTS.md agent, and served over MCP.",
   "type": "module",
   "bin": {

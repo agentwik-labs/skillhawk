@@ -319,6 +319,7 @@ const JOURNEY = [
     tools: [
       { name: 'Map', cmd: 'skillhawk map', what: 'Writes an index of files, symbols, imports and skills (map.json, MAP.md) that agents can query.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
       { name: 'Tokens', cmd: 'skillhawk tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.', noOut: 'Reads your own Claude Code logs, so the output is yours. A summary of one developer\'s measured week is in the Proof section of the home page.' },
+      { name: 'Agents', cmd: 'skillhawk agents --notify desktop', what: 'Agent processes, Claude Code sessions working with no human input (with cost since a human last wrote), scheduled agents and dev servers left running. Read-only; prints the command to stop each one.', out: '! claude  up 3d 4h  no terminal  2 child processes\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
       { name: 'Savings ledger', cmd: 'skillhawk savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
     ] },
 ];
@@ -355,7 +356,7 @@ const PRICING = {
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
       blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
-      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
+      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
       blurb: 'Pre-order. Not built yet. Planned: re-run your checks when a model, an agent or a tool you use changes, and send fixes as pull requests.',
@@ -661,7 +662,8 @@ A  lint-everything        no findings`;
 const CHECKS = [
   { name: 'Review', what: 'Grades every skill A to F with line-level findings: contradictions, vague rules, broken links, skills that crowd each other out.', cmd: 'npx skillhawk review .', out: 'C notes-v2: description never says when to use it' },
   { name: 'Secure', what: 'Audits skills, MCP configs, hooks and scripts. A non-zero exit makes it a CI gate.', cmd: 'npx skillhawk secure .', out: 'HIGH settings.json:2 "Bash(*)" runs any shell command' },
-  { name: 'Compile', what: 'One skill, native files for Claude Code, Codex, Cursor, Copilot and Gemini, each checked against its limits.', cmd: 'npx skillhawk compile ./skill', out: 'copilot: FAIL size 4301/4000 chars' },
+  { name: 'Agents', what: 'Agents and dev servers still running that nobody is watching, and what a session has cost since a human last wrote. Read-only.', cmd: 'npx skillhawk agents', out: '! claude  up 3d 4h  no terminal  2 child processes   (example data)' },
+  { name: 'Compile', what: 'One skill, native files for five agents, each checked against its limits.', cmd: 'npx skillhawk compile ./skill', out: 'copilot: FAIL size 4301/4000 chars' },
 ];
 
 function heroReserve(id) {
@@ -699,9 +701,9 @@ async function viewShowcase() {
     </section>
 
     <section class="h2-sec" id="checks" aria-labelledby="checks-h">
-      <h2 id="checks-h" class="h2-h">Three checks, one command each.</h2>
+      <h2 id="checks-h" class="h2-h">Four checks, one command each.</h2>
       <ul class="h2-cards">${CHECKS.map((c) => `<li><h3>${esc(c.name)}</h3><p>${esc(c.what)}</p>${cmd(c.cmd)}<pre aria-label="Example output">${esc(c.out)}</pre></li>`).join('')}</ul>
-      <p class="h2-more"><a href="tools/">All 24 commands, with real output →</a></p>
+      <p class="h2-more"><a href="tools/">Every command, with example output →</a></p>
     </section>
 
     <section class="h2-sec" id="proof" aria-labelledby="proof-h">

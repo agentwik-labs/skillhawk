@@ -64,6 +64,9 @@ Token Saver
   map [dir] [--out .skillyard/map] [--update] [--engine builtin|graphify]
                                                  Index a repo + its skills (files, symbols, imports, skills) into map.json + MAP.md
   map query "<question>" [--limit 8] [--json]    Top files/symbols with line numbers, no model; read less, ask the map
+  agents [--running 12] [--idle 2] [--json [f]] [--notify desktop|slack] [--webhook url] [--fail-on-flag]
+                                                 Agents nobody is watching: agent processes, Claude Code sessions working with no human
+                                                 input (cost since a human last wrote), scheduled agents, dev servers left running. Read-only
   tokens [--days 7] [--logs dir] [--json] [--exclude p]
   savings [--days 30] [--logs dir] [--price-table f] [--rate 100] [--json] [--statement out.md]
                                                  Estimated dollars saved per skill (corrections, redo turns, tokens vs comparable sessions without it)
@@ -194,6 +197,7 @@ export async function main(argv) {
     eval: evalCmd,
     map: (a, f) => import('./map.js').then((m) => m.run(a, f)),
     tokens: (a, f) => import('./tokens.js').then((m) => m.run(a, f)),
+    agents: (a, f) => import('./agentwatch.js').then((m) => m.run(a, f)),
     publish: (a, f) => import('./vault-cli.js').then((m) => m.publish(a, f)),
     pull: (a, f) => import('./vault-cli.js').then((m) => m.pull(a, f)),
     versions: (a, f) => import('./vault-cli.js').then((m) => m.versions(a, f)),
