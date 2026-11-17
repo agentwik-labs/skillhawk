@@ -7,6 +7,10 @@ import path from 'node:path';
 import { LEARN } from './prerender-content.js';
 
 export const DEFAULT_SITE_URL = 'https://skillhawk.ai';
+// Cloudflare Web Analytics (cookieless, anonymous counts) for the public skillhawk.ai build only. Self-hosted exports
+// for any other site URL get no analytics.
+const CF_BEACON_TOKEN = '4dca467d2e5844e980e8c97c370470c2';
+const beaconTag = (siteUrl) => (siteUrl === DEFAULT_SITE_URL ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${CF_BEACON_TOKEN}"}'></script>` : '');
 const BOTS = ['*', 'GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-Web', 'Claude-SearchBot', 'anthropic-ai', 'PerplexityBot', 'Perplexity-User', 'Google-Extended', 'Googlebot', 'Bingbot', 'Applebot-Extended', 'CCBot'];
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -96,6 +100,7 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
   <link rel="stylesheet" href="${b}landing.css">
   <link rel="stylesheet" href="${b}static.css">
   ${ld.map(jsonLd).join('\n  ')}
+  ${beaconTag(siteUrl)}
 </head>
 <body class="sp">
   ${NAV(b)}
@@ -345,7 +350,7 @@ ${body(b)}
     const ldApp = { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Skillhawk', applicationCategory: 'DeveloperApplication', operatingSystem: 'macOS, Linux, Windows (Node.js 18+)', description: SITE_DESC, url: `${siteUrl}/`, license: 'https://opensource.org/license/mit', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, codeRepository: 'https://github.com/agentwik-labs/skillhawk' };
     let html = fs.readFileSync(indexFile, 'utf8');
     html = html.replace(/(<link rel="canonical" href=")[^"]*(">)/, `$1${siteUrl}/$2`).replace(/(<meta property="og:url" content=")[^"]*(">)/, `$1${siteUrl}/$2`)
-      .replace('</head>', `  <link rel="stylesheet" href="static.css">\n  ${jsonLd(ldApp)}\n</head>`)
+      .replace('</head>', `  <link rel="stylesheet" href="static.css">\n  ${jsonLd(ldApp)}\n  ${beaconTag(siteUrl)}\n</head>`)
       .replace(/<main id="app" tabindex="-1"><\/main>/, `<main id="app" tabindex="-1">\n${landing}\n  </main>`);
     html = html.replace('<nav aria-label="The journey">', '<nav aria-label="The journey">').replace(/(<a href="#\/browse">Library<\/a>)/, '$1\n      <a href="tools/">Tools</a>\n      <a href="learn/">Learn</a>');
     fs.writeFileSync(indexFile, html);

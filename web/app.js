@@ -391,7 +391,7 @@ function lpFooter() {
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
     ${LEGAL_LIVE ? `<nav class="lp-legal-links" aria-label="Legal"><a href="legal/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="legal/terms.html">Terms</a><span aria-hidden="true">·</span><a href="legal/security.html">Security</a><span aria-hidden="true">·</span><a href="legal/contact.html">Contact</a></nav>` : ''}
-    <div class="lp-legal"><span>MIT licensed. Imported skills keep their own licences.</span><span>No cookies, no analytics.</span></div>
+    <div class="lp-legal"><span>MIT licensed. Imported skills keep their own licences.</span><span>${location.hostname === 'skillhawk.ai' ? 'No cookies. Anonymous visit counts (Cloudflare Web Analytics).' : 'No cookies, no analytics.'}</span></div>
   </footer>`;
 }
 

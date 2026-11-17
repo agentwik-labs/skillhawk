@@ -88,3 +88,12 @@ test('sitemap lists every static page; robots allows the AI bots; llms files exi
   assert.match(full, /Are agent skills safe/);
   assert.match(full, /Command: skillhawk review skills\//);
 });
+
+test('Cloudflare Web Analytics only on the public skillhawk.ai build, never on other site URLs', () => {
+  assert.doesNotMatch(fs.readFileSync(path.join(out, 'index.html'), 'utf8'), /cloudflareinsights/);
+  const pub = fs.mkdtempSync(path.join(os.tmpdir(), 'sy-pub-'));
+  const r = spawnSync(process.execPath, [path.join(ROOT, 'bin', 'skillyard.js'), 'export', 'site', '--data', path.join(tmp, 'data'), '--out', pub, '--site-url', 'https://skillhawk.ai'], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  for (const f of ['index.html', 'tools/index.html']) assert.match(fs.readFileSync(path.join(pub, f), 'utf8'), /static\.cloudflareinsights\.com\/beacon\.min\.js/);
+  assert.doesNotMatch(fs.readFileSync(path.join(pub, 'index.html'), 'utf8'), /googletagmanager|google-analytics/);
+});
