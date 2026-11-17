@@ -37,7 +37,7 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           mkdir smoke && cd smoke && npm init -y >/dev/null
-          npm install --no-audit --no-fund "$RUNNER_TEMP"/skillyard-*.tgz
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/*.tgz
       - name: Run the website's commands
         working-directory: ${{ runner.temp }}/smoke
         run: |
@@ -45,4 +45,5 @@ jobs:
           npx skillhawk review "$GITHUB_WORKSPACE/registry/public"
           npx skillhawk secure "$GITHUB_WORKSPACE/registry/public"
           npx skillhawk validate "$GITHUB_WORKSPACE/registry/public"
+          test "$(npx skillyard --version)" = "$(npx skillhawk --version)"   # the old command name still works
           npx skillhawk compile "$GITHUB_WORKSPACE/registry/public/$(ls "$GITHUB_WORKSPACE/registry/public" | head -1)" --to all --out compiled
