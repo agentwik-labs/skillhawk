@@ -1,9 +1,9 @@
-// skillyard ab: split sessions between two versions of one skill, compare outcomes from the logs, promote the winner.
-//   skillyard ab <skill> --a <dirA> --b <dirB> [--split 50]   start/replace an experiment (.skillyard/ab/<skill>.json)
-//   skillyard ab hook                                         SessionStart hook: assigns this session and installs its arm
-//   skillyard ab report <skill> [--logs dir]                  correction / redo rate, tokens, z-test, decision
-//   skillyard ab promote <skill> [--to dir] [--arm a|b]       copy the winner (needs a significant result unless --arm)
-// Wire the hook yourself, e.g. in .claude/settings.json SessionStart: { "type": "command", "command": "npx --yes skillyard ab hook" }.
+// skillhawk ab: split sessions between two versions of one skill, compare outcomes from the logs, promote the winner.
+//   skillhawk ab <skill> --a <dirA> --b <dirB> [--split 50]   start/replace an experiment (.skillyard/ab/<skill>.json)
+//   skillhawk ab hook                                         SessionStart hook: assigns this session and installs its arm
+//   skillhawk ab report <skill> [--logs dir]                  correction / redo rate, tokens, z-test, decision
+//   skillhawk ab promote <skill> [--to dir] [--arm a|b]       copy the winner (needs a significant result unless --arm)
+// Wire the hook yourself, e.g. in .claude/settings.json SessionStart: { "type": "command", "command": "npx --yes skillhawk ab hook" }.
 // It reads the hook's JSON on stdin ({session_id, cwd}). Nothing is installed anywhere unless the hook runs; the skills
 // folder is --skills-dir, $SKILLYARD_SKILLS_DIR, or ~/.claude/skills.
 import fs from 'node:fs';
@@ -77,7 +77,7 @@ export function twoProportionP(x1, n1, x2, n2) {
 
 export async function report({ skill, root = '.', logs, days = 0, now = Date.now() }) {
   const e = loadExp(root, skill);
-  if (!e) throw new Error(`no experiment for "${skill}" (start with: skillyard ab ${skill} --a <dir> --b <dir>)`);
+  if (!e) throw new Error(`no experiment for "${skill}" (start with: skillhawk ab ${skill} --a <dir> --b <dir>)`);
   const sessions = await readSessions({ logs, days, now });
   const arms = { a: [], b: [] };
   const used = new Set();
@@ -145,25 +145,25 @@ export async function run(args, flags) {
     let p = {};
     try { p = JSON.parse((await readStdin()) || '{}'); } catch { /* not JSON: fall back to cwd+date */ }
     const done = hook({ session: p.session_id || flags.session, cwd: p.cwd || process.cwd(), root: p.cwd && !flags.root ? p.cwd : root, skillsDir: skillsDirOf(flags['skills-dir']) });
-    if (!flags.quiet) for (const d of done) console.error(`skillyard ab: ${d.skill} -> arm ${d.arm.toUpperCase()}`);
+    if (!flags.quiet) for (const d of done) console.error(`skillhawk ab: ${d.skill} -> arm ${d.arm.toUpperCase()}`);
     return done;
   }
   if (typeof flags.json === 'string') flags.json = true;
   const logs = flags.logs && flags.logs !== true ? flags.logs : undefined;
   if (sub === 'report') {
-    if (!args[1]) throw new Error('usage: skillyard ab report <skill> [--logs dir]');
+    if (!args[1]) throw new Error('usage: skillhawk ab report <skill> [--logs dir]');
     const r = await report({ skill: args[1], root, logs });
     console.log(flags.json ? JSON.stringify(r, null, 2) : renderReport(r));
     return r;
   }
   if (sub === 'promote') {
-    if (!args[1]) throw new Error('usage: skillyard ab promote <skill> [--to dir] [--arm a|b]');
+    if (!args[1]) throw new Error('usage: skillhawk ab promote <skill> [--to dir] [--arm a|b]');
     const r = await promote({ skill: args[1], root, logs, to: flags.to, arm: flags.arm, skillsDir: skillsDirOf(flags['skills-dir']) });
     console.log(`Promoted arm ${r.arm.toUpperCase()} to ${r.to}`);
     return r;
   }
-  if (!sub) throw new Error('usage: skillyard ab <skill> --a <dirA> --b <dirB> [--split 50] | ab hook | ab report <skill> | ab promote <skill>');
+  if (!sub) throw new Error('usage: skillhawk ab <skill> --a <dirA> --b <dirB> [--split 50] | ab hook | ab report <skill> | ab promote <skill>');
   const e = startExperiment({ skill: sub, a: flags.a, b: flags.b, split: flags.split === undefined ? 50 : Number(flags.split), root });
-  console.log(`A/B started for ${sub}: ${e.split}% A (${e.a}), ${100 - e.split}% B (${e.b}). Recorded in ${expFile(root, sub)}.\nAdd a SessionStart hook running: skillyard ab hook`);
+  console.log(`A/B started for ${sub}: ${e.split}% A (${e.a}), ${100 - e.split}% B (${e.b}). Recorded in ${expFile(root, sub)}.\nAdd a SessionStart hook running: skillhawk ab hook`);
   return e;
 }

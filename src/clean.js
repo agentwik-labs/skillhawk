@@ -1,4 +1,4 @@
-// skillyard clean: (1) static review of the scripts bundled in skills, (2) learn a coding-standards skill from a repo.
+// skillhawk clean: (1) static review of the scripts bundled in skills, (2) learn a coding-standards skill from a repo.
 // Deterministic heuristics only: no network, no model calls, no dependencies.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -463,7 +463,7 @@ export function renderStandards(c, rules, name = 'coding-standards') {
 
 export function casesYaml(c) {
   const repo = path.basename(path.resolve(c.root));
-  return `# Trigger cases for the coding-standards skill (run: skillyard test <dir>)
+  return `# Trigger cases for the coding-standards skill (run: skillhawk test <dir>)
 should_fire:
   - "write a new function in ${repo} that follows our coding standards"
   - "what commit message format do we use here"
@@ -525,5 +525,5 @@ export async function run(args, flags = {}) {
     if ('CDF'.includes(r.review.grade)) process.exitCode = 1;
     return;
   }
-  throw new Error('usage: skillyard clean scripts <skill-dir...> [--json]  |  skillyard clean standards [repo] [--from-git] [--from-reviews <file>] [--out <dir>]');
+  throw new Error('usage: skillhawk clean scripts <skill-dir...> [--json]  |  skillhawk clean standards [repo] [--from-git] [--from-reviews <file>] [--out <dir>]');
 }

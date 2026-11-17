@@ -1,4 +1,4 @@
-// HTTP client for a Skillyard registry, plus CLI config (~/.skillyard/config.json, env overrides).
+// HTTP client for a Skillhawk registry, plus CLI config (~/.skillyard/config.json, env overrides).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,7 +36,7 @@ export class RemoteRegistry {
     try {
       res = await fetch(this.base + p, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
     } catch (e) {
-      throw new Error(`cannot reach registry ${this.base} (${e.cause?.code || e.message}). Is it running? Try: skillyard serve`);
+      throw new Error(`cannot reach registry ${this.base} (${e.cause?.code || e.message}). Is it running? Try: skillhawk serve`);
     }
     const ct = res.headers.get('content-type') || '';
     const data = ct.includes('application/json') && !(raw && res.ok) ? await res.json() : await res.text();

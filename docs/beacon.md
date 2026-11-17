@@ -4,7 +4,7 @@
 
 ## What it does
 
-Skillyard already marks every delivered copy of a private skill with invisible tags, wording choices and a canary example. The optional `beacon` layer adds one more thing: a single line inside the illustrative Example section of the copy:
+Skillhawk already marks every delivered copy of a private skill with invisible tags, wording choices and a canary example. The optional `beacon` layer adds one more thing: a single line inside the illustrative Example section of the copy:
 
     Reference: <vault-base-url>/r/<opaque-token>
 
@@ -26,18 +26,18 @@ Nothing else: no cookies, no fingerprinting, no scripts, no content from the req
 
 ## What it is not
 
-- It is not proof of who leaked a file. A hit shows that a copy bearing a given token was opened somewhere, possibly by someone other than the recipient. Treat it as a lead, alongside the other mark layers and the pull history (`skillyard evidence`).
+- It is not proof of who leaked a file. A hit shows that a copy bearing a given token was opened somewhere, possibly by someone other than the recipient. Treat it as a lead, alongside the other mark layers and the pull history (`skillhawk evidence`).
 - It does not run code on anyone's machine and does not prevent copying.
 - It can be stripped or ignored, and some agents will never fetch it.
 
 ## Turning it on
 
-    skillyard org settings acme --beacon on --i-have-legal-review
+    skillhawk org settings acme --beacon on --i-have-legal-review
 
 Without `--i-have-legal-review` the command refuses. The vault must know its public base URL: set `SKILLYARD_PUBLIC_URL` (otherwise the request's Host header is used). Copies delivered before enabling carry no beacon. Turn it off with `--beacon off`; tokens already issued keep working so past copies still resolve.
 
-List hits with `skillyard alerts [--org acme]` (run on the vault host, against its data directory).
+List hits with `skillhawk alerts [--org acme]` (run on the vault host, against its data directory).
 
 ## Before you enable it
 
-Have counsel confirm that collecting an IP address, User-Agent and Referer from people who open the link is acceptable in every jurisdiction you operate in (for example GDPR and ePrivacy in the EU, state privacy laws in the US), what lawful basis and retention apply, and what the employee policy or contract must say. Tell employees and contractors who receive skills that copies carry per-person marks and a reference link, and what happens when it is fetched. Skillyard does not provide legal advice.
+Have counsel confirm that collecting an IP address, User-Agent and Referer from people who open the link is acceptable in every jurisdiction you operate in (for example GDPR and ePrivacy in the EU, state privacy laws in the US), what lawful basis and retention apply, and what the employee policy or contract must say. Tell employees and contractors who receive skills that copies carry per-person marks and a reference link, and what happens when it is fetched. Skillhawk does not provide legal advice.

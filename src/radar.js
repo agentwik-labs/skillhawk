@@ -1,7 +1,7 @@
-// skillyard radar: across several people's session logs, find corrections that keep coming back, rank them by
+// skillhawk radar: across several people's session logs, find corrections that keep coming back, rank them by
 // people affected x frequency, and draft a tested skill for the top clusters. Local only: no model, no network, no push.
 // Output holds counts of people, never raw chats; the drafted skill uses the same redacted text review --chats stores.
-//   skillyard radar <dir...> [--logs dir[,dir]] [--team] [--min-people 2] [--days 14] [--top 3] [--out .skillyard/radar] [--branch]
+//   skillhawk radar <dir...> [--logs dir[,dir]] [--team] [--min-people 2] [--days 14] [--top 3] [--out .skillyard/radar] [--branch]
 // Each dir is one person's logs; with --team each immediate subfolder of a dir is a person (a team export).
 import fs from 'node:fs';
 import path from 'node:path';

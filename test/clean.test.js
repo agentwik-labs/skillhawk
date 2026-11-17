@@ -55,7 +55,7 @@ test('a tidy script has no findings and long functions are caught', () => {
   assert.ok(reviewScripts(d).findings.some((f) => f.rule === 'long-function' && f.file === 'scripts/long.py'));
 });
 
-test('skillyard review prints a scripts section only for skills with scripts', () => {
+test('skillhawk review prints a scripts section only for skills with scripts', () => {
   const r = reviewDir(path.join(FX, 'sloppy-skill'));
   assert.ok(r.scripts.findings.length > 10);
   const out = execFileSync('node', [BIN, 'review', path.join(FX, 'sloppy-skill')], { encoding: 'utf8' });

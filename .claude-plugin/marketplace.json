@@ -1,10 +1,10 @@
 {
   "name": "skillyard",
   "owner": {
-    "name": "Skillyard Community"
+    "name": "Skillhawk Community"
   },
   "metadata": {
-    "description": "Open-source Agent Skills from Skillyard",
+    "description": "Open-source Agent Skills from Skillhawk",
     "version": "1.0.0"
   },
   "plugins": [

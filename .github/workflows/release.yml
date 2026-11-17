@@ -1,7 +1,7 @@
 # Publish to npm when a version tag is pushed: git tag v0.2.1 && git push origin v0.2.1
 # Uses npm trusted publishing (OIDC): no npm token is stored in GitHub, and each release carries a provenance
-# statement linking it to this workflow run. One-time setup on npmjs.com: package skillyard -> Settings ->
-# Trusted publisher -> GitHub Actions, organization agentwik-labs, repository skillyard, workflow release.yml.
+# statement linking it to this workflow run. One-time setup on npmjs.com: package skillhawk -> Settings ->
+# Trusted publisher -> GitHub Actions, organization agentwik-labs, repository skillhawk, workflow release.yml.
 name: release
 on:
   push:

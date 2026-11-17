@@ -16,7 +16,7 @@
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAM`, `STRIPE_PRICE_SEAT` | unset | Stripe billing; without them checkout returns 501 |
 
 The Docker image runs `serve --log` only. For a local trial with demo data, run `seed` once first:
-`docker run -v skillyard-data:/data skillyard node bin/skillyard.js seed`.
+`docker run -v skillyard-data:/data skillhawk node bin/skillyard.js seed`.
 
 ## Storage
 
@@ -29,7 +29,7 @@ front of `GET /api/skills/*` for public skills if needed.
 
 - **Scopes**: every skill belongs to an org. `@skillyard` is the community scope that `seed` creates.
 - **Tokens**: `read` sees the org's private skills; `publish` also publishes, changes visibility, deletes, manages
-  the org's tokens and reads its activity log. Admin tokens (`skillyard token create --admin` or
+  the org's tokens and reads its activity log. Admin tokens (`skillhawk token create --admin` or
   `SKILLYARD_ADMIN_TOKEN`) can do anything. Tokens are shown once and stored as SHA-256 hashes.
 - **Private by default**: an org skill is private unless its `skill.json` or the publish request says `public`.
   Callers without access get `404`, so private skill names do not leak.

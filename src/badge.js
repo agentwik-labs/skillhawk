@@ -1,4 +1,4 @@
-// Skillyard badge: a static shields-style SVG from facts we can verify offline.
+// Skillhawk badge: a static shields-style SVG from facts we can verify offline.
 // Grade comes from review, "secure" only when secure finds no high/medium issue, lift only from a provided eval report.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,10 +39,10 @@ export function badgeText({ grade, lift, secure }) {
 }
 
 export function badgeSvg(facts) {
-  const left = 'skillyard';
+  const left = 'skillhawk';
   const right = badgeText(facts);
   const lw = width(left); const rw = width(right);
-  const title = `Skillyard: ${right}`;
+  const title = `Skillhawk: ${right}`;
   const color = COLORS[facts.grade] || '#9f9f9f';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${lw + rw}" height="20" role="img" aria-label="${esc(title)}">
 <title>${esc(title)}</title>
@@ -58,17 +58,17 @@ export function badgeSvg(facts) {
 
 export async function run(args, flags = {}) {
   const dir = args[0];
-  if (!dir) throw new Error('usage: skillyard badge <skill-dir> [--out badge.svg] [--lift <pts> | --from-report r.json] [--markdown]');
+  if (!dir) throw new Error('usage: skillhawk badge <skill-dir> [--out badge.svg] [--lift <pts> | --from-report r.json] [--markdown]');
   const facts = badgeFacts(dir, { lift: flags.lift, fromReport: flags.fromReport });
   const svg = badgeSvg(facts);
   const out = flags.out && flags.out !== true ? flags.out : 'badge.svg';
   if (flags.markdown) {
-    console.log(`[![skillyard: ${badgeText(facts)}](${out})](https://github.com/agentwik-labs/skillyard)`);
+    console.log(`[![skillyard: ${badgeText(facts)}](${out})](https://github.com/agentwik-labs/skillhawk)`);
     if (!flags.out) return;
   }
   if (flags.out || !flags.markdown) {
     fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
     fs.writeFileSync(out, svg);
-    console.log(`${out}: skillyard | ${badgeText(facts)}`);
+    console.log(`${out}: skillhawk | ${badgeText(facts)}`);
   }
 }

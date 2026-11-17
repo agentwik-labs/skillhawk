@@ -40,7 +40,7 @@ test('constants are overridable and low confidence is stated under 10 sessions',
   assert.ok(Math.abs(rich.parts.corrections - 2 * base.parts.corrections) < 1e-9);
   assert.equal(DEFAULTS.hourlyRate, 100);
   const md = statement(estimate(s), 30);
-  assert.match(md, /Skillyard saved an estimated \*\*\$/);
+  assert.match(md, /Skillhawk saved an estimated \*\*\$/);
   assert.match(md, /low/);
   assert.match(md, /## Method/);
 });
@@ -63,6 +63,6 @@ test('CLI: savings --json and --statement; price table override', () => {
   assert.equal(j.status, 0, j.stderr);
   const r = JSON.parse(j.stdout);
   assert.equal(r.skills[0].parts.tokens, 0);
-  assert.match(fs.readFileSync(out, 'utf8'), /^# Skillyard savings statement/);
+  assert.match(fs.readFileSync(out, 'utf8'), /^# Skillhawk savings statement/);
   assert.match(run().stdout, /deploy-runbook/);
 });

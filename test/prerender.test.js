@@ -26,7 +26,7 @@ after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 test('landing text is in index.html without JavaScript, and the SPA scripts are still there', () => {
   const html = read('index.html');
   assert.match(textOf(html), /Check your AI skills before your agents run them/);
-  assert.match(textOf(html), /skillyard review skills\//);
+  assert.match(textOf(html), /skillhawk review skills\//);
   assert.match(html, /<link rel="canonical" href="https:\/\/example\.test\/base\/">/);
   assert.match(html, /src="app\.js/);
   const types = ldOf(html).map((x) => x['@type']);
@@ -49,7 +49,7 @@ test('static pages exist with title, description, canonical and real text', () =
   }
   const sk = read(pages.at(-1));
   assert.match(textOf(sk), new RegExp(`Grade\\s+${s.grade}`));
-  assert.match(textOf(sk), /npx skillyard install/);
+  assert.match(textOf(sk), /npx skillhawk install/);
   assert.ok(ldOf(sk).some((x) => x['@type'] === 'BreadcrumbList'));
   assert.match(textOf(read('proof/scan/index.html')), /511 unique skills/);
 });
@@ -83,8 +83,8 @@ test('sitemap lists every static page; robots allows the AI bots; llms files exi
   for (const bot of ['GPTBot', 'ClaudeBot', 'Claude-Web', 'PerplexityBot', 'Google-Extended', 'Bingbot']) assert.match(robots, new RegExp(`User-agent: ${bot}\\nAllow: /`));
   assert.ok(!/Disallow: \//.test(robots));
   assert.match(robots, new RegExp(`Sitemap: ${SITE}/sitemap.xml`));
-  assert.match(read('llms.txt'), /^# Skillyard/);
+  assert.match(read('llms.txt'), /^# Skillhawk/);
   const full = read('llms-full.txt');
   assert.match(full, /Are agent skills safe/);
-  assert.match(full, /Command: skillyard review skills\//);
+  assert.match(full, /Command: skillhawk review skills\//);
 });

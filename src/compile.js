@@ -135,7 +135,7 @@ export function resolveTargets(list) {
 
 export async function run(args, flags = {}) {
   const dir = args[0];
-  if (!dir || !flags.to || flags.to === true) throw new Error('usage: skillyard compile <skill-dir> --to claude,codex,cursor,copilot,gemini|all [--out dir]');
+  if (!dir || !flags.to || flags.to === true) throw new Error('usage: skillhawk compile <skill-dir> --to claude,codex,cursor,copilot,gemini|all [--out dir]');
   const out = path.resolve(flags.out && flags.out !== true ? flags.out : path.join('.skillyard', 'compiled'));
   let bad = 0;
   for (const t of resolveTargets(flags.to)) {

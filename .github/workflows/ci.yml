@@ -41,8 +41,8 @@ jobs:
       - name: Run the website's commands
         working-directory: ${{ runner.temp }}/smoke
         run: |
-          test "$(npx skillyard --version)" = "$(node -p "require('$GITHUB_WORKSPACE/package.json').version")"
-          npx skillyard review "$GITHUB_WORKSPACE/registry/public"
-          npx skillyard secure "$GITHUB_WORKSPACE/registry/public"
-          npx skillyard validate "$GITHUB_WORKSPACE/registry/public"
-          npx skillyard compile "$GITHUB_WORKSPACE/registry/public/$(ls "$GITHUB_WORKSPACE/registry/public" | head -1)" --to all --out compiled
+          test "$(npx skillhawk --version)" = "$(node -p "require('$GITHUB_WORKSPACE/package.json').version")"
+          npx skillhawk review "$GITHUB_WORKSPACE/registry/public"
+          npx skillhawk secure "$GITHUB_WORKSPACE/registry/public"
+          npx skillhawk validate "$GITHUB_WORKSPACE/registry/public"
+          npx skillhawk compile "$GITHUB_WORKSPACE/registry/public/$(ls "$GITHUB_WORKSPACE/registry/public" | head -1)" --to all --out compiled

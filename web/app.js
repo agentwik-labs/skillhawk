@@ -1,6 +1,6 @@
 // Legal pages (web/legal) go live after counsel review and the business details are filled in.
 const LEGAL_LIVE = false;
-// Skillyard web UI: hash-routed, no build step, no dependencies.
+// Skillhawk web UI: hash-routed, no build step, no dependencies.
 const app = document.getElementById('app');
 const ORIGIN = window.SKILLYARD_STATIC ? 'https://skills.your-company.com' : location.origin;
 const CATEGORY_LABELS = {
@@ -204,7 +204,7 @@ function shortLine(t, n) {
   const cut = first.slice(0, n);
   return `${cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s,;:-]+$/, '')}…`;
 }
-const srcName = (s) => (s.scope === 'skillyard' ? 'Skillyard' : s.source ? s.source.repo.replace('https://github.com/', '') : `@${s.scope}`);
+const srcName = (s) => (s.scope === 'skillyard' ? 'Skillhawk' : s.source ? s.source.repo.replace('https://github.com/', '') : `@${s.scope}`);
 
 // Measured results, from reports/ and Studio (Claude Haiku, graded runs). Kept in one place so the page and the
 // reports agree.
@@ -250,7 +250,7 @@ function bindSignups(root) {
   }));
 }
 
-const TERM_REVIEW = `$ skillyard review examples/bad
+const TERM_REVIEW = `$ skillhawk review examples/bad
 
 F  engineering-handbook  ~ 217 tok  6 findings: contradiction, vague-instruction
      high   SKILL.md:13 contradiction with line 12:
@@ -264,7 +264,7 @@ C  notes-v2              ~ 811 tok  1 finding: description-no-when
      high   SKILL.md:3 description does not say when to use the skill
 A  lint-everything       ~ 102 tok  no findings
        high scripts/setup.sh:2 no \`set -e\`: a failed command is ignored`;
-const TERM_SECURE = `$ skillyard secure test/fixtures/secure-bad
+const TERM_SECURE = `$ skillhawk secure test/fixtures/secure-bad
 
 HIGH   .claude/settings.json:2  permission "Bash(*)" lets the agent run any shell command unprompted
        fix: allow exact commands, e.g. Bash(npm test:*)
@@ -286,66 +286,66 @@ const PILOT = 'Pro: $20 a month, on pre-order; the hosted vault is not running y
 const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: re-run these checks when things change.', tier: 'Watch: not built. Planned at $9 a month; pre-orders are not open yet, but you can reserve a place. The commands below work today.',
   promise: 'Models, agents and the tools you install change. Today you can re-run these checks yourself. Watch is our plan to run them for you when something changes and send any fix as a pull request.',
   tools: [
-    { name: 'New-model check', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Watch: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
-    { name: 'Supply-chain check', cmd: 'skillyard secure . --gate high', what: 'Today: scan the skills, MCP servers, hooks and scripts you use. Planned for Watch: re-scan them when they change upstream.', out: null, noOut: 'Full output in the Check section.' },
-    { name: 'Agent format check', cmd: 'skillyard compile release-notes --to all', what: 'Today: compile to five agents and check each file against its limits. Planned for Watch: re-check when an agent changes its format or limits, and open a pull request.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
+    { name: 'New-model check', cmd: 'skillhawk watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Watch: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
+    { name: 'Supply-chain check', cmd: 'skillhawk secure . --gate high', what: 'Today: scan the skills, MCP servers, hooks and scripts you use. Planned for Watch: re-scan them when they change upstream.', out: null, noOut: 'Full output in the Check section.' },
+    { name: 'Agent format check', cmd: 'skillhawk compile release-notes --to all', what: 'Today: compile to five agents and check each file against its limits. Planned for Watch: re-check when an agent changes its format or limits, and open a pull request.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
   ] };
 const JOURNEY = [
   { id: 'build', step: 'Build', h: 'Write a skill once. Run it in five agents.', tier: FREE,
     promise: 'Turn an interview, a runbook or a document into a skill with trigger tests, then compile it to each agent\'s own format.',
     tools: [
-      { name: 'Create', cmd: 'skillyard create --answers answers.json', what: 'Interview, document or session log in; a reviewed, secured and tested skill out.', out: 'review: A (98/100), 1 finding\ntest: 4 passed, 0 failed (static trigger cases)' },
-      { name: 'Generate', cmd: 'skillyard generate checklist --from runbook.md', what: 'Six generators (procedure, checklist, voice, playbook, decision, metric) filled from your own document.', out: 'created refund-request-review' },
-      { name: 'Compile', cmd: 'skillyard compile release-notes --to all', what: 'Native files for Claude Code, Codex, Cursor, Copilot and Gemini, each checked for size, frontmatter and lost content.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
+      { name: 'Create', cmd: 'skillhawk create --answers answers.json', what: 'Interview, document or session log in; a reviewed, secured and tested skill out.', out: 'review: A (98/100), 1 finding\ntest: 4 passed, 0 failed (static trigger cases)' },
+      { name: 'Generate', cmd: 'skillhawk generate checklist --from runbook.md', what: 'Six generators (procedure, checklist, voice, playbook, decision, metric) filled from your own document.', out: 'created refund-request-review' },
+      { name: 'Compile', cmd: 'skillhawk compile release-notes --to all', what: 'Native files for Claude Code, Codex, Cursor, Copilot and Gemini, each checked for size, frontmatter and lost content.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
     ] },
   { id: 'check', step: 'Check', h: 'Catch the errors before agents do.', tier: FREE,
     promise: 'Grade every skill A to F with line-level findings, and audit the skills, MCP configs, hooks and scripts around them.',
     tools: [
-      { name: 'Review', cmd: 'skillyard review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: null, noOut: 'Full output below.' },
-      { name: 'Secure', cmd: 'skillyard secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: null, noOut: 'Full output below.' },
-      { name: 'Clean', cmd: 'skillyard clean scripts skills/', what: 'Scripts shipped inside skills: error handling, hard-coded paths, exec bits.', out: 'high scripts/fetch.sh:2 no `set -e`: a failed command is ignored' },
+      { name: 'Review', cmd: 'skillhawk review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: null, noOut: 'Full output below.' },
+      { name: 'Secure', cmd: 'skillhawk secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: null, noOut: 'Full output below.' },
+      { name: 'Clean', cmd: 'skillhawk clean scripts skills/', what: 'Scripts shipped inside skills: error handling, hard-coded paths, exec bits.', out: 'high scripts/fetch.sh:2 no `set -e`: a failed command is ignored' },
     ] },
   { id: 'improve', step: 'Improve', h: 'Learn from how your team really works.', tier: FREE,
     promise: 'Find the corrections people keep repeating, turn them into skill changes, and keep a change only when it measurably helps.',
     tools: [
-      { name: 'Chat review', cmd: 'skillyard review --chats', what: 'Reads your own agent sessions locally and proposes edits. Nothing changes without your approval.', out: '[af240c47] no skill covers this  4 corrections (repeated)  pending' },
-      { name: 'Optimize', cmd: 'skillyard optimize notes-v2', what: 'Cuts tokens and keeps the rewrite only if the grade and trigger cases hold.', out: 'notes-v2: tokens 811 -> 783 (-3%)  grade C -> C' },
-      { name: 'Radar', cmd: 'skillyard radar logs/ --team', what: 'Corrections repeated across people become a drafted, tested skill, ready for a pull request.', out: 'Cluster 85fd6553: 2 people, 6 corrections in 4 sessions' },
-      { name: 'A/B', cmd: 'skillyard ab report deploy', what: 'Split sessions between two versions; promote B only at p < 0.05 with 30 sessions per arm.', out: 'Decision: promote B (p=0.0000 ... (56/78 vs 9/82))' },
-      { name: 'Model watch', cmd: 'skillyard watch run skills/ --model <new> --allow-model', what: 'Re-run every skill\'s evals on a model you name and an older one, report the drops and draft fixes.', out: null, noOut: 'Runs when you start it; needs --allow-model and an API key, so no sample output here.' },
+      { name: 'Chat review', cmd: 'skillhawk review --chats', what: 'Reads your own agent sessions locally and proposes edits. Nothing changes without your approval.', out: '[af240c47] no skill covers this  4 corrections (repeated)  pending' },
+      { name: 'Optimize', cmd: 'skillhawk optimize notes-v2', what: 'Cuts tokens and keeps the rewrite only if the grade and trigger cases hold.', out: 'notes-v2: tokens 811 -> 783 (-3%)  grade C -> C' },
+      { name: 'Radar', cmd: 'skillhawk radar logs/ --team', what: 'Corrections repeated across people become a drafted, tested skill, ready for a pull request.', out: 'Cluster 85fd6553: 2 people, 6 corrections in 4 sessions' },
+      { name: 'A/B', cmd: 'skillhawk ab report deploy', what: 'Split sessions between two versions; promote B only at p < 0.05 with 30 sessions per arm.', out: 'Decision: promote B (p=0.0000 ... (56/78 vs 9/82))' },
+      { name: 'Model watch', cmd: 'skillhawk watch run skills/ --model <new> --allow-model', what: 'Re-run every skill\'s evals on a model you name and an older one, report the drops and draft fixes.', out: null, noOut: 'Runs when you start it; needs --allow-model and an API key, so no sample output here.' },
     ] },
   { id: 'save', step: 'Save', h: 'See where your tokens go.', tier: FREE,
     promise: 'Give agents a map to query instead of opening every file, see where the tokens go, and estimate what each skill saves.',
     tools: [
-      { name: 'Map', cmd: 'skillyard map', what: 'Writes an index of files, symbols, imports and skills (map.json, MAP.md) that agents can query.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
-      { name: 'Tokens', cmd: 'skillyard tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.', noOut: 'Reads your own Claude Code logs, so the output is yours. A summary of one developer\'s measured week is in the Proof section of the home page.' },
-      { name: 'Savings ledger', cmd: 'skillyard savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
+      { name: 'Map', cmd: 'skillhawk map', what: 'Writes an index of files, symbols, imports and skills (map.json, MAP.md) that agents can query.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
+      { name: 'Tokens', cmd: 'skillhawk tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.', noOut: 'Reads your own Claude Code logs, so the output is yours. A summary of one developer\'s measured week is in the Proof section of the home page.' },
+      { name: 'Savings ledger', cmd: 'skillhawk savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
     ] },
 ];
 const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. Keep them.', tier: PILOT,
   promise: 'A private vault with roles and an audit trail, copies that name the person they were issued to, and access you can take back.',
   groups: [
     { name: 'Keep', tools: [
-      { name: 'Vault and roles', cmd: 'skillyard token create --org acme --role editor', what: 'Versions, diffs and rollback; publishing must pass review and security (an org admin can override; it is logged).', out: 'token d840e76f297e (read,publish for @acme), shown once' },
-      { name: 'Audit log', cmd: 'skillyard audit verify', what: 'Pulls, publishes, rollbacks and access changes, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
-      { name: 'Signed skills', cmd: 'skillyard verify deploy-safely --pub org.pem', what: '`skillyard verify` fails if the files differ from what the org signed.', out: 'FAIL deploy-safely: files differ from what was signed\n  changed: SKILL.md' },
+      { name: 'Vault and roles', cmd: 'skillhawk token create --org acme --role editor', what: 'Versions, diffs and rollback; publishing must pass review and security (an org admin can override; it is logged).', out: 'token d840e76f297e (read,publish for @acme), shown once' },
+      { name: 'Audit log', cmd: 'skillhawk audit verify', what: 'Pulls, publishes, rollbacks and access changes, hash-chained.', out: 'ok   audit log: 291 entries (291 chained, 0 legacy)' },
+      { name: 'Signed skills', cmd: 'skillhawk verify deploy-safely --pub org.pem', what: '`skillhawk verify` fails if the files differ from what the org signed.', out: 'FAIL deploy-safely: files differ from what was signed\n  changed: SKILL.md' },
     ] },
     { name: 'Trace (teams)', tools: [
-      { name: 'Marked copies', cmd: 'skillyard trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to, so a leaked fragment can often be traced to who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
-      { name: 'Evidence pack', cmd: 'skillyard evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'most likely recipient: alice (code-review v1.0.0, confidence 100.00%)\naudit log chain: verified\nwrote evidence pack to /home/you/evidence' },
-      { name: 'Call-home link', cmd: 'skillyard org settings acme --beacon on --i-have-legal-review', what: 'A per-copy link that records when a leaked copy is opened: time, IP address and browser.', out: null, note: 'Built, off by default. Not offered until a lawyer has reviewed it.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
+      { name: 'Marked copies', cmd: 'skillhawk trace leaked.md --marks marks.json --secret $SKILLYARD_SECRET', what: 'Every SKILL.md copy is marked for the token holder it is issued to, so a leaked fragment can often be traced to who it was issued to.', out: 'alice          v1.0.0   confidence 1.0000  (111 bits)' },
+      { name: 'Evidence pack', cmd: 'skillhawk evidence leaked.md --org acme', what: 'Signed report with the trace, pull history, audit chain and a drafted takedown notice.', out: 'most likely recipient: alice (code-review v1.0.0, confidence 100.00%)\naudit log chain: verified\nwrote evidence pack to /home/you/evidence' },
+      { name: 'Call-home link', cmd: 'skillhawk org settings acme --beacon on --i-have-legal-review', what: 'A per-copy link that records when a leaked copy is opened: time, IP address and browser.', out: null, note: 'Built, off by default. Not offered until a lawyer has reviewed it.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
     ] },
     { name: 'Take back (teams)', tools: [
-      { name: 'Revocable streaming', cmd: 'skillyard connect claude --stream', what: 'Agents load skills from the vault over MCP; Skillyard installs no skill files (the agent\'s own session logs may still hold text it loaded).', out: 'No skill files are installed on this machine, and `skillyard revoke` cuts access on the next call.' },
-      { name: 'Offboarding', cmd: 'skillyard offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
-      { name: 'Exit interview', note: 'Free CLI tool.', cmd: 'skillyard exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
+      { name: 'Revocable streaming', cmd: 'skillhawk connect claude --stream', what: 'Agents load skills from the vault over MCP; Skillhawk installs no skill files (the agent\'s own session logs may still hold text it loaded).', out: 'No skill files are installed on this machine, and `skillhawk revoke` cuts access on the next call.' },
+      { name: 'Offboarding', cmd: 'skillhawk offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
+      { name: 'Exit interview', note: 'Free CLI tool.', cmd: 'skillhawk exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
     ] },
     { name: 'Prove', tools: [
-      { name: 'Governance export', note: 'Free CLI tool.', cmd: 'skillyard governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillyard itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
+      { name: 'Governance export', note: 'Free CLI tool.', cmd: 'skillhawk governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillhawk itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
     ] },
   ] };
 // BACKLOG.md "Later": planned, not built.
-// Self-hosting is not here: `skillyard serve` runs the vault on your own server (docs/self-hosting.md).
+// Self-hosting is not here: `skillhawk serve` runs the vault on your own server (docs/self-hosting.md).
 const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged copies already rank both colluders)', 'Single sign-on', 'Slack alerts for vault events (Studio already posts review proposals to a Slack webhook)', 'VS Code extension'];
 
 // Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
@@ -356,7 +356,7 @@ const PRICING = {
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
       blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
       items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
-      cta: { label: 'npx skillyard review', href: 'https://github.com/agentwik-labs/skillyard', code: true } },
+      cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
       blurb: 'Pre-order. Not built yet. Planned: re-run your checks when a model, an agent or a tool you use changes, and send fixes as pull requests.',
       items: ['New-model check', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
@@ -374,7 +374,7 @@ const PRICING = {
 };
 function lpNav() {
   return `<header class="lp-nav">
-    <a class="lp-word" href="#/">skillyard</a>
+    <a class="lp-word" href="#/">skillhawk</a>
     <nav aria-label="The journey">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<a href="#/?s=${s.id}">${s.step}</a>`).join('')}<a href="#/?s=proof">Proof</a><a href="#/?s=library">Library</a><a href="#/?s=pricing">Pricing</a></nav>
     <a class="lp-action" href="#/?s=watch">Pre-order Watch</a>
   </header>`;
@@ -383,9 +383,9 @@ function lpNav() {
 function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
-      <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillyard#readme">Install guide on GitHub →</a></p></div>
+      <div><h2 class="lp-h">Check your skills today.</h2><p class="lp-install"><a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
       <ul class="jf">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}">${s.step}</a></li>`).join('')}<li><a href="#/?s=proof">Proof</a></li><li><a href="#/?s=library">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li></ul>
-      <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillyard">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
+      <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
     ${LEGAL_LIVE ? `<nav class="lp-legal-links" aria-label="Legal"><a href="legal/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="legal/terms.html">Terms</a><span aria-hidden="true">·</span><a href="legal/security.html">Security</a><span aria-hidden="true">·</span><a href="legal/contact.html">Contact</a></nav>` : ''}
     <div class="lp-legal"><span>MIT licensed. Imported skills keep their own licences.</span><span>No cookies, no analytics.</span></div>
@@ -466,7 +466,7 @@ function teamsCta(id) {
     </section>`;
 }
 
-// ---- the library: Skillyard's own grades for every public skill (web/media/library.json, built by tools/build-library.mjs)
+// ---- the library: Skillhawk's own grades for every public skill (web/media/library.json, built by tools/build-library.mjs)
 let libraryP;
 function loadLibrary() {
   libraryP ||= fetch('media/library.json').then((r) => (r.ok ? r.json() : null)).then((l) => {
@@ -479,7 +479,7 @@ function loadLibrary() {
 const SECURE_LABEL = { clean: 'No security findings', low: 'Low-risk security notes', medium: 'Medium security findings', high: 'High security findings' };
 function judgeChips(j) {
   if (!j) return '';
-  return `<span class="gchip" title="Graded ${esc(j.grade)} (${j.score}/100) by skillyard review">${esc(j.grade)}</span><span class="schip ${j.secure}" title="skillyard secure">${esc(j.secure === 'clean' ? 'secure' : `${j.secure} risk`)}</span>`;
+  return `<span class="gchip" title="Graded ${esc(j.grade)} (${j.score}/100) by skillhawk review">${esc(j.grade)}</span><span class="schip ${j.secure}" title="skillhawk secure">${esc(j.secure === 'clean' ? 'secure' : `${j.secure} risk`)}</span>`;
 }
 
 const RULE_WORDS = { bloat: 'length paid on every load', 'description-no-when': 'a description that never says when to use it', 'broken-link': 'broken links', contradiction: 'contradictions', 'thin-body': 'almost no instructions', frontmatter: 'broken frontmatter', 'trigger-hijack': 'triggers that steal other skills\' work' };
@@ -498,14 +498,14 @@ function chartGrades(l) {
     <p class="gd-sec">Security: <b>${l.secure.clean}</b> clean, <b>${l.secure.low}</b> low, <b>${l.secure.medium}</b> medium, <b>${l.secure.high}</b> high.</p>`;
   return proofFigure({ id: 'pf-lib', cls: 'lib-fig', title: `Grades across ${l.total} public skills`,
     takeaway: `${l.grades.A} get an A. ${df} get a D or F${why(l)}.`,
-    body, table: numTable(['Grade', 'Skills'], order.map((g) => [g, l.grades[g] || 0])), source: `skillyard review and skillyard secure, run over the library on ${fmtDate(l.generatedAt)}` });
+    body, table: numTable(['Grade', 'Skills'], order.map((g) => [g, l.grades[g] || 0])), source: `skillhawk review and skillhawk secure, run over the library on ${fmtDate(l.generatedAt)}` });
 }
 
 function libCard(j) {
   const ref = j.scope === 'public' ? j.name : j.id;
   return `<li class="lc"><a class="lc-a" href="#/skill/${esc(j.id)}"><span class="lc-t">${esc(j.title)}</span><span class="lc-d">${esc(j.description)}</span></a>
-    <div class="lc-m">${judgeChips(j)}<span class="lc-src">${esc(j.scope === 'public' ? 'Skillyard' : j.source.repo || 'community')}${j.source.licence ? ` · ${esc(j.source.licence)}` : ''}</span></div>
-    ${cmd(`npx skillyard install ${ref}`)}</li>`;
+    <div class="lc-m">${judgeChips(j)}<span class="lc-src">${esc(j.scope === 'public' ? 'Skillhawk' : j.source.repo || 'community')}${j.source.licence ? ` · ${esc(j.source.licence)}` : ''}</span></div>
+    ${cmd(`npx skillhawk install ${ref}`)}</li>`;
 }
 
 async function librarySection(el) {
@@ -515,7 +515,7 @@ async function librarySection(el) {
   el.innerHTML = `<div class="x-head"><h2 id="library-h" class="lp-h">${l.total} public skills, graded by our own reviewer.</h2>
       <div class="j-side"><p class="v-lede">${l.scopes.public} written by us, ${l.scopes.community} imported from open-source repositories with their licences kept. Every grade comes from the same review and security code you run locally; none is set by hand.</p></div></div>
     <div class="lib">${chartGrades(l)}
-      <p class="lib-note">Installing needs a registry: <code>npx skillyard seed --community &amp;&amp; npx skillyard serve</code>, then the command on each card.</p>
+      <p class="lib-note">Installing needs a registry: <code>npx skillhawk seed --community &amp;&amp; npx skillhawk serve</code>, then the command on each card.</p>
       <div class="lib-picks"><h3 class="lib-h">Top-graded in each category</h3><ul class="lcs">${picks.map(libCard).join('')}</ul>
       <a class="lp-link" href="#/browse">Browse all ${l.total} with grade and security filters →</a></div></div>`;
   copyButtons(el);
@@ -586,8 +586,8 @@ function chartTokens(d) {
       <div class="tk-side"><p class="tk-h">Tokens per day, November ${Number(d.daily_m[0][0].slice(3))} to ${Number(d.daily_m[n - 1][0].slice(3))}</p>${daily}</div>
     </div>`;
   return proofFigure({ id: 'pf-tok', cls: 'w12', title: 'Where one developer\'s tokens went in a week',
-    takeaway: `Almost everything was the agent re-reading context it had already seen. New input was ${d.split_m.input}M tokens. We have not yet measured whether skillyard map reduces that.`,
-    body, table: numTable(['Kind or day', 'Tokens (millions)'], [...segs.map(([n, v]) => [n, v]), ...d.daily_m.map(([day, v]) => [`Nov ${Number(day.slice(3))}`, v])]), source: `${d.source}. Measured with skillyard tokens.` });
+    takeaway: `Almost everything was the agent re-reading context it had already seen. New input was ${d.split_m.input}M tokens. We have not yet measured whether skillhawk map reduces that.`,
+    body, table: numTable(['Kind or day', 'Tokens (millions)'], [...segs.map(([n, v]) => [n, v]), ...d.daily_m.map(([day, v]) => [`Nov ${Number(day.slice(3))}`, v])]), source: `${d.source}. Measured with skillhawk tokens.` });
 }
 
 function chartTrace(d) {
@@ -610,7 +610,7 @@ function chartScan(d) {
     body, table: numTable(['Finding', 'Skills', `Share of ${d.skills}`], facts.map(([v, t]) => [t, v, `${Math.round(v / d.skills * 100)}%`])), source: d.source });
 }
 
-// A summary of the measured week, built only from the numbers in proof.json. It is not `skillyard tokens` output.
+// A summary of the measured week, built only from the numbers in proof.json. It is not `skillhawk tokens` output.
 function tokensExcerpt(d) {
   const f = (m) => (m >= 1 ? `${m.toFixed(1)}M` : `${(m * 1000).toFixed(1)}k`);
   const peak = d.daily_m.reduce((a, b) => (b[1] > a[1] ? b : a));
@@ -633,7 +633,7 @@ async function proofCharts(el) {
     el.innerHTML = chartLift(d.lift) + chartPrecision(d.reviewer_precision) + chartTokens(d.tokens) + chartTrace(d.trace) + chartScan(d.scan);
   } catch {
     document.querySelectorAll('[data-live="tokens"]').forEach((x) => { x.textContent = 'The measured week could not be loaded; see web/media/proof.json.'; });
-    el.innerHTML = '<p class="pf-k">The measurements could not be loaded. They are in <a href="https://github.com/agentwik-labs/skillyard/tree/main/reports">the reports folder on GitHub</a>.</p>';
+    el.innerHTML = '<p class="pf-k">The measurements could not be loaded. They are in <a href="https://github.com/agentwik-labs/skillhawk/tree/main/reports">the reports folder on GitHub</a>.</p>';
   }
 }
 
@@ -650,8 +650,8 @@ function launchVideo() {
 async function viewShowcase() {
   const [build, check, improve, save] = JOURNEY;
   const terms = `<div class="v-terms">
-        <figure><figcaption>Review, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard review">${esc(TERM_REVIEW)}</pre></figure>
-        <figure><figcaption>Secure, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillyard secure">${esc(TERM_SECURE)}</pre></figure>
+        <figure><figcaption>Review, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillhawk review">${esc(TERM_REVIEW)}</pre></figure>
+        <figure><figcaption>Secure, full output (trimmed)</figcaption><pre tabindex="0" aria-label="Output of skillhawk secure">${esc(TERM_SECURE)}</pre></figure>
       </div>`;
   app.innerHTML = `
   <div class="lp" data-landing data-home>
@@ -661,7 +661,7 @@ async function viewShowcase() {
       <h1 id="hero-h" class="lp-sentence v-h1 x-h1">Check your AI skills before your agents run them.</h1>
       <div class="x-side">
         <p class="lp-lede">Skills are the instructions your agents follow. The free CLI grades them, scans them for security problems, tests them and compiles them for five agents. Watch, on pre-order and not built yet, is planned to re-run those checks when a model, an agent or a tool you use changes.</p>
-        <div class="v-actions"><a class="lp-action big" href="#/?s=watch">Pre-order Watch</a><span class="v-install"><code>npx skillyard review</code></span></div>
+        <div class="v-actions"><a class="lp-action big" href="#/?s=watch">Pre-order Watch</a><span class="v-install"><code>npx skillhawk review</code></span></div>
       </div>
       ${launchVideo()}
       <ol class="jmap" aria-label="The journey">${[WATCH, ...JOURNEY, PROTECT].map((s) => `<li><a href="#/?s=${s.id}"><b>${s.step}</b><span>${esc(s.h)}</span></a></li>`).join('')}</ol>
@@ -700,7 +700,7 @@ function viewTeams() {
   <div class="lp" data-landing>
     ${lpNav()}
     <section class="lp-hero v-hero">
-      <h1 class="lp-sentence v-h1">Skillyard for teams, by request.</h1>
+      <h1 class="lp-sentence v-h1">Skillhawk for teams, by request.</h1>
       <p class="lp-lede">The developer tools are free and all of the code is open source. We focus on individual developers first; a shared vault for several people is set up by request. Tell us what you need.</p>
     </section>
     ${protectSection('vault')}
@@ -728,7 +728,7 @@ async function viewBrowse(params) {
   const cardL = (x) => card(x, lib);
   const cats = Object.keys(stats.categories).sort((a, b) => stats.categories[b] - stats.categories[a]);
   const source = params.get('source');
-  if (source) skills.splice(0, skills.length, ...skills.filter((x) => (x.source ? x.source.repo.replace('https://github.com/', '') : 'agentwik-labs/skillyard') === source));
+  if (source) skills.splice(0, skills.length, ...skills.filter((x) => (x.source ? x.source.repo.replace('https://github.com/', '') : 'agentwik-labs/skillhawk') === source));
   const setParam = (k, v) => { const p = new URLSearchParams(params); v ? p.set(k, v) : p.delete(k); location.hash = `#/browse?${p}`; };
   const mine = !me.anonymous && me.org ? skills.filter((s) => s.scope === me.org) : [];
   const showMine = mine.length && !q && !category && !scope && !params.get('grade') && !params.get('secure');
@@ -737,7 +737,7 @@ async function viewBrowse(params) {
     <section class="hero">
       <div>
         <h1>Skills your agents can use, from open source and from your own company.</h1>
-        <p>Search ready-made Agent Skills. On a registry you run yourself (<code>skillyard serve</code>), private skills sit beside public ones, install into Claude Code, Codex, Cursor or any AGENTS.md agent, and load over MCP.</p>
+        <p>Search ready-made Agent Skills. On a registry you run yourself (<code>skillhawk serve</code>), private skills sit beside public ones, install into Claude Code, Codex, Cursor or any AGENTS.md agent, and load over MCP.</p>
       </div>
       <div class="stats" aria-label="Registry stats">
         <div><b>${stats.skills}</b><span>Skills</span></div>
@@ -755,7 +755,7 @@ async function viewBrowse(params) {
       <select name="secure" aria-label="Security" style="max-width:190px"><option value="">Any security result</option>${['clean', 'low', 'medium', 'high'].map((k) => `<option value="${k}" ${k === secure ? 'selected' : ''}>${k === 'clean' ? 'Clean' : `${k[0].toUpperCase()}${k.slice(1)} risk`} (${lib.secure[k]})</option>`).join('')}</select>` : '')}
       <button class="primary" type="submit">Search</button>
     </form>
-    ${raw(lib ? `<p class="muted judge-note">Grades and security results come from <code>skillyard review</code> and <code>skillyard secure</code>, run over every public skill. Private company skills are not graded here.</p>` : '')}
+    ${raw(lib ? `<p class="muted judge-note">Grades and security results come from <code>skillhawk review</code> and <code>skillhawk secure</code>, run over every public skill. Private company skills are not graded here.</p>` : '')}
     <div class="chips" role="group" aria-label="Categories">
       <button type="button" class="chip ${category ? '' : 'on'}" data-cat="">All</button>
       ${raw(cats.map((c) => `<button type="button" class="chip ${c === category ? 'on' : ''}" data-cat="${esc(c)}">${esc(CATEGORY_LABELS[c] || c)} · ${stats.categories[c]}</button>`).join(''))}
@@ -784,14 +784,14 @@ function judgePanel(j) {
   const sn = j.secureFindings.high + j.secureFindings.medium + j.secureFindings.low;
   const li = (f) => `<li title="${esc(f.rule)}"><span class="sev ${f.severity}">${f.severity}</span> ${esc(f.file)}:${f.line} <span class="muted">${esc(f.message)}</span></li>`;
   return `<div class="panel judge-panel">
-    <h3>Skillyard's judgement</h3>
+    <h3>Skillhawk's judgement</h3>
     <p class="jp-grade">${judgeChips(j)}<span>${j.score}/100 · ~${j.tokens} tokens</span></p>
-    <img class="jp-badge" src="media/badges/${esc(j.id.split('/')[0].slice(1))}/${esc(j.name)}.svg" alt="Skillyard badge: grade ${esc(j.grade)}, ${j.secure === 'clean' || j.secure === 'low' ? 'secure' : 'security findings'}" onerror="this.remove()">
+    <img class="jp-badge" src="media/badges/${esc(j.id.split('/')[0].slice(1))}/${esc(j.name)}.svg" alt="Skillhawk badge: grade ${esc(j.grade)}, ${j.secure === 'clean' || j.secure === 'low' ? 'secure' : 'security findings'}" onerror="this.remove()">
     <p class="jp-line"><b>Review:</b> ${n ? `${n} finding${n === 1 ? '' : 's'} (${j.findings.high} high, ${j.findings.medium} medium, ${j.findings.low} low)` : 'no findings'}</p>
     ${j.top.length ? `<ul class="files">${j.top.map(li).join('')}</ul>` : ''}
     <p class="jp-line"><b>Security:</b> ${esc(SECURE_LABEL[j.secure])}${sn ? ` (${j.secureFindings.high} high, ${j.secureFindings.medium} medium, ${j.secureFindings.low} low)` : ''}</p>
     ${j.secureTop.length ? `<ul class="files">${j.secureTop.map(li).join('')}</ul>` : ''}
-    <p class="muted" style="font-size:13px;margin:8px 0 0">Run it yourself: <code>skillyard review</code> and <code>skillyard secure</code> on the skill folder.</p>
+    <p class="muted" style="font-size:13px;margin:8px 0 0">Run it yourself: <code>skillhawk review</code> and <code>skillhawk secure</code> on the skill folder.</p>
   </div>`;
 }
 
@@ -824,8 +824,8 @@ async function viewSkill(id, filePath) {
         <div class="panel">
           <h3>Install</h3>
           <div class="tabs" role="tablist">${raw(INSTALL_TABS.map(([k, l], i) => `<button type="button" role="tab" data-tab="${k}" class="${i === 0 ? 'on' : ''}">${l}</button>`).join(''))}</div>
-          <div id="install-cmd">${raw(cmd(`npx skillyard install ${ref} --agent claude`))}</div>
-          <p class="muted" style="font-size:13px;margin:10px 0 0">Add <code>-g</code> to install for every project, <code>--save</code> to record it in <code>skills.json</code>.${raw(s.visibility === 'private' ? ' Private: run <code>skillyard login --token …</code> first.' : '')}</p>
+          <div id="install-cmd">${raw(cmd(`npx skillhawk install ${ref} --agent claude`))}</div>
+          <p class="muted" style="font-size:13px;margin:10px 0 0">Add <code>-g</code> to install for every project, <code>--save</code> to record it in <code>skills.json</code>.${raw(s.visibility === 'private' ? ' Private: run <code>skillhawk login --token …</code> first.' : '')}</p>
         </div>
         <div class="panel">
           <h3>Use over MCP</h3>
@@ -859,7 +859,7 @@ async function viewSkill(id, filePath) {
     </div>`;
   app.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
     app.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
-    document.getElementById('install-cmd').innerHTML = cmd(`npx skillyard install ${ref} --agent ${b.dataset.tab}`);
+    document.getElementById('install-cmd').innerHTML = cmd(`npx skillhawk install ${ref} --agent ${b.dataset.tab}`);
     copyButtons(document.getElementById('install-cmd'));
   }));
   copyButtons(app);
@@ -932,7 +932,7 @@ function viewConnect() {
   const url = `${ORIGIN}/mcp`;
   const tok = '${SKILLYARD_TOKEN}';
   const agents = [
-    ['Claude Code', 'Adds Skillyard as a remote MCP server for every project.', `claude mcp add --transport http --scope user skillyard ${url} --header "Authorization: Bearer $SKILLYARD_TOKEN"`],
+    ['Claude Code', 'Adds Skillhawk as a remote MCP server for every project.', `claude mcp add --transport http --scope user skillhawk ${url} --header "Authorization: Bearer $SKILLYARD_TOKEN"`],
     ['OpenAI Codex', 'Append to ~/.codex/config.toml.', `[mcp_servers.skillyard]\nurl = "${url}"\nbearer_token_env_var = "SKILLYARD_TOKEN"`],
     ['Cursor', 'Add to .cursor/mcp.json in your project.', JSON.stringify({ mcpServers: { skillyard: { url, headers: { Authorization: 'Bearer ${env:SKILLYARD_TOKEN}' } } } }, null, 2)],
     ['VS Code / Copilot', 'Add to .vscode/mcp.json.', JSON.stringify({ servers: { skillyard: { type: 'http', url, headers: { Authorization: 'Bearer ${env:SKILLYARD_TOKEN}' } } } }, null, 2)],
@@ -943,9 +943,9 @@ function viewConnect() {
   app.innerHTML = h`
     <div class="page-head"><h1>Connect an agent</h1><p>Two ways to give an agent your skills. <strong>Install</strong> copies skills into the folder the agent already reads, so they work offline and load automatically. <strong>MCP</strong> lets the agent search the whole registry live and pull a skill when a task calls for it — useful when your company has more skills than you want installed.</p></div>
     <div class="steps">
-      <div class="step"><h3>1 · Point the CLI at this registry</h3><p>Private skills need an org token; public ones don't.</p>${raw(cmd(`npx skillyard login --registry ${ORIGIN} --token sy_…`))}</div>
-      <div class="step"><h3>2 · Install skills into your agents</h3><p>Detects Claude Code, Codex, Cursor and AGENTS.md in the current project; pick explicitly with <code>--agent</code>.</p>${raw(cmd('npx skillyard install code-review @acme/deploy-runbook --agent claude,codex --save'))}<p style="margin-top:12px">Teammates then run one command to get the same set:</p>${raw(cmd('npx skillyard sync'))}</div>
-      <div class="step"><h3>3 · Or connect over MCP</h3><p>When you run <code>skillyard serve</code>, your registry also serves MCP at <code>${url}</code> with tools <code>search_skills</code>, <code>get_skill</code> and <code>read_skill_file</code>, and every skill as a prompt. <code>npx skillyard connect &lt;agent&gt; --write</code> sets this up for you.</p></div>
+      <div class="step"><h3>1 · Point the CLI at this registry</h3><p>Private skills need an org token; public ones don't.</p>${raw(cmd(`npx skillhawk login --registry ${ORIGIN} --token sy_…`))}</div>
+      <div class="step"><h3>2 · Install skills into your agents</h3><p>Detects Claude Code, Codex, Cursor and AGENTS.md in the current project; pick explicitly with <code>--agent</code>.</p>${raw(cmd('npx skillhawk install code-review @acme/deploy-runbook --agent claude,codex --save'))}<p style="margin-top:12px">Teammates then run one command to get the same set:</p>${raw(cmd('npx skillhawk sync'))}</div>
+      <div class="step"><h3>3 · Or connect over MCP</h3><p>When you run <code>skillhawk serve</code>, your registry also serves MCP at <code>${url}</code> with tools <code>search_skills</code>, <code>get_skill</code> and <code>read_skill_file</code>, and every skill as a prompt. <code>npx skillhawk connect &lt;agent&gt; --write</code> sets this up for you.</p></div>
     </div>
     <div class="section-title"><h2>MCP config by agent</h2><span class="muted">export SKILLYARD_TOKEN=sy_… first</span></div>
     <div class="agents-grid">${raw(agents.map(([name, note, snippet]) => h`<div class="panel"><h3>${name}</h3><p class="muted" style="font-size:13px;margin:0 0 8px">${note}</p>${raw(cmd(snippet))}</div>`).join(''))}</div>`;
@@ -982,7 +982,7 @@ async function viewExamples(params) {
   const pct = (x) => `${Math.round(x * 100)}%`;
   app.innerHTML = h`
     <div class="page-head"><h1>Good skills, bad skills</h1>
-    <p>Twelve skills that look reasonable and aren't, each next to a version that works. Every verdict below is the real output of <code>skillyard validate</code>, <code>skillyard scan</code> or <code>skillyard eval</code>, not a description of what they'd say. The bad ones live in <a href="https://github.com/agentwik-labs/skillyard/tree/main/examples/bad">examples/bad</a> so you can test your own tools on them; don't install them.</p></div>
+    <p>Twelve skills that look reasonable and aren't, each next to a version that works. Every verdict below is the real output of <code>skillhawk validate</code>, <code>skillhawk scan</code> or <code>skillhawk eval</code>, not a description of what they'd say. The bad ones live in <a href="https://github.com/agentwik-labs/skillhawk/tree/main/examples/bad">examples/bad</a> so you can test your own tools on them; don't install them.</p></div>
     <div class="chips" role="group" aria-label="Filter">
       ${raw(['', 'security', 'quality'].map((k) => `<button type="button" class="chip ${k === kind ? 'on' : ''}" data-kind="${k}">${k ? k[0].toUpperCase() + k.slice(1) : 'All'} · ${data.lessons.filter((l) => !k || l.kind === k).length}</button>`).join(''))}
     </div>
@@ -1070,10 +1070,10 @@ async function viewCreate(params) {
   if (builder.gen !== g?.id) Object.assign(builder, { gen: g?.id || null, answers: {} });
   if (!g) {
     app.innerHTML = h`
-      <div class="page-head"><h1>Create a skill</h1><p>Turn what your team already knows into a skill every agent follows. Pick the kind of knowledge, answer a few questions, and download a folder that installs into Claude Code, Codex, Cursor and any AGENTS.md agent. Have an SOP or a wiki page already? Skillyard Studio fills these in from the document for you.</p></div>
+      <div class="page-head"><h1>Create a skill</h1><p>Turn what your team already knows into a skill every agent follows. Pick the kind of knowledge, answer a few questions, and download a folder that installs into Claude Code, Codex, Cursor and any AGENTS.md agent. Have an SOP or a wiki page already? Skillhawk Studio fills these in from the document for you.</p></div>
       <div class="gen-grid">${raw(GEN.GENERATORS.map((x) => `<a class="gen-card" href="#/create?g=${x.id}"><h3>${esc(x.title)}</h3><p>${esc(x.summary)}</p><span class="muted">Generator: <code>${x.id}</code></span></a>`).join(''))}</div>
       <div class="steps" style="margin-top:28px">
-        <div class="step"><h3>From the command line</h3><p>Fill a generator from your own document, then test and install it.</p>${raw(cmd('npx skillyard generate decision --from refund-policy.md'))}</div>
+        <div class="step"><h3>From the command line</h3><p>Fill a generator from your own document, then test and install it.</p>${raw(cmd('npx skillhawk generate decision --from refund-policy.md'))}</div>
       </div>`;
     copyButtons(app);
     return;
@@ -1094,7 +1094,7 @@ async function viewCreate(params) {
         <div class="panel"><h3>Preview</h3><pre class="skillmd" id="bmd"></pre>
           <div id="bnotes"></div>
           <div class="row" style="margin-top:12px"><button class="primary" type="button" id="bzip">Download .zip</button><button type="button" id="bcopy">Copy SKILL.md</button></div>
-          <p class="muted" style="font-size:13px;margin:10px 0 0">Unzip into your repo, then <code>npx skillyard install ./${raw('<span id="bname">skill</span>')} --agent all</code>. Your answers never leave this page.</p>
+          <p class="muted" style="font-size:13px;margin:10px 0 0">Unzip into your repo, then <code>npx skillhawk install ./${raw('<span id="bname">skill</span>')} --agent all</code>. Your answers never leave this page.</p>
         </div>
       </div>
     </div>`;
@@ -1131,7 +1131,7 @@ async function viewCreate(params) {
 
 function viewPublish() {
   if (STATIC) {
-    app.innerHTML = h`<div class="page-head"><h1>Publish a skill</h1><p>This is a read-only demo. Publishing needs a running registry: <code>npx skillyard serve</code>, or see the README on GitHub.</p></div>${raw(cmd('git clone https://github.com/agentwik-labs/skillyard && cd skillyard && npm run dev'))}`;
+    app.innerHTML = h`<div class="page-head"><h1>Publish a skill</h1><p>This is a read-only demo. Publishing needs a running registry: <code>npx skillhawk serve</code>, or see the README on GitHub.</p></div>${raw(cmd('git clone https://github.com/agentwik-labs/skillhawk && cd skillhawk && npm run dev'))}`;
     copyButtons(app);
     return;
   }
@@ -1139,7 +1139,7 @@ function viewPublish() {
   app.innerHTML = h`
     <div class="page-head"><h1>Publish a skill</h1><p>A skill is a folder with a <code>SKILL.md</code> (YAML frontmatter with <code>name</code> and <code>description</code>, then instructions) and optional <code>scripts/</code>, <code>references/</code> and <code>templates/</code>. Add a <code>skill.json</code> for version, category and tags. Versions are immutable: bump <code>version</code> to publish a change.</p></div>
     <div class="steps">
-      <div class="step"><h3>From the CLI</h3>${raw(cmd('npx skillyard new my-skill'))}<p style="margin-top:12px"></p>${raw(cmd('npx skillyard validate my-skill && npx skillyard publish my-skill --org acme --visibility private'))}</div>
+      <div class="step"><h3>From the CLI</h3>${raw(cmd('npx skillhawk new my-skill'))}<p style="margin-top:12px"></p>${raw(cmd('npx skillhawk validate my-skill && npx skillhawk publish my-skill --org acme --visibility private'))}</div>
       <div class="step"><h3>From this page</h3>
         ${raw(canPublish ? h`<p>Choose a skill folder. It is validated by the server and published under <strong>@${me.org || '…'}</strong>.</p>
         <form id="upload" class="row">
@@ -1202,8 +1202,8 @@ async function route() {
     else if (pathPart === '/browse') await viewBrowse(params);
     else await viewShowcase();
     document.body.classList.toggle('is-landing', pathPart === '/' || pathPart === '' || pathPart === '/teams');
-    document.title = `${document.querySelector('main h1')?.textContent?.slice(0, 60) || 'Skillyard'} · Skillyard`;
-    if (pathPart === '/') document.title = 'Skillyard';
+    document.title = `${document.querySelector('main h1')?.textContent?.slice(0, 60) || 'Skillhawk'} · Skillhawk`;
+    if (pathPart === '/') document.title = 'Skillhawk';
   } catch (e) {
     app.innerHTML = h`<div class="empty"><strong>${e.status === 404 ? 'Not found' : 'Something went wrong'}</strong><p>${e.message}</p>${raw(e.status === 404 && me.anonymous ? '<p>If this is a private skill, sign in with your org token.</p>' : '')}<p><a href="#/">Back to all skills</a></p></div>`;
   }

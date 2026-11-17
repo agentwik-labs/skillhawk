@@ -82,7 +82,7 @@ export function buildGovernance(store, { org, framework = 'all', out }) {
 
   const md = [
     `# Governance evidence export: @${org}`, '',
-    `Generated ${generatedAt} by Skillyard. This bundle **supports evidence for** the controls named below. It does not by itself establish compliance with any framework; scope, interpretation and attestation remain with the organisation and its auditor.`, '',
+    `Generated ${generatedAt} by Skillhawk. This bundle **supports evidence for** the controls named below. It does not by itself establish compliance with any framework; scope, interpretation and attestation remain with the organisation and its auditor.`, '',
     '## Summary', '',
     `- Skills: ${inventory.length} (${inventory.filter((s) => s.visibility === 'private').length} private, ${inventory.filter((s) => s.signed).length} signed)`,
     `- Publish events: ${approvalTrail.filter((a) => a.action === 'publish').length}; rejected by checks: ${approvalTrail.filter((a) => a.action === 'publish.rejected').length}; forced overrides: ${forced.length}`,
@@ -96,7 +96,7 @@ export function buildGovernance(store, { org, framework = 'all', out }) {
     ...(forced.length ? ['Forced overrides:', ...forced.map((a) => `- ${a.at} ${a.skill}@${a.version} by ${a.by}`), ''] : ['No forced overrides on record.', '']),
     '## Access control', '', `Roles, ${tokens.length} active tokens and ${access.revocations.length} revocations in access-control.json.`, '',
     '## Change history', '', `${history.events.length} registry events and ${approvalTrail.filter((a) => a.action === 'rollback').length} rollbacks in change-history.json and approval-trail.json.`, '',
-    '## Audit log integrity', '', `Each audit entry stores the hash of the one before it; \`skillyard audit verify\` re-walks the chain. Result in audit-integrity.json. Truncation of the final entries is detectable only against a previously saved head hash.`, '',
+    '## Audit log integrity', '', `Each audit entry stores the hash of the one before it; \`skillhawk audit verify\` re-walks the chain. Result in audit-integrity.json. Truncation of the final entries is detectable only against a previously saved head hash.`, '',
     '## Control mapping (supports evidence for)', '',
     ...fws.flatMap((k) => [`### ${MAPPING[k].name}`, '', '| Control | Topic | Evidence files |', '|---|---|---|', ...MAPPING[k].rows.map(([c, t, f]) => `| ${c} | ${t} | ${f.join(', ')} |`), '']),
     'Evidence file names refer to files in this directory.', '',
@@ -116,7 +116,7 @@ export function buildGovernance(store, { org, framework = 'all', out }) {
 }
 
 export async function governanceCmd(args, f) {
-  if (args[0] !== 'export' || !f.org || f.org === true) throw new Error('usage: skillyard governance export --org <org> [--framework soc2|iso42001|euaiact|all] [--out dir] [--data dir]');
+  if (args[0] !== 'export' || !f.org || f.org === true) throw new Error('usage: skillhawk governance export --org <org> [--framework soc2|iso42001|euaiact|all] [--out dir] [--data dir]');
   const out = f.out && f.out !== true ? f.out : `governance-${f.org}`;
   const r = buildGovernance(new Store(dataDir(f)), { org: f.org, framework: f.framework && f.framework !== true ? f.framework : 'all', out });
   console.log(`wrote governance bundle (${r.inventory.length} skills, audit log ${r.integrity.ok ? 'verified' : 'FAILED'}) to ${r.dir}`);

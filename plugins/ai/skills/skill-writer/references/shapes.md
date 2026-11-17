@@ -1,4 +1,4 @@
-# Shapes (Skillyard generators)
+# Shapes (Skillhawk generators)
 
 | Shape | Use for | Sections |
 |---|---|---|
@@ -9,5 +9,5 @@
 | decision | Who can approve what: refunds, discounts, data access, spend | Look at first, Rules (if: then), Approvers, Never, Output |
 | metric | How numbers are defined and reported | Definitions (metric: formula), Data, Check before reporting, Output |
 
-The same shapes power `npx skillyard generate <shape> --from <document>` and the builder at
-https://agentwik-labs.github.io/skillyard/#/create.
+The same shapes power `npx skillhawk generate <shape> --from <document>` and the builder at
+https://skillhawk.ai/#/create.

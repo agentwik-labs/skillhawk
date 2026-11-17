@@ -66,7 +66,7 @@ export class Store {
     const o = this.db.orgs[slug];
     if (!this.enforce || !o || accessLevel(o) === 'full') return;
     const why = o.billing?.status === 'pilot' ? 'the pilot has ended' : `billing is ${o.billing?.status || 'not set up'}`;
-    throw new HttpError(402, `@${slug} is read-only because ${why}. Pulls and revokes still work. See: skillyard org billing ${slug}`);
+    throw new HttpError(402, `@${slug} is read-only because ${why}. Pulls and revokes still work. See: skillhawk org billing ${slug}`);
   }
 
   assertFeature(slug, feature) {
@@ -253,7 +253,7 @@ export class Store {
         const o = this.db.orgs[org];
         if (!mine && used >= o.seats) {
           this.log('seat.blocked', { org, member: name, used, seats: o.seats });
-          throw new HttpError(402, `seat limit reached: ${used} of ${o.seats} seats on ${PLANS[o.plan]?.name || o.plan}. Revoke a member (skillyard revoke) or add seats (skillyard org billing ${org})`);
+          throw new HttpError(402, `seat limit reached: ${used} of ${o.seats} seats on ${PLANS[o.plan]?.name || o.plan}. Revoke a member (skillhawk revoke) or add seats (skillhawk org billing ${org})`);
         }
       }
     }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Skillyard launch</title>
+<title>Skillhawk launch</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet">
 <style>
@@ -39,7 +39,7 @@
 </style>
 </head>
 <body>
-<div class="wordmark" id="wm"><i></i>skillyard</div>
+<div class="wordmark" id="wm"><i></i>skillhawk</div>
 
 <section class="scene" id="s1">
   <div class="eyebrow">Your agents follow skills</div>
@@ -48,19 +48,19 @@
 </section>
 
 <section class="scene" id="s2">
-  <div class="eyebrow">01 · skillyard review</div>
+  <div class="eyebrow">01 · skillhawk review</div>
   <h2>Find what's wrong<br>before the agent does.</h2>
   <div class="term" id="t2" style="margin-top:60px"></div>
 </section>
 
 <section class="scene" id="s3">
-  <div class="eyebrow">02 · skillyard secure</div>
+  <div class="eyebrow">02 · skillhawk secure</div>
   <h2>Check everything<br>around the skill.</h2>
   <div class="term" id="t3" style="margin-top:60px"></div>
 </section>
 
 <section class="scene" id="s4">
-  <div class="eyebrow">03 · skillyard mark + trace</div>
+  <div class="eyebrow">03 · skillhawk mark + trace</div>
   <h2 id="s4h">Every copy is marked<br>for the person it's issued to.</h2>
   <div class="grid10" id="g10"></div>
   <div class="scan" id="scan"></div>
@@ -83,7 +83,7 @@
 
 <section class="scene" id="s7">
   <h1 id="s7h">Build, check and protect<br>your company's AI skills.</h1>
-  <div><span class="pill">npx skillyard review</span><span class="cta">Become a design partner</span></div>
+  <div><span class="pill">npx skillhawk review</span><span class="cta">Become a design partner</span></div>
   <p class="lede">Free for developers. A private, traceable vault for companies.</p>
 </section>
 
@@ -99,7 +99,7 @@ const S = { s1: [0, 5], s2: [5, 13], s3: [13, 20], s4: [20, 27], s5: [27, 36], s
 const DURATION = 48;
 
 const REVIEW = [
-  '$ skillyard review skills/',
+  '$ skillhawk review skills/',
   '',
   '<span class="red">F</span>  engineering-handbook   6 findings',
   '     high  SKILL.md:13  <span class="hi">contradiction</span> with line 12',
@@ -110,7 +110,7 @@ const REVIEW = [
   '<span class="grn">A</span>  incident-postmortem    no findings',
 ];
 const SECURE = [
-  '$ skillyard secure --gate high',
+  '$ skillhawk secure --gate high',
   '',
   '<span class="red">HIGH</span>  .claude/settings.json:2  "Bash(*)" runs any shell command unprompted',
   '<span class="red">HIGH</span>  .claude/settings.json:6  hook downloads and runs remote code',
@@ -128,7 +128,7 @@ const LEAK = [
   'ticket 47339, amount $2,667.07.',
 ];
 const TRACE = [
-  '$ skillyard trace leaked.md',
+  '$ skillhawk trace leaked.md',
   '',
   'recipient   confidence',
   '<span class="hi">dave</span>        1.00',
@@ -140,10 +140,10 @@ const TRACE = [
 ];
 const NAMES = ['alice', 'bob', 'carol', 'dave', 'erin', 'frank', 'grace', 'heidi', 'ivan', 'judy'];
 const TOOLS = [
-  ['skillyard review --chats', 'Chat review', 'Learns from your sessions. You approve every edit.'],
-  ['skillyard map', 'Token Saver', 'Agents query a map instead of reading every file.'],
-  ['skillyard optimize', 'Optimizer', 'Shorter skills, kept only if they score as well.'],
-  ['skillyard create', 'Creator', 'A runbook or your corrections, turned into a tested skill.'],
+  ['skillhawk review --chats', 'Chat review', 'Learns from your sessions. You approve every edit.'],
+  ['skillhawk map', 'Token Saver', 'Agents query a map instead of reading every file.'],
+  ['skillhawk optimize', 'Optimizer', 'Shorter skills, kept only if they score as well.'],
+  ['skillhawk create', 'Creator', 'A runbook or your corrections, turned into a tested skill.'],
 ];
 $('g10').innerHTML = NAMES.map((n, i) => `<div class="copy" id="c-${n}"><span class="fp">#${(((i + 3) * 2654435761) >>> 0).toString(16).slice(0, 4)}</span><b>${n}</b>SKILL.md<div class="bars"><i style="width:90%"></i><i style="width:70%"></i><i style="width:82%"></i></div></div>`).join('');
 $('tools').innerHTML = TOOLS.map(([c, n, w]) => `<div class="tool"><code>${c}</code><b>${n}</b><span>${w}</span></div>`).join('');

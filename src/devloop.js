@@ -86,7 +86,7 @@ should_fire:
 should_not_fire:
   - "TODO a nearby prompt that belongs to a different skill"
 
-# Behaviour cases (run with: skillyard test <dir> --allow-model): prompt + substrings to expect/forbid, or a rubric line.
+# Behaviour cases (run with: skillhawk test <dir> --allow-model): prompt + substrings to expect/forbid, or a rubric line.
 behaviour:
   - prompt: "TODO task to give the agent"
     expect: ["TODO text the answer must contain"]
@@ -202,7 +202,7 @@ export function staticTest(skillDir, { agent, cwd, global, files: filesOverride 
   const res = { dir: skillDir, errors: [], results: [], pass: 0, fail: 0, behaviourCases: 0, competitors: 0, hasCases: false };
   if (!v.ok) { res.errors.push(...v.errors); return res; }
   const loaded = loadCases(skillDir);
-  if (!loaded) { res.errors.push('no tests/cases.yaml (create a stub with: skillyard new, or add tests/cases.yaml)'); return res; }
+  if (!loaded) { res.errors.push('no tests/cases.yaml (create a stub with: skillhawk new, or add tests/cases.yaml)'); return res; }
   res.hasCases = true;
   const bad = validateCases(loaded.cases);
   if (bad.length) { res.errors.push(...bad.map((e) => `${path.relative(skillDir, loaded.file)}: ${e}`)); return res; }
@@ -230,11 +230,11 @@ export function formatStatic(r) {
   return o.join('\n');
 }
 
-// ---- skillyard test ------------------------------------------------------------
+// ---- skillhawk test ------------------------------------------------------------
 
 export async function testCmd(args, f) {
   const dir = args[0];
-  if (!dir || !fs.existsSync(path.join(dir, 'SKILL.md'))) throw new Error('usage: skillyard test <skill-dir> [--static] [--allow-model] [--model haiku]');
+  if (!dir || !fs.existsSync(path.join(dir, 'SKILL.md'))) throw new Error('usage: skillhawk test <skill-dir> [--static] [--allow-model] [--model haiku]');
   const r = staticTest(dir, { agent: f.agent || 'claude', cwd: f.cwd && f.cwd !== true ? f.cwd : undefined, global: !!f.global });
   console.log(`static trigger test: ${dir} (vs ${r.competitors} other skill${r.competitors === 1 ? '' : 's'})\n${formatStatic(r)}`);
   console.log(`${r.pass} passed, ${r.fail} failed${r.errors.length ? `, ${r.errors.length} error(s)` : ''}`);
@@ -265,7 +265,7 @@ export function behaviourToEvalCases(c) {
   }));
 }
 
-// ---- skillyard dev -------------------------------------------------------------
+// ---- skillhawk dev -------------------------------------------------------------
 
 const NOT_SHIPPED = (k) => k.startsWith('evals/') || k.startsWith('tests/') || k.startsWith('.skillyard-');
 
@@ -302,7 +302,7 @@ export function devWatch(dir, opts = {}, onLine = (l) => console.log(l)) {
 
 export async function devCmd(args, f) {
   const dir = args[0];
-  if (!dir || !fs.existsSync(path.join(dir, 'SKILL.md'))) throw new Error('usage: skillyard dev <skill-dir> [--agent claude] [--cwd project] [-g] [--once]');
+  if (!dir || !fs.existsSync(path.join(dir, 'SKILL.md'))) throw new Error('usage: skillhawk dev <skill-dir> [--agent claude] [--cwd project] [-g] [--once]');
   const opts = { agent: f.agent || 'claude', cwd: f.cwd && f.cwd !== true ? path.resolve(f.cwd) : process.cwd(), global: !!f.global };
   if (f.once) return void console.log(devCycle(dir, opts));
   console.log(`watching ${dir} (ctrl-c to stop)`);
@@ -363,7 +363,7 @@ export function compareMarkdown(dirs, ref) {
     const arrow = before && before.grade !== after.grade ? (after.grade < before.grade ? '↑' : '↓') : '';
     rows.push(`| \`${d}\` | ${show(before)} → ${show(after)} ${arrow} | ${delta > 0 ? '+' : ''}${delta} | ${tb ? `${tb.pass}/${tb.total}` : '-'} → ${ta ? `${ta.pass}/${ta.total}` : '-'} |`);
   }
-  if (!rows.length) return `### Skillyard lift-diff vs \`${ref}\`\n\nNo skill changed.\n`;
-  return ['### Skillyard lift-diff vs `' + ref + '`', '', '| Skill | Review grade (findings) | Findings delta | Static trigger tests |', '|---|---|---|---|', ...rows, '',
-    '_Model-based lift is opt-in: run `skillyard eval <dir>` or `skillyard test <dir> --allow-model`._', ''].join('\n');
+  if (!rows.length) return `### Skillhawk lift-diff vs \`${ref}\`\n\nNo skill changed.\n`;
+  return ['### Skillhawk lift-diff vs `' + ref + '`', '', '| Skill | Review grade (findings) | Findings delta | Static trigger tests |', '|---|---|---|---|', ...rows, '',
+    '_Model-based lift is opt-in: run `skillhawk eval <dir>` or `skillhawk test <dir> --allow-model`._', ''].join('\n');
 }

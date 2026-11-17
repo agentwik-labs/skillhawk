@@ -183,7 +183,7 @@ function folderSummaries(files) {
 
 export function overview(map, budgetChars = 7500) {
   const files = Object.entries(map.files);
-  const out = [`# Map of ${map.root}`, '', `${files.length} files, ${map.skills.length} skills. Query before opening files: \`skillyard map query "<question>"\` (or the \`map_query\` MCP tool). Built ${map.built.slice(0, 10)}.`, ''];
+  const out = [`# Map of ${map.root}`, '', `${files.length} files, ${map.skills.length} skills. Query before opening files: \`skillhawk map query "<question>"\` (or the \`map_query\` MCP tool). Built ${map.built.slice(0, 10)}.`, ''];
   out.push('## Folders');
   const dirs = Object.entries(map.folders).filter(([, v]) => v.summary || v.files > 2).sort((a, b) => a[0].split('/').length - b[0].split('/').length || b[1].files - a[1].files);
   let used = out.join('\n').length;
@@ -306,10 +306,10 @@ export async function run(args, flags) {
   for (const k of ['update', 'json']) if (typeof flags[k] === 'string') { if (k === 'update' || args[0] === 'query') args.push(flags[k]); flags[k] = true; }
   if (args[0] === 'query') {
     const q = args.slice(1).join(' ');
-    if (!q) throw new Error('usage: skillyard map query "<question>" [--dir .] [--out .skillyard/map] [--limit 8] [--json]');
+    if (!q) throw new Error('usage: skillhawk map query "<question>" [--dir .] [--out .skillyard/map] [--limit 8] [--json]');
     const root = flags.dir || '.';
     const map = loadMap(root, flags.out || DEFAULT_OUT);
-    if (!map) throw new Error(`no map in ${path.resolve(root)}. Run: skillyard map ${root}`);
+    if (!map) throw new Error(`no map in ${path.resolve(root)}. Run: skillhawk map ${root}`);
     const hits = queryMap(map, q, Number(flags.limit) || 8);
     console.log(flags.json ? JSON.stringify(hits, null, 2) : formatHits(hits));
     return;
@@ -322,7 +322,7 @@ export async function run(args, flags) {
     if (probe.error) throw new Error('graphify is not on PATH. Install it, or omit --engine to use the built-in index.');
     const r = spawnSync('graphify', [path.resolve(root)], { stdio: 'inherit', cwd: path.resolve(root) });
     if (r.status !== 0) throw new Error(`graphify exited with ${r.status}`);
-    console.log('graphify finished; its output is in graphify-out/ (skillyard map query uses the built-in index only).');
+    console.log('graphify finished; its output is in graphify-out/ (skillhawk map query uses the built-in index only).');
     return;
   }
   if (flags.engine && flags.engine !== 'builtin') throw new Error(`unknown engine "${flags.engine}" (builtin, graphify)`);

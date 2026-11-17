@@ -14,7 +14,7 @@ import { sectionOf } from './map.js';
 import { loadConfig } from './client.js';
 import { PROTOCOL_VERSIONS } from './mcp.js';
 
-const SERVER_INFO = { name: 'skillyard-stream', title: 'Skillyard company vault (streaming)', version: '0.1.0' };
+const SERVER_INFO = { name: 'skillyard-stream', title: 'Skillhawk company vault (streaming)', version: '0.1.0' };
 
 const TOOLS = [
   { name: 'skill_list', title: 'List the company skills', description: 'List your organization\'s skills: id and one-line description only. Nothing is loaded until you call skill_load.',
@@ -138,7 +138,7 @@ export async function mcpStdio() {
   await new Promise((r) => rl.on('close', r));
 }
 
-/** `skillyard connect <agent> --stream`: point the agent at the vault's MCP endpoint; no skill files are installed. */
+/** `skillhawk connect <agent> --stream`: point the agent at the vault's MCP endpoint; no skill files are installed. */
 export async function connectStream(args, f) {
   const agent = args[0];
   const cfg = loadConfig();
@@ -164,7 +164,7 @@ export async function connectStream(args, f) {
     gemini: () => merge(path.join(os.homedir(), '.gemini', 'settings.json'), ['mcpServers', 'skillyard-vault']),
     codex: () => `Add to ~/.codex/config.toml:\n[mcp_servers.skillyard-vault]\nurl = "${url}"\nbearer_token_env_var = "SKILLYARD_TOKEN"`,
   };
-  if (!targets[agent]) throw new Error(`usage: skillyard connect <${Object.keys(targets).join('|')}> --stream [--write]`);
+  if (!targets[agent]) throw new Error(`usage: skillhawk connect <${Object.keys(targets).join('|')}> --stream [--write]`);
   console.log(targets[agent]());
-  console.log(`\nStream mode: the agent reads skills from the vault on demand (skill_list / skill_load / skill_section).\nNothing is installed on this machine, and \`skillyard revoke\` cuts access on the next call.\nSet your token: export SKILLYARD_TOKEN=<your token>   (or over stdio: skillyard mcp --stream)`);
+  console.log(`\nStream mode: the agent reads skills from the vault on demand (skill_list / skill_load / skill_section).\nNothing is installed on this machine, and \`skillhawk revoke\` cuts access on the next call.\nSet your token: export SKILLYARD_TOKEN=<your token>   (or over stdio: skillhawk mcp --stream)`);
 }

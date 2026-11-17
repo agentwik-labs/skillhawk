@@ -1,4 +1,4 @@
-// Skillyard Studio UI. Hash-routed, no build step. Everything shown from logs is untrusted text: always escaped.
+// Skillhawk Studio UI. Hash-routed, no build step. Everything shown from logs is untrusted text: always escaped.
 const app = document.getElementById('app');
 const TYPE_LABELS = {
   interrupted: 'Stopped mid-action', 'did-too-much': 'Did more than asked', 'ignored-instruction': 'Ignored an instruction',
@@ -33,7 +33,7 @@ const STATIC = !!window.STUDIO_STATIC;
 let snapshot = null;
 async function staticApi(path, body) {
   snapshot ||= await (await fetch('demo-snapshot.json')).json();
-  if (body !== undefined) throw new Error('This is a read-only demo. Run npx skillyard studio --demo to approve, edit and undo for real.');
+  if (body !== undefined) throw new Error('This is a read-only demo. Run npx skillhawk studio --demo to approve, edit and undo for real.');
   const [p, qs = ''] = path.split('?');
   if (p === '/api/state') return snapshot.state;
   if (p === '/api/skills') return { skills: snapshot.skills };
@@ -522,7 +522,7 @@ async function viewSkills() {
   app.innerHTML = `
   <div class="title-row"><div><h1>Skills</h1><p class="finding muted">What your agents load today. Studio proposes edits to these when your corrections show a gap.</p></div></div>
   ${skills.length ? `<table><thead><tr><th>Skill</th><th>Where</th><th>Managed by</th><th class="hide-sm">Description</th></tr></thead><tbody>
-  ${skills.map((k) => `<tr><td class="mono">${esc(k.name)}</td><td>${esc(where[k.where] || k.where)}</td><td>${k.managed ? 'Skillyard' : '<span class="muted">You</span>'}</td><td class="hide-sm muted"><span class="clip">${esc(k.description)}</span></td></tr>`).join('')}</tbody></table>`
+  ${skills.map((k) => `<tr><td class="mono">${esc(k.name)}</td><td>${esc(where[k.where] || k.where)}</td><td>${k.managed ? 'Skillhawk' : '<span class="muted">You</span>'}</td><td class="hide-sm muted"><span class="clip">${esc(k.description)}</span></td></tr>`).join('')}</tbody></table>`
     : '<div class="empty"><h3>No skills installed</h3>Approve a proposal to install your first one.</div>'}`;
 }
 
@@ -557,7 +557,7 @@ async function viewPrivacy() {
     <div><h3>3. Review automatically</h3>
       <p>Runs a review on a schedule and leaves new proposals in your inbox. It never installs anything: every change still waits for your approval.</p>
       <div class="state">${c.autoReview.schedule === 'off' ? 'Off' : `${esc(c.autoReview.schedule === 'daily' ? 'Every day' : 'Every Monday')} at 9:00`}</div>
-      ${c.autoReview.schedule !== 'off' ? `<p class="cron">Add this line to your crontab (<span class="mono">crontab -e</span>) to run it:</p><pre class="mono" style="background:var(--raised);padding:10px 12px;border-radius:6px;white-space:pre-wrap">${esc(c.autoReview.schedule === 'daily' ? '0 9 * * *' : '0 9 * * 1')} npx skillyard studio review</pre>` : ''}
+      ${c.autoReview.schedule !== 'off' ? `<p class="cron">Add this line to your crontab (<span class="mono">crontab -e</span>) to run it:</p><pre class="mono" style="background:var(--raised);padding:10px 12px;border-radius:6px;white-space:pre-wrap">${esc(c.autoReview.schedule === 'daily' ? '0 9 * * *' : '0 9 * * 1')} npx skillhawk studio review</pre>` : ''}
     </div>
     <select id="auto" aria-label="Automatic review" style="height:32px;border:1px solid var(--control);border-radius:6px;padding:0 8px" ${c.modelReview.granted ? '' : 'disabled'}>
       ${[['off', 'Off'], ['weekly', 'Weekly'], ['daily', 'Daily']].map(([v, l]) => `<option value="${v}" ${v === c.autoReview.schedule ? 'selected' : ''}>${l}</option>`).join('')}
@@ -710,12 +710,12 @@ async function viewCreate(params) {
 
 function demoBar() {
   if (!STATIC || document.querySelector('.demo-bar')) return;
-  app.insertAdjacentHTML('afterbegin', '<div class="demo-bar">Read-only demo of a fictional team. Run it on your own logs with <code>npx skillyard studio</code>, or <a href="../#/teams?ask=waitlist">join the waitlist for Studio for teams</a>.</div>');
+  app.insertAdjacentHTML('afterbegin', '<div class="demo-bar">Read-only demo of a fictional team. Run it on your own logs with <code>npx skillhawk studio</code>, or <a href="../#/teams?ask=waitlist">join the waitlist for Studio for teams</a>.</div>');
 }
 
 function setCrumb(t) {
   document.getElementById('crumb').innerHTML = `Studio / <b>${esc(t)}</b>`;
-  document.title = `${t} · Skillyard Studio`;
+  document.title = `${t} · Skillhawk Studio`;
 }
 
 async function route() {

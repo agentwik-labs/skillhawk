@@ -1,6 +1,6 @@
 // Billing: Stripe Checkout + webhooks over plain REST (no SDK), plus the operator path when Stripe is not set up.
 // docs/plans-and-seats.md. Nothing here runs until STRIPE_* env vars are set; without them checkout answers 501 and
-// plans are set by the server admin (skillyard org plan).
+// plans are set by the server admin (skillhawk org plan).
 import crypto from 'node:crypto';
 import { HttpError } from './store.js';
 import { PLANS, validatePlan } from './plans.js';

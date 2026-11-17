@@ -21,7 +21,7 @@ export async function versions(args) {
 }
 
 export async function diff(args) {
-  if (args.length < 3) throw new Error('usage: skillyard diff <skill> <v1> <v2>');
+  if (args.length < 3) throw new Error('usage: skillhawk diff <skill> <v1> <v2>');
   const r = ref(args[0]);
   const d = await registry().diff(r.scope, r.name, args[1], args[2]);
   if (!d.files.length) return void console.log(`${d.id}: ${d.from} and ${d.to} are identical`);
@@ -29,7 +29,7 @@ export async function diff(args) {
 }
 
 export async function rollback(args) {
-  if (args.length < 2) throw new Error('usage: skillyard rollback <skill> <version>');
+  if (args.length < 2) throw new Error('usage: skillhawk rollback <skill> <version>');
   const r = ref(args[0]);
   const s = await registry().rollback(r.scope, r.name, args[1]);
   console.log(`${s.id} now serves ${s.latest} (history kept; publish a new version to move forward)`);
@@ -47,7 +47,7 @@ export async function audit(_args, f) {
 
 export async function publish(args, f) {
   const dir = args[0] || '.';
-  if (!f.org) throw new Error('usage: skillyard publish <dir> --org <org> [--visibility public|private] [--force]');
+  if (!f.org) throw new Error('usage: skillhawk publish <dir> --org <org> [--visibility public|private] [--force]');
   const files = readSkillDir(dir);
   const v = validateFiles(files);
   if (!v.ok) throw new Error(`invalid skill:\n  - ${v.errors.join('\n  - ')}`);
@@ -64,13 +64,13 @@ export async function pull(_args, f) {
   let targets;
   let org = f.org;
   if (f.frozen) {
-    if (!fs.existsSync(lockPath)) throw new Error(`${LOCK} not found; run skillyard pull first`);
+    if (!fs.existsSync(lockPath)) throw new Error(`${LOCK} not found; run skillhawk pull first`);
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
     org ||= lock.org;
     targets = Object.entries(lock.skills).map(([id, e]) => ({ id, version: e.version, hash: e.hash }));
   } else {
     if (!org) org = (await reg.request('GET', '/api/whoami')).org;
-    if (!org) throw new Error('usage: skillyard pull --org <org>');
+    if (!org) throw new Error('usage: skillhawk pull --org <org>');
     const o = await reg.request('GET', `/api/orgs/${org}`);
     targets = o.skills.filter((s) => s.scope === org).map((s) => ({ id: s.id, version: s.latest }));
     if (!targets.length) throw new Error(`@${org} has no skills you can read`);

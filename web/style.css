@@ -232,7 +232,7 @@ table.cols .tag { text-decoration: none; display: inline-block; margin: 2px 0; }
 .gen-list .muted { font-size: 13px; }
 @media (max-width: 860px) { .picks { grid-template-columns: 1fr; } .show-make { grid-template-columns: 1fr; padding: 20px; } .top nav { gap: 14px; } }
 
-/* Skillyard's own grade and security result, from media/library.json (shared by the landing, browse and skill pages) */
+/* Skillhawk's own grade and security result, from media/library.json (shared by the landing, browse and skill pages) */
 .gchip { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box; border-radius: 6px; background: #141414; color: #fff; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
 .schip { display: inline-flex; align-items: center; gap: 6px; height: 26px; font-size: 13px; font-weight: 500; color: #141414; }
 .schip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #141414; }

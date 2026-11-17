@@ -22,7 +22,7 @@ export function expireLeases({ agents = Object.keys(AGENTS), cwd = process.cwd()
   return removed;
 }
 
-/** Wrapper for `skillyard sync`: expire first, then sync re-fetches (and fails if access was revoked). */
+/** Wrapper for `skillhawk sync`: expire first, then sync re-fetches (and fails if access was revoked). */
 export async function syncWithLeases(args, f, sync) {
   const removed = expireLeases({ cwd: process.cwd(), global: !!f.global });
   if (!f.quiet) for (const r of removed) console.log(`lease expired: removed ${r.id} from ${AGENTS[r.agent].label}`);

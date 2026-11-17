@@ -40,8 +40,8 @@ python3 scripts/fmt.py --check
 test('badge svg is well-formed and text matches inputs', () => {
   const svg = badgeSvg({ grade: 'A', lift: 38, secure: true });
   assert.match(svg, /^<svg [^>]*role="img"/);
-  assert.match(svg, /<title>Skillyard: A · \+38 lift · secure<\/title>/);
-  assert.ok(svg.includes('>skillyard</text>') && svg.includes('>A · +38 lift · secure</text>'));
+  assert.match(svg, /<title>Skillhawk: A · \+38 lift · secure<\/title>/);
+  assert.ok(svg.includes('>skillhawk</text>') && svg.includes('>A · +38 lift · secure</text>'));
   for (const t of ['svg', 'title', 'g', 'text']) assert.equal((svg.match(new RegExp(`<${t}[ >]`, 'g')) || []).length, (svg.match(new RegExp(`</${t}>`, 'g')) || []).length, t);
   assert.equal(badgeText({ grade: 'B', lift: null, secure: false }), 'B · security findings');
   assert.ok(!/lift/.test(badgeSvg({ grade: 'C', lift: null, secure: true })), 'lift never invented');

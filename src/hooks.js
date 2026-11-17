@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const START = '# >>> skillyard (managed: skillyard hooks remove) >>>';
+const START = '# >>> skillyard (managed: skillyard hooks remove) >>>'; // marker kept from before the rename so existing hooks are still found
 const END = '# <<< skillyard <<<';
 const GIT_HOOKS = ['post-merge', 'post-checkout'];
-const SYNC = 'npx --yes skillyard sync --quiet >/dev/null 2>&1 || true';
+const SYNC = 'npx --yes skillhawk sync --quiet >/dev/null 2>&1 || true';
 
 function gitHooksDir(cwd) {
   const r = spawnSync('git', ['rev-parse', '--git-path', 'hooks'], { cwd, encoding: 'utf8' });
@@ -42,7 +42,7 @@ export function installHooks({ cwd = process.cwd(), git = true, claude = false }
     const cur = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
     cur.hooks ||= {};
     const list = (cur.hooks.SessionStart ||= []);
-    const cmd = 'npx --yes skillyard sync --quiet';
+    const cmd = 'npx --yes skillhawk sync --quiet';
     if (!list.some((g) => (g.hooks || []).some((x) => x.command === cmd))) list.push({ hooks: [{ type: 'command', command: cmd, timeout: 60 }] });
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, `${JSON.stringify(cur, null, 2)}\n`);
@@ -65,7 +65,7 @@ export function removeHooks({ cwd = process.cwd() } = {}) {
     const cur = JSON.parse(fs.readFileSync(file, 'utf8'));
     const before = JSON.stringify(cur);
     if (cur.hooks?.SessionStart) {
-      cur.hooks.SessionStart = cur.hooks.SessionStart.map((g) => ({ ...g, hooks: (g.hooks || []).filter((x) => !String(x.command).includes('skillyard sync')) })).filter((g) => g.hooks.length);
+      cur.hooks.SessionStart = cur.hooks.SessionStart.map((g) => ({ ...g, hooks: (g.hooks || []).filter((x) => !String(x.command).includes('skillhawk sync')) })).filter((g) => g.hooks.length);
       if (!cur.hooks.SessionStart.length) delete cur.hooks.SessionStart;
       if (!Object.keys(cur.hooks).length) delete cur.hooks;
     }

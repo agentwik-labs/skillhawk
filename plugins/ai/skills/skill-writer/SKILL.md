@@ -23,8 +23,8 @@ the shape that fits, and prove it helps.
    Do not invent facts; when something is missing, ask or leave it out.
 5. **Write one test from a real request.** Put it in `evals/evals.json`: the request as a colleague would type it
    (it must not state the rule the skill teaches) and 2-4 checks a good answer must pass.
-6. **Check it.** If the Skillyard CLI is available, run `npx skillyard validate <folder>` and fix every error and
-   warning, then offer `npx skillyard eval <folder> --model haiku --runs 2` to measure it with and without.
+6. **Check it.** If the Skillhawk CLI is available, run `npx skillhawk validate <folder>` and fix every error and
+   warning, then offer `npx skillhawk eval <folder> --model haiku --runs 2` to measure it with and without.
 7. **Show the user** the folder and the one rule you were least sure about.
 
 ## Rules

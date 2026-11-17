@@ -131,7 +131,7 @@ export async function finalizePull(store, bundle, auth, { baseUrl = null } = {})
     store.recordMark({ recipient: who, skill: bundle.id, version: bundle.version, fingerprint });
     if (r.fingerprint?.beacon) store.registerBeacon({ org: bundle.scope, recipient: who, skill: bundle.id, version: bundle.version, token: r.fingerprint.beacon.token });
   }
-  // Re-sign what this recipient actually receives (the marked copy), so `skillyard verify --pub <org key>` passes on
+  // Re-sign what this recipient actually receives (the marked copy), so `skillhawk verify --pub <org key>` passes on
   // an installed copy and fails if anyone edits it afterwards. The publish-time signature was checked above.
   if (org.privateKey) {
     const s = await import('./sign.js').catch(() => null);
@@ -142,7 +142,7 @@ export async function finalizePull(store, bundle, auth, { baseUrl = null } = {})
     }
   }
   store.audit({ action: 'pull', org: bundle.scope, skill: bundle.id, version: bundle.version, marked: !!fingerprint }, auth);
-  // Installed copies of private skills carry a lease; `skillyard sync` removes them once it runs out.
+  // Installed copies of private skills carry a lease; `skillhawk sync` removes them once it runs out.
   if (store.db.skills[bundle.id].visibility === 'private') {
     const days = org.leaseDays ?? DEFAULT_LEASE_DAYS;
     bundle.lease = { days, expiresAt: new Date(Date.now() + days * 86400000).toISOString() };

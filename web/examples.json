@@ -1393,7 +1393,7 @@
    },
    "highlight": "past tense|Never add a body|prefixes|breaking",
    "why": "Nothing here is malicious and every format check passes. It just overrides better defaults: past tense, no body, no breaking-change marker. Only measuring catches it.",
-   "fix": "Run the skill with and without it on real tasks (skillyard eval). Keep a rule only if the score goes up.",
+   "fix": "Run the skill with and without it on real tasks (skillhawk eval). Keep a rule only if the score goes up.",
    "caughtBy": [
     "eval"
    ],
@@ -3827,7 +3827,7 @@
    },
    "highlight": "scripts/|references/",
    "why": "The workflow depends on a script and a guide that were never committed. The agent will improvise a validator or guess the schema, confidently.",
-   "fix": "Ship every file the instructions mention, and run skillyard validate before publishing.",
+   "fix": "Ship every file the instructions mention, and run skillhawk validate before publishing.",
    "caughtBy": [
     "validate"
    ],

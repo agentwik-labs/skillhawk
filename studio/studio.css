@@ -1,5 +1,5 @@
-/* Skillyard Studio. Style: framed sheet (tinted L-frame, white sheet inset 8px, no shadows at rest).
-   Face: the frame is tinted from Skillyard's green; the one chart hue is that green on the main series.
+/* Skillhawk Studio. Style: framed sheet (tinted L-frame, white sheet inset 8px, no shadows at rest).
+   Face: the frame is tinted from Skillhawk's green; the one chart hue is that green on the main series.
    Grid: sheet padding 24; one gap 24 everywhere; overview row = 2fr + 1fr with a 24 gap. */
 :root {
   --ground: #f3f3f3;

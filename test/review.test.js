@@ -71,7 +71,7 @@ test('CLI prints a report and writes json', () => {
   const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'review-json-')), 'r.json');
   let stdout;
   try { stdout = execFileSync('node', [BIN, 'review', FX, '--json', out], { encoding: 'utf8' }); } catch (e) { stdout = e.stdout; }
-  assert.match(stdout, /skillyard review: 4 skills/);
+  assert.match(stdout, /skillhawk review: 4 skills/);
   assert.match(stdout, /library: 1 duplicate/);
   const j = JSON.parse(fs.readFileSync(out, 'utf8'));
   assert.equal(j.skills.length, 4);

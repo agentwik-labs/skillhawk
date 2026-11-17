@@ -3,6 +3,6 @@
   "description": "Security skills: dockerfile-hardening, secrets-hygiene, secure-agent-setup, security-review; security-auditor subagent",
   "version": "1.0.0",
   "author": {
-    "name": "Skillyard Community"
+    "name": "Skillhawk Community"
   }
 }

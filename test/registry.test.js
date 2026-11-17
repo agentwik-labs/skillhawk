@@ -167,7 +167,7 @@ test('installs into each agent and refuses to clobber foreign folders', async ()
 
   fs.mkdirSync(path.join(cwd, '.claude/skills/mine'), { recursive: true });
   const foreign = { ...b, id: '@x/mine', name: 'mine' };
-  assert.throws(() => installBundle('claude', foreign, { cwd }), /not installed by skillyard/);
+  assert.throws(() => installBundle('claude', foreign, { cwd }), /not installed by skillhawk/);
   assert.throws(() => installBundle('claude', { ...b, files: { '../../pwn': 'eA==' } }, { cwd, force: true }), /unsafe path/);
 
   fs.writeFileSync(path.join(cwd, 'AGENTS.md'), `# House rules\n\n${fs.readFileSync(path.join(cwd, 'AGENTS.md'), 'utf8')}`);

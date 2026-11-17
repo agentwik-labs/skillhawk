@@ -1,4 +1,4 @@
-// skillyard command-line interface.
+// skillhawk command-line interface.
 import { parseArgs } from './args.js';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -21,7 +21,7 @@ const BIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bi
 const REPO_ROOT = path.resolve(path.dirname(BIN), '..');
 const ADMIN = { admin: true, org: null, scopes: ['read', 'publish', 'admin'], tokenId: 'cli' };
 
-const HELP = `skillyard — a skill registry for AI agents (Claude Code, Codex, Cursor, any AGENTS.md agent)
+const HELP = `skillhawk — a skill registry for AI agents (Claude Code, Codex, Cursor, any AGENTS.md agent)
 
 Using skills
   search [query] [--scope org] [--category c]   Find skills
@@ -221,7 +221,7 @@ export async function main(argv) {
   };
   if (cmd === '--version' || cmd === 'version' || (!cmd && flags.version)) return void console.log(JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
   if (!cmd || cmd === 'help' || flags.help) return void process.stdout.write(HELP);
-  if (!cmds[cmd]) throw new Error(`unknown command "${cmd}". Run skillyard help.`);
+  if (!cmds[cmd]) throw new Error(`unknown command "${cmd}". Run skillhawk help.`);
   await cmds[cmd](args, flags);
 }
 
@@ -244,9 +244,9 @@ async function serve(_args, f) {
   for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => { server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 5000).unref(); });
   const stats = server.store.stats({ admin: true, scopes: ['read'] });
   await new Promise((r) => server.listen(port, host, r));
-  console.log(`skillyard registry on http://${host}:${port}  (${stats.skills} skills, data: ${server.store.dataDir})`);
+  console.log(`skillhawk registry on http://${host}:${port}  (${stats.skills} skills, data: ${server.store.dataDir})`);
   console.log(`  web: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}   mcp: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/mcp`);
-  if (!stats.skills) console.log('  registry is empty: run `skillyard seed` to load the bundled skills');
+  if (!stats.skills) console.log('  registry is empty: run `skillhawk seed` to load the bundled skills');
 }
 
 async function seed(_args, f) {
@@ -264,7 +264,7 @@ async function seed(_args, f) {
   };
   const skillDirs = (root) => (fs.existsSync(root) ? fs.readdirSync(root).map((d) => path.join(root, d)).filter((d) => fs.existsSync(path.join(d, 'SKILL.md'))) : []);
 
-  ensureOrg({ slug: 'skillyard', name: 'Skillyard Community', description: 'Open-source skills maintained by the community.', website: 'https://github.com/agentwik-labs/skillyard' });
+  ensureOrg({ slug: 'skillyard', name: 'Skillhawk Community', description: 'Open-source skills maintained by the community.', website: 'https://github.com/agentwik-labs/skillhawk' });
   let n = 0;
   for (const d of skillDirs(path.join(REPO_ROOT, 'registry', 'public'))) n += publishDir('skillyard', d, 'public');
   report.unshift(`@skillyard: ${n} new skill version(s)`);
@@ -299,10 +299,10 @@ async function generateCmd(args, f) {
   if (!id) {
     console.log('Generators:\n');
     for (const g of GENERATORS) console.log(`  ${g.id.padEnd(10)} ${g.title}\n             ${g.summary}\n`);
-    console.log('skillyard generate <generator> --from <document.md>   or   --answers <answers.json>');
+    console.log('skillhawk generate <generator> --from <document.md>   or   --answers <answers.json>');
     return;
   }
-  if (!GENERATORS.some((g) => g.id === id)) throw new Error(`unknown generator "${id}" (run skillyard generate to list them)`);
+  if (!GENERATORS.some((g) => g.id === id)) throw new Error(`unknown generator "${id}" (run skillhawk generate to list them)`);
   let answers;
   if (f.answers) answers = JSON.parse(fs.readFileSync(f.answers, 'utf8'));
   else if (f.from) {
@@ -319,7 +319,7 @@ async function generateCmd(args, f) {
   fs.writeFileSync(path.join(dir, 'generator-answers.json'), `${JSON.stringify(answers, null, 2)}\n`);
   const notes = [...r.errors, ...r.missing.map((m) => `missing: ${m}`), ...r.scan.map((x) => `${x.severity}: ${x.message}`), ...r.warnings];
   console.log(`${r.valid ? 'created' : 'created with problems'} ${tilde(dir)}${notes.map((n) => `\n  - ${n}`).join('')}`);
-  console.log(`\nnext:\n  read ${tilde(path.join(dir, 'SKILL.md'))}\n${r.files['evals/evals.json'] ? `  skillyard eval ${tilde(dir)} --model haiku --runs 2\n` : ''}  skillyard install ${tilde(dir)} --agent claude,codex`);
+  console.log(`\nnext:\n  read ${tilde(path.join(dir, 'SKILL.md'))}\n${r.files['evals/evals.json'] ? `  skillhawk eval ${tilde(dir)} --model haiku --runs 2\n` : ''}  skillhawk install ${tilde(dir)} --agent claude,codex`);
 }
 
 async function hooks(args, f) {
@@ -329,8 +329,8 @@ async function hooks(args, f) {
     console.log(`installed: ${done.join(', ')}\nskills now re-sync after git pull and branch switches${f.claude ? ', and when a Claude Code session starts' : ''}`);
   } else if (args[0] === 'remove') {
     const done = removeHooks();
-    console.log(done.length ? `removed skillyard from: ${done.join(', ')}` : 'nothing to remove');
-  } else throw new Error('usage: skillyard hooks install [--claude] | hooks remove');
+    console.log(done.length ? `removed skillhawk from: ${done.join(', ')}` : 'nothing to remove');
+  } else throw new Error('usage: skillhawk hooks install [--claude] | hooks remove');
 }
 
 /** CI gate: validate + scan every skill under the given folders; markdown summary to $GITHUB_STEP_SUMMARY. */
@@ -358,7 +358,7 @@ async function ci(args, f = {}) {
   const pk = secureScan(args.length ? args : ['.'], { skills: false });
   for (const x of pk.findings.filter((x) => x.severity !== 'low')) console.log(`${x.severity === 'high' ? 'FAIL' : 'warn'} ${formatFinding(x).replace(/\n\s+/, ' ')}`);
   if (pk.high) failed += pk.high;
-  const md = [`### Skillyard: ${dirs.length} skill(s) checked, ${failed} failing${pk.findings.length ? `; packages: ${pk.high} high, ${pk.medium} medium` : ''}`, '', '| | Skill | Findings |', '|---|---|---|', ...rows, ''].join('\n');
+  const md = [`### Skillhawk: ${dirs.length} skill(s) checked, ${failed} failing${pk.findings.length ? `; packages: ${pk.high} high, ${pk.medium} medium` : ''}`, '', '| | Skill | Findings |', '|---|---|---|', ...rows, ''].join('\n');
   let out = md;
   if (f.compare && f.compare !== true) {
     const cmp = (await import('./devloop.js')).compareMarkdown(dirs, f.compare);
@@ -396,15 +396,15 @@ async function org(args, f) {
   if (sub === 'settings') return (await import('./beacon.js')).orgSettings(args, f);
   if (sub === 'billing' || sub === 'plan') return orgPlan(sub, args, f);
   if (sub === 'key') {
-    // Public key that signs every copy the vault serves: skillyard org key acme > org.pem; skillyard verify <dir> --pub org.pem
-    if (!args[0]) throw new Error('usage: skillyard org key <org> > org.pem');
+    // Public key that signs every copy the vault serves: skillhawk org key acme > org.pem; skillhawk verify <dir> --pub org.pem
+    if (!args[0]) throw new Error('usage: skillhawk org key <org> > org.pem');
     const { RemoteRegistry, loadConfig } = await import('./client.js');
     const cfg = loadConfig();
     const o = f.data ? new Store(dataDir(f)).getOrg(args[0]) : await new RemoteRegistry({ registry: f.registry || process.env.SKILLYARD_REGISTRY || cfg.registry, token: cfg.token }).request('GET', `/api/orgs/${args[0]}`);
     if (!o?.publicKey) throw new Error(`@${args[0]} has no public key`);
     return process.stdout.write(o.publicKey);
   }
-  if (sub !== 'create' || !args[0]) throw new Error('usage: skillyard org create <slug> [--name "Acme"] [--description ...]');
+  if (sub !== 'create' || !args[0]) throw new Error('usage: skillhawk org create <slug> [--name "Acme"] [--description ...]');
   const store = new Store(dataDir(f));
   const o = store.createOrg({ slug: args[0], name: f.name, description: f.description || '', website: f.website || '' });
   const t = store.createToken({ org: o.slug, name: 'owner', role: 'admin' });
@@ -414,11 +414,11 @@ async function org(args, f) {
 /**
  * org billing <org> | org plan <org> --plan team --seats 7 [--status active] [--pilot-ends <date>] [--period-end <date>]
  * With --data: edits that data dir directly (stop the server first, or it overwrites the change on its next save).
- * Otherwise: calls the configured registry (skillyard login) with a server-admin token.
+ * Otherwise: calls the configured registry (skillhawk login) with a server-admin token.
  */
 async function orgPlan(sub, args, f) {
   const slug = args[0];
-  if (!slug) throw new Error(`usage: skillyard org ${sub} <org>${sub === 'plan' ? ' --plan free|pro|team|enterprise [--seats n] [--status pilot|active|past_due|canceled] [--pilot-ends <date>]' : ''}`);
+  if (!slug) throw new Error(`usage: skillhawk org ${sub} <org>${sub === 'plan' ? ' --plan free|pro|team|enterprise [--seats n] [--status pilot|active|past_due|canceled] [--pilot-ends <date>]' : ''}`);
   const patch = { plan: f.plan, seats: f.seats === undefined ? undefined : Number(f.seats), status: f.status, pilotEndsAt: f.pilotEnds, periodEnd: f.periodEnd };
   let st;
   if (f.data) {
@@ -441,7 +441,7 @@ async function token(args, f) {
   const sub = args.shift();
   const store = new Store(dataDir(f));
   if (sub === 'create') {
-    if (!f.org && !f.admin) throw new Error('usage: skillyard token create --org <org> [--scopes read,publish] | --admin');
+    if (!f.org && !f.admin) throw new Error('usage: skillhawk token create --org <org> [--scopes read,publish] | --admin');
     const scopes = f.admin ? ['admin', 'read', 'publish'] : String(f.scopes || 'read').split(',');
     const t = store.createToken({ org: f.admin ? null : f.org, name: f.name || 'token', kind: f.service ? 'service' : 'member', ...(f.role ? { role: f.role } : { scopes }) }, { name: 'cli' });
     console.log(`token ${t.id} (${t.scopes.join(',')}${t.org ? ` for @${t.org}` : ', admin'}${t.kind === 'service' ? ', service: no seat, public skills only' : ''}), shown once:\n  ${t.token}`);
@@ -450,7 +450,7 @@ async function token(args, f) {
   } else if (sub === 'revoke' && args[0]) {
     store.revokeToken(args[0]);
     console.log(`revoked ${args[0]}`);
-  } else throw new Error('usage: skillyard token create|list|revoke');
+  } else throw new Error('usage: skillhawk token create|list|revoke');
 }
 
 // ---- account --------------------------------------------------------------
@@ -487,7 +487,7 @@ async function info(args) {
 ${s.title} — ${s.summary}
 tags: ${s.tags.join(', ') || '-'}   versions: ${s.versions.join(', ')}   downloads: ${s.downloads}
 files: ${s.files.join(', ')}
-install: npx skillyard install ${s.scope === 'skillyard' ? s.name : s.id}
+install: npx skillhawk install ${s.scope === 'skillyard' ? s.name : s.id}
 
 ${s.skillMd}`);
 }
@@ -507,7 +507,7 @@ function pickAgents(f) {
 }
 
 async function install(args, f) {
-  if (!args.length) throw new Error('usage: skillyard install <skill...> [--agent claude,codex,cursor,agents|all] [-g]');
+  if (!args.length) throw new Error('usage: skillhawk install <skill...> [--agent claude,codex,cursor,agents|all] [-g]');
   const agents = pickAgents(f);
   const reg = registry();
   for (const r of args) {
@@ -595,7 +595,7 @@ async function list(_args, f) {
     for (const s of items) console.log(`  ${s.id}@${s.version}  ${tilde(s.dir)}`);
     n += items.length;
   }
-  if (!n) console.log(`no skills installed${f.global ? ' globally' : ' in this project'} (try -g, or skillyard install <skill>)`);
+  if (!n) console.log(`no skills installed${f.global ? ' globally' : ' in this project'} (try -g, or skillhawk install <skill>)`);
 }
 
 async function update(_args, f) {
@@ -621,7 +621,7 @@ const writeManifest = (m) => fs.writeFileSync(MANIFEST, `${JSON.stringify(m, nul
 async function init(_args, f) {
   if (readManifest()) return console.log('skills.json already exists');
   writeManifest(newManifest(pickAgents(f)));
-  console.log('created skills.json — add skills with: skillyard install <skill> --save');
+  console.log('created skills.json — add skills with: skillhawk install <skill> --save');
 }
 
 async function sync(_args, f) {
@@ -631,7 +631,7 @@ async function sync(_args, f) {
 
 async function syncInner(f) {
   const m = readManifest();
-  if (!m) throw new Error('no skills.json here (run skillyard init)');
+  if (!m) throw new Error('no skills.json here (run skillhawk init)');
   const cfg = loadConfig();
   const reg = new RemoteRegistry({ registry: process.env.SKILLYARD_REGISTRY || m.registry || cfg.registry, token: cfg.token });
   const agents = f.agent ? resolveAgents(f.agent) : resolveAgents((m.agents || ['claude']).join(','));
@@ -683,7 +683,7 @@ async function connect(args, f) {
   const stdio = fromCheckout ? { command: 'node', args: [BIN, 'mcp'] } : { command: 'npx', args: ['-y', 'skillyard', 'mcp'] };
   const tokenNote = cfg.token
     ? 'Your token is read from the SKILLYARD_TOKEN environment variable; export it in your shell profile:\n  export SKILLYARD_TOKEN=<your token>'
-    : 'No token configured: only public skills will be visible. Run `skillyard login --token ...` for private skills.';
+    : 'No token configured: only public skills will be visible. Run `skillhawk login --token ...` for private skills.';
   const configs = {
     claude: () => {
       const cmd = ['claude', 'mcp', 'add', '--transport', 'http', '--scope', 'user', 'skillyard', url];
@@ -716,7 +716,7 @@ async function connect(args, f) {
         { ...stdio, env: { SKILLYARD_REGISTRY: cfg.registry, ...(cfg.token ? { SKILLYARD_TOKEN: cfg.token } : {}) } }, f.write, '');
     },
   };
-  if (!configs[agent]) throw new Error(`usage: skillyard connect <${Object.keys(configs).join('|')}> [--write]`);
+  if (!configs[agent]) throw new Error(`usage: skillhawk connect <${Object.keys(configs).join('|')}> [--write]`);
   const out = configs[agent]();
   if (out) console.log(out);
 }
@@ -731,7 +731,7 @@ function writeOrPrintJson(file, keyPath, value, write, note) {
   cur[keyPath[0]] = { ...(cur[keyPath[0]] || {}), [keyPath[1]]: value };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(cur, null, 2)}\n`);
-  return `wrote skillyard MCP server to ${tilde(file)}${note ? `\n${note}` : ''}`;
+  return `wrote skillhawk MCP server to ${tilde(file)}${note ? `\n${note}` : ''}`;
 }
 
 function appendToml(file, block) {
@@ -746,7 +746,7 @@ function appendToml(file, block) {
 
 async function scaffold(args, f) {
   const name = args[0];
-  if (!name || !NAME_RE.test(name)) throw new Error('usage: skillyard new <lowercase-hyphenated-name>');
+  if (!name || !NAME_RE.test(name)) throw new Error('usage: skillhawk new <lowercase-hyphenated-name>');
   const dir = path.resolve(f.dir || '.', name);
   if (fs.existsSync(dir)) throw new Error(`${dir} already exists`);
   fs.mkdirSync(path.join(dir, 'references'), { recursive: true });
@@ -778,7 +778,7 @@ TODO exactly what the agent should produce. Put long detail in references/ and l
   fs.writeFileSync(path.join(dir, 'skill.json'), `${JSON.stringify({
     name, version: '0.1.0', title: titleCase(name), summary: 'TODO one sentence for the registry card', category: 'engineering', tags: [], license: 'MIT', author: '',
   }, null, 2)}\n`);
-  console.log(`created ${dir}\nedit SKILL.md, then: skillyard validate ${path.relative(process.cwd(), dir) || '.'} && skillyard publish ${path.relative(process.cwd(), dir) || '.'} --org <org>`);
+  console.log(`created ${dir}\nedit SKILL.md, then: skillhawk validate ${path.relative(process.cwd(), dir) || '.'} && skillhawk publish ${path.relative(process.cwd(), dir) || '.'} --org <org>`);
 }
 
 async function validate(args) {
@@ -842,7 +842,7 @@ async function scanCmd(args, f) {
 }
 
 async function evalCmd(args, f) {
-  if (!args.length) throw new Error('usage: skillyard eval <skill-dir...> [--agent claude|codex] [--model haiku] [--runs 1] [--out report.md]');
+  if (!args.length) throw new Error('usage: skillhawk eval <skill-dir...> [--agent claude|codex] [--model haiku] [--runs 1] [--out report.md]');
   const reports = [];
   for (const dir of args) {
     reports.push(await evalSkill(dir, { agent: f.agent || 'claude', model: f.model, tools: f.tools ? String(f.tools).split(',') : undefined, runs: Number(f.runs) || 1, log: (l) => console.log(l) }));
@@ -858,7 +858,7 @@ async function evalCmd(args, f) {
 
 async function publish(args, f) {
   const dir = args[0] || '.';
-  if (!f.org) throw new Error('usage: skillyard publish <dir> --org <org> [--visibility public|private]');
+  if (!f.org) throw new Error('usage: skillhawk publish <dir> --org <org> [--visibility public|private]');
   const files = readSkillDir(dir);
   const v = validateFiles(files);
   if (!v.ok) throw new Error(`invalid skill:\n  - ${v.errors.join('\n  - ')}`);
@@ -870,7 +870,7 @@ async function publish(args, f) {
 
 async function exportCmd(args, f) {
   if (args[0] === 'site') return exportSite(f);
-  if (args[0] !== 'claude-marketplace' || !f.out) throw new Error('usage: skillyard export claude-marketplace --out <dir> [--from <dir> | --scope <org>] [--name n]');
+  if (args[0] !== 'claude-marketplace' || !f.out) throw new Error('usage: skillhawk export claude-marketplace --out <dir> [--from <dir> | --scope <org>] [--name n]');
   const out = path.resolve(f.out);
   const skills = []; // { name, category, version, description, files: {rel: Buffer} }
   if (f.scope) {
@@ -908,7 +908,7 @@ async function exportCmd(args, f) {
     const pdir = path.join(pluginsDir, cat);
     fs.mkdirSync(path.join(pdir, '.claude-plugin'), { recursive: true });
     const description = `${({ ai: "AI", devops: "DevOps" })[cat] || titleCase(cat)} skills: ${list.map((s) => s.name).sort().join(', ')}`;
-    fs.writeFileSync(path.join(pdir, '.claude-plugin', 'plugin.json'), `${JSON.stringify({ name: pname, description, version: '1.0.0', author: { name: f.scope ? f.scope : 'Skillyard Community' } }, null, 2)}\n`);
+    fs.writeFileSync(path.join(pdir, '.claude-plugin', 'plugin.json'), `${JSON.stringify({ name: pname, description, version: '1.0.0', author: { name: f.scope ? f.scope : 'Skillhawk Community' } }, null, 2)}\n`);
     for (const s of list) {
       for (const [rel, buf] of Object.entries(s.files)) {
         const dest = path.join(pdir, 'skills', s.name, rel);
@@ -925,15 +925,15 @@ async function exportCmd(args, f) {
   } catch { /* no previous marketplace */ }
   fs.writeFileSync(path.join(out, '.claude-plugin', 'marketplace.json'), `${JSON.stringify({
     name,
-    owner: { name: f.scope ? f.scope : 'Skillyard Community' },
-    metadata: { description: f.scope ? `Private skills for @${f.scope}, exported from Skillyard` : 'Open-source Agent Skills from Skillyard', version: '1.0.0' },
+    owner: { name: f.scope ? f.scope : 'Skillhawk Community' },
+    metadata: { description: f.scope ? `Private skills for @${f.scope}, exported from Skillhawk` : 'Open-source Agent Skills from Skillhawk', version: '1.0.0' },
     plugins,
   }, null, 2)}\n`);
   console.log(`wrote ${plugins.length} plugin(s) with ${skills.length} skill(s) to ${tilde(out)}\nadd it in Claude Code: /plugin marketplace add <git repo or path>`);
 }
 
 async function exportSite(f) {
-  if (!f.out) throw new Error('usage: skillyard export site --out <dir> [--data ./data] [--site-url https://example.com/base]');
+  if (!f.out) throw new Error('usage: skillhawk export site --out <dir> [--data ./data] [--site-url https://example.com/base]');
   const store = new Store(dataDir(f));
   const out = path.resolve(f.out);
   const webDir = path.join(REPO_ROOT, 'web');
@@ -1028,7 +1028,7 @@ async function studio(args, f) {
   const port = Number(f.port || 7430);
   const server = createStudioServer({ port });
   await new Promise((r) => server.listen(port, '127.0.0.1', r));
-  console.log(`Skillyard Studio on http://127.0.0.1:${port}  (local only; nothing is read until you allow it)`);
+  console.log(`Skillhawk Studio on http://127.0.0.1:${port}  (local only; nothing is read until you allow it)`);
 }
 
 // ---- helpers --------------------------------------------------------------

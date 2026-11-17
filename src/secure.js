@@ -1,4 +1,4 @@
-// `skillyard secure`: skills (via scan.js) plus the packages around them: MCP server configs, hooks,
+// `skillhawk secure`: skills (via scan.js) plus the packages around them: MCP server configs, hooks,
 // dependencies declared by skill scripts, scripts fetched at run time, and over-broad tool grants.
 // Every finding: { severity: high|medium|low, rule, file, line, message (why it matters), fix }.
 
@@ -273,7 +273,7 @@ export async function secureCmd(args, f) {
   const res = secureScan(dirs);
   if (typeof f.json === 'string') fs.writeFileSync(f.json, `${JSON.stringify(res, null, 2)}\n`);
   for (const x of res.findings) console.log(formatFinding(x));
-  const summary = `skillyard secure: ${res.high} high, ${res.medium} medium, ${res.low} low`;
+  const summary = `skillhawk secure: ${res.high} high, ${res.medium} medium, ${res.low} low`;
   if (gate) {
     const hits = atOrAbove(res.findings, gate);
     console.log(`${summary} | gate ${gate}: ${hits.length ? `FAIL (${hits.length} at or above ${gate})` : 'pass'}`);

@@ -1,19 +1,19 @@
-# Skillyard
+# Skillhawk
 
 A skill registry for AI agents. Keep open-source skills and your company's private ones in one place, and install
 them into **Claude Code, OpenAI Codex, Cursor and any AGENTS.md agent** (Gemini CLI, Copilot, Windsurf, Aider), or let
 agents search and load them live over **MCP**.
 
 A *skill* is a folder with a `SKILL.md` (YAML frontmatter + instructions) and optional `scripts/`, `references/` and
-`templates/`, following the [Agent Skills](https://agentskills.io) format. Skillyard adds what a team needs around
+`templates/`, following the [Agent Skills](https://agentskills.io) format. Skillhawk adds what a team needs around
 that format: private org scopes with access tokens, immutable versions, a security scan on every publish, one-command
 installs for every agent, a project manifest teammates can sync, and an audit log.
 
 ```
-npx skillyard install code-review @acme/deploy-runbook --agent claude,codex --save
+npx skillhawk install code-review @acme/deploy-runbook --agent claude,codex --save
 ```
 
-**Live demo:** https://agentwik-labs.github.io/skillyard/ (read-only; click *Sign in* and type `acme` or `northwind`
+**Live demo:** https://skillhawk.ai/ (read-only; click *Sign in* and type `acme` or `northwind`
 to see two fictional companies' private skills).
 
 **Reports:** [We scanned the 34 most-installed skill repos](reports/2026-10-top-skills-scan.md) ·
@@ -27,19 +27,19 @@ Six generators cover the knowledge businesses actually keep: **procedure** (runb
 **decision** (who approves what) and **metric** (how numbers are defined).
 
 ```sh
-npx skillyard generate                                   # list generators
-npx skillyard generate decision --from refund-policy.md  # fill one from your own document, with a test case
+npx skillhawk generate                                   # list generators
+npx skillhawk generate decision --from refund-policy.md  # fill one from your own document, with a test case
 ```
 
-The same generators run in the [web builder](https://agentwik-labs.github.io/skillyard/#/create) (answer a few
+The same generators run in the [web builder](https://skillhawk.ai/#/create) (answer a few
 questions, download a zip; nothing leaves the page) and in Studio's **Create a skill**, where the result is tested and
 waits for approval like every other proposal. The `skill-writer` skill does the same from inside Claude Code or Codex.
 
 ## Studio: your agents learn from your corrections
 
 ```sh
-npx skillyard studio          # http://127.0.0.1:7430, local only
-npx skillyard studio --demo   # try it on a fictional team's data first
+npx skillhawk studio          # http://127.0.0.1:7430, local only
+npx skillhawk studio --demo   # try it on a fictional team's data first
 ```
 
 Every time someone tells an agent "no, we use pnpm here" or "I didn't ask for that", it's a free test case.
@@ -69,18 +69,18 @@ your team's defect rate for AI work, with the pipeline from corrections to prove
 | **Registry server** | REST API, web UI, and an MCP endpoint at `/mcp`. Zero dependencies (Node ≥ 20), file-backed storage. |
 | **Private skills** | Every skill lives under a scope (`@acme/…`). Org skills are private by default, visible only to that org's tokens; a company can still publish selected skills publicly. |
 | **Security scan** | Every publish is scanned for prompt-injection phrasing, instructions to hide actions from the user, invisible Unicode, embedded secrets, `curl \| sh`, credential-file reads and secret exfiltration. Critical findings block the publish; warnings are shown on the skill page. |
-| **Cross-agent install** | `skillyard install` writes each skill where each agent looks: `.claude/skills/`, `.codex/skills/`, `.cursor/rules/*.mdc` (+ files), and `.agents/skills/` with a managed index in `AGENTS.md`. |
-| **MCP server** | Tools `search_skills`, `get_skill`, `read_skill_file`; every skill as an MCP prompt and resource. Over HTTP from the registry, or as a stdio bridge (`skillyard mcp`). |
-| **Lift evals** | `skillyard eval <skill>` runs the skill's `evals/evals.json` tasks through Claude Code or Codex with and without the skill, grades both with fixed checks, and reports the lift. Skills that don't help are context you pay for on every task. |
-| **Skill reviewer** | `skillyard review <dir>` grades every skill A-F with line-level findings and fixes, `--fix` applies safe mechanical fixes, and a library pass flags duplicates, overlapping triggers and contradictions; also a Claude Code skill + subagent in `plugins/review`. |
-| **Skill optimizer** | `skillyard optimize <dir>` cuts tokens with a static pass (filler, repeats, whitespace) that must keep the review grade and trigger cases; `--allow-model` adds model rewrites kept only if lift holds; `--all <dir>` summarizes a library; plugin in `plugins/optimize`. |
-| **Clean** | `skillyard clean scripts <skill-dir...>` reviews scripts bundled in skills (error handling, `set -e`, unquoted variables, hard-coded paths, unused code; also shown in `review`); `skillyard clean standards [repo] [--from-git] [--from-reviews file]` learns a coding-standards skill from the repo and clusters repeated PR review requests into counted rules; skill + subagent in `plugins/clean`. |
-| **Token Saver** | `skillyard map [dir]` builds a zero-dependency index of a repo and its skills (symbols, imports, summaries; `--update` is incremental; `--engine graphify` uses the graphify CLI if installed); `skillyard map query "<question>"` returns ranked `file:line` hits with no model. `skillyard mcp` serves it as `map_query` and `skill_section` (one heading of a SKILL.md), and `plugins/tokensaver` teaches agents to use both. |
-| **Token dashboard** | `skillyard tokens [--days 7] [--logs dir] [--json]` totals tokens and estimated cost from Claude Code logs per day, repo, skill and session (folders listed in `exclude` in ~/.skillyard/config.json, SKILLYARD_EXCLUDE or `--exclude` are never read). |
-| **Secure the setup** | `skillyard secure [dir...] [--gate high]` audits skills plus MCP configs, hooks, skill dependencies, run-time downloads and tool grants, with file:line, why and fix; `--gate` fails CI. |
-| **Scan any folder** | `skillyard scan <dir>` finds every skill under a folder (a repo, `~/.claude/skills`) and reports what runs code, talks to the network or hides instructions. |
-| **Project manifest** | `skills.json` lists a project's skills and agents; `skillyard sync` reproduces the set on any machine. |
-| **Claude plugin marketplace** | This repo is a Claude Code marketplace of the open-source skills, and `skillyard export claude-marketplace --scope acme` turns an org's private skills into a marketplace for a private git repo. |
+| **Cross-agent install** | `skillhawk install` writes each skill where each agent looks: `.claude/skills/`, `.codex/skills/`, `.cursor/rules/*.mdc` (+ files), and `.agents/skills/` with a managed index in `AGENTS.md`. |
+| **MCP server** | Tools `search_skills`, `get_skill`, `read_skill_file`; every skill as an MCP prompt and resource. Over HTTP from the registry, or as a stdio bridge (`skillhawk mcp`). |
+| **Lift evals** | `skillhawk eval <skill>` runs the skill's `evals/evals.json` tasks through Claude Code or Codex with and without the skill, grades both with fixed checks, and reports the lift. Skills that don't help are context you pay for on every task. |
+| **Skill reviewer** | `skillhawk review <dir>` grades every skill A-F with line-level findings and fixes, `--fix` applies safe mechanical fixes, and a library pass flags duplicates, overlapping triggers and contradictions; also a Claude Code skill + subagent in `plugins/review`. |
+| **Skill optimizer** | `skillhawk optimize <dir>` cuts tokens with a static pass (filler, repeats, whitespace) that must keep the review grade and trigger cases; `--allow-model` adds model rewrites kept only if lift holds; `--all <dir>` summarizes a library; plugin in `plugins/optimize`. |
+| **Clean** | `skillhawk clean scripts <skill-dir...>` reviews scripts bundled in skills (error handling, `set -e`, unquoted variables, hard-coded paths, unused code; also shown in `review`); `skillhawk clean standards [repo] [--from-git] [--from-reviews file]` learns a coding-standards skill from the repo and clusters repeated PR review requests into counted rules; skill + subagent in `plugins/clean`. |
+| **Token Saver** | `skillhawk map [dir]` builds a zero-dependency index of a repo and its skills (symbols, imports, summaries; `--update` is incremental; `--engine graphify` uses the graphify CLI if installed); `skillhawk map query "<question>"` returns ranked `file:line` hits with no model. `skillhawk mcp` serves it as `map_query` and `skill_section` (one heading of a SKILL.md), and `plugins/tokensaver` teaches agents to use both. |
+| **Token dashboard** | `skillhawk tokens [--days 7] [--logs dir] [--json]` totals tokens and estimated cost from Claude Code logs per day, repo, skill and session (folders listed in `exclude` in ~/.skillyard/config.json, SKILLYARD_EXCLUDE or `--exclude` are never read). |
+| **Secure the setup** | `skillhawk secure [dir...] [--gate high]` audits skills plus MCP configs, hooks, skill dependencies, run-time downloads and tool grants, with file:line, why and fix; `--gate` fails CI. |
+| **Scan any folder** | `skillhawk scan <dir>` finds every skill under a folder (a repo, `~/.claude/skills`) and reports what runs code, talks to the network or hides instructions. |
+| **Project manifest** | `skills.json` lists a project's skills and agents; `skillhawk sync` reproduces the set on any machine. |
+| **Claude plugin marketplace** | This repo is a Claude Code marketplace of the open-source skills, and `skillhawk export claude-marketplace --scope acme` turns an org's private skills into a marketplace for a private git repo. |
 | **Seed content** | 37 open-source skills in [`registry/public`](registry/public), including 12 for running a business (sales calls, outreach, proposals, pricing, investor updates, collections, hiring, SOPs), plus 227 imported community skills and two fictional companies with 13 private skills in [`seed/orgs`](seed/orgs). |
 
 ## Quick start
@@ -105,60 +105,60 @@ node bin/skillyard.js install @acme/deploy-runbook code-review --agent all
 **Install** copies skills into the agent's own folder, so they load automatically and work offline:
 
 ```sh
-skillyard install code-review                    # detected agents in this project (default: claude)
-skillyard install @acme/incident-response -g     # user-wide (Claude Code, Codex)
-skillyard install sql-review --agent cursor      # writes .cursor/rules/sql-review.mdc + .cursor/skills/sql-review/
-skillyard list && skillyard update
+skillhawk install code-review                    # detected agents in this project (default: claude)
+skillhawk install @acme/incident-response -g     # user-wide (Claude Code, Codex)
+skillhawk install sql-review --agent cursor      # writes .cursor/rules/sql-review.mdc + .cursor/skills/sql-review/
+skillhawk list && skillhawk update
 ```
 
 **MCP** lets the agent search everything your token can see and pull in a skill when a task calls for it:
 
 ```sh
-skillyard connect claude --write    # runs `claude mcp add --transport http skillyard <registry>/mcp …`
-skillyard connect codex --write     # adds [mcp_servers.skillyard] to ~/.codex/config.toml
-skillyard connect cursor --write    # .cursor/mcp.json (token read from ${env:SKILLYARD_TOKEN})
-skillyard connect vscode | gemini | claude-desktop
+skillhawk connect claude --write    # runs `claude mcp add --transport http skillhawk <registry>/mcp …`
+skillhawk connect codex --write     # adds [mcp_servers.skillyard] to ~/.codex/config.toml
+skillhawk connect cursor --write    # .cursor/mcp.json (token read from ${env:SKILLYARD_TOKEN})
+skillhawk connect vscode | gemini | claude-desktop
 ```
 
-**Claude Code plugins**: `/plugin marketplace add agentwik-labs/skillyard`, then `/plugin install skillyard-engineering@skillyard`.
+**Claude Code plugins**: `/plugin marketplace add agentwik-labs/skillhawk`, then `/plugin install skillyard-engineering@skillyard`.
 
 See [docs/agents.md](docs/agents.md) for where each agent reads skills and how each config looks.
 
 ## Roll it out to your team
 
 ```sh
-npx -y skillyard kit .
+npx -y skillhawk kit .
 ```
 
 Copies the [team starter kit](starter-kit/README.md) into your repo: a two-week plan, a 30-minute kickoff agenda,
 a skill review checklist, fill-in `data-handling` and `definition-of-done` skills with evals, a new-skill template,
-and a CI check. No server needed: `skillyard install ./skills/* --agent all` installs straight from the folder.
+and a CI check. No server needed: `skillhawk install ./skills/* --agent all` installs straight from the folder.
 
 ## Run it for a company
 
 ```sh
-SKILLYARD_ADMIN_TOKEN=$(openssl rand -hex 24) skillyard serve --host 0.0.0.0 --data /var/lib/skillyard
-skillyard org create acme --name "Acme Cloud"            # prints an owner token (read + publish)
-skillyard token create --org acme --scopes read --name laptop-dana
-skillyard new deploy-runbook && skillyard publish deploy-runbook --org acme
+SKILLYARD_ADMIN_TOKEN=$(openssl rand -hex 24) skillhawk serve --host 0.0.0.0 --data /var/lib/skillyard
+skillhawk org create acme --name "Acme Cloud"            # prints an owner token (read + publish)
+skillhawk token create --org acme --scopes read --name laptop-dana
+skillhawk new deploy-runbook && skillhawk publish deploy-runbook --org acme
 ```
 
 Sign-ups on the public site (the monthly report, audit requests, the Studio waitlist) post to the email-list endpoint in
 [`web/config.js`](web/config.js); until one is set, the forms point to the contact link instead.
 
-Or with Docker: `docker build -t skillyard . && docker run -p 7420:7420 -v skillyard-data:/data skillyard`.
+Or with Docker: `docker build -t skillhawk . && docker run -p 7420:7420 -v skillyard-data:/data skillhawk`.
 Put it behind TLS (any reverse proxy). Tokens are stored as SHA-256 hashes; org members manage tokens and see the
 activity log on their org page. See [docs/self-hosting.md](docs/self-hosting.md).
 
 ## Sign, test and live-reload a skill
 
-- `skillyard keys create --out keys/`, `skillyard sign <skill-dir> --key keys/skillyard-private.pem`, `skillyard verify <skill-dir> --pub keys/skillyard-public.pem` (exit 1, names the changed files). The signature is ed25519 over a sorted path-to-sha256 manifest, stored in `.skillyard-signature.json` (excluded from the manifest). Per-person marked copies differ from the signed original, so the vault signs the marked copy it serves, at serve time, with the org key; `verify` works on whatever was delivered. Library: `generateKeys`, `signFiles`, `verifyFiles` in `src/sign.js`.
-- `skillyard new` adds `tests/cases.yaml` (`should_fire`, `should_not_fire`, `behaviour` with `expect`/`forbid`/`rubric`; `cases.json` also works). `skillyard test <dir>` scores each trigger prompt against this skill's description and the sibling/installed skills (BM25) and reports which skill would win; `--allow-model` also runs behaviour cases in the confined eval runner.
-- `skillyard dev <dir> [--agent claude]` watches the folder, re-installs on change and prints one status line (review grade, static tests).
-- `skillyard ci skills --compare origin/main` adds a grade before/after and findings-delta table for changed skills to the PR summary (action input `compare`).
+- `skillhawk keys create --out keys/`, `skillhawk sign <skill-dir> --key keys/skillyard-private.pem`, `skillhawk verify <skill-dir> --pub keys/skillyard-public.pem` (exit 1, names the changed files). The signature is ed25519 over a sorted path-to-sha256 manifest, stored in `.skillyard-signature.json` (excluded from the manifest). Per-person marked copies differ from the signed original, so the vault signs the marked copy it serves, at serve time, with the org key; `verify` works on whatever was delivered. Library: `generateKeys`, `signFiles`, `verifyFiles` in `src/sign.js`.
+- `skillhawk new` adds `tests/cases.yaml` (`should_fire`, `should_not_fire`, `behaviour` with `expect`/`forbid`/`rubric`; `cases.json` also works). `skillhawk test <dir>` scores each trigger prompt against this skill's description and the sibling/installed skills (BM25) and reports which skill would win; `--allow-model` also runs behaviour cases in the confined eval runner.
+- `skillhawk dev <dir> [--agent claude]` watches the folder, re-installs on change and prints one status line (review grade, static tests).
+- `skillhawk ci skills --compare origin/main` adds a grade before/after and findings-delta table for changed skills to the PR summary (action input `compare`).
 ## Leak tracing: mark and trace
 
-`skillyard mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> --marks marks.json` writes a per-person copy and appends its fingerprint to `marks.json`; `skillyard trace leaked.md --marks marks.json --secret <s>` names the recipient with confidence and evidence, from a full copy or a fragment. Three layers, all keyed by HMAC(secret, recipient|version):
+`skillhawk mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> --marks marks.json` writes a per-person copy and appends its fingerprint to `marks.json`; `skillhawk trace leaked.md --marks marks.json --secret <s>` names the recipient with confidence and evidence, from a full copy or a fragment. Three layers, all keyed by HMAC(secret, recipient|version):
 
 - **zw**: a 32-bit tag as zero-width characters at up to 8 line ends. Easy to strip, which is fine.
 - **wording**: meaning-preserving variants (verify/confirm/check, make sure/ensure, before/prior to, e.g./for example, contractions and apostrophe style, Oxford comma, list marker style, order of adjacent independent bullets). Each site carries one bit of a 32-bit code in the parity of the choice, so every bit is repeated across sites; sites are anchored to line content, so fragments and merged copies still match. Never touches frontmatter, code fences, inline code, URLs, paths, headings or tables. Short skills get fewer sites (about 10 to 35).
@@ -177,8 +177,8 @@ my-skill/
   templates/        # fill-in documents
 ```
 
-Add `evals/evals.json` (tasks plus pass/fail checks) and run `skillyard eval <dir> --model haiku --runs 3` to see
-whether the skill helps. `skillyard validate <dir>` checks the format and runs the same security scan as the server. Versions are
+Add `evals/evals.json` (tasks plus pass/fail checks) and run `skillhawk eval <dir> --model haiku --runs 3` to see
+whether the skill helps. `skillhawk validate <dir>` checks the format and runs the same security scan as the server. Versions are
 immutable; bump `version` in `skill.json` to publish a change. Contribution rules for the open-source set are in
 [CONTRIBUTING.md](CONTRIBUTING.md).
 

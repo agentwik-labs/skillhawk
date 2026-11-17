@@ -99,7 +99,7 @@ export async function run(args, flags = {}) {
       if (!provided) throw new Error('--check needs --models a,b or --from-file <file> (or --fetch with ANTHROPIC_API_KEY)');
       const fresh = newModels(state, agent, provided);
       console.log(fresh.length ? `new models for ${agent}: ${fresh.join(', ')}` : `no new models for ${agent}`);
-      for (const m of fresh) console.log(`  skillyard watch run <skills> --model ${m} --allow-model`);
+      for (const m of fresh) console.log(`  skillhawk watch run <skills> --model ${m} --allow-model`);
       if (flags.save || flags.add) { state.models[agent] = [...state.models[agent], ...fresh]; saveState(state, stateFile); console.log(`saved to ${stateFile}`); }
       return;
     }
@@ -108,7 +108,7 @@ export async function run(args, flags = {}) {
   }
   if (sub === 'run') {
     const model = str(flags.model);
-    if (!model || !args.length) throw new Error('usage: skillyard watch run <skill-dir...> --model <new> [--baseline <old>] [--threshold 10] [--out .skillyard/watch] [--allow-model]');
+    if (!model || !args.length) throw new Error('usage: skillhawk watch run <skill-dir...> --model <new> [--baseline <old>] [--threshold 10] [--out .skillyard/watch] [--allow-model]');
     if (!(flags.allowModel || flags['allow-model'])) throw new Error('watch run calls models for every skill on two models; re-run with --allow-model');
     const state = loadState(stateFile);
     const baseline = str(flags.baseline, state.models[agent].filter((m) => m !== model).pop());
@@ -118,5 +118,5 @@ export async function run(args, flags = {}) {
     if (!state.models[agent].includes(model)) { state.models[agent].push(model); saveState(state, stateFile); }
     return;
   }
-  throw new Error('usage: skillyard watch models [--check --models a,b | --from-file f | --fetch] [--add m] [--save] [--state f]  |  watch run <dir...> --model <new> [--baseline <old>] --allow-model');
+  throw new Error('usage: skillhawk watch models [--check --models a,b | --from-file f | --fetch] [--add m] [--save] [--state f]  |  watch run <dir...> --model <new> [--baseline <old>] --allow-model');
 }

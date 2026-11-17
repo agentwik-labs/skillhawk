@@ -1,7 +1,7 @@
 # Skill review checklist
 
 Use on every PR that adds or changes a skill. Examples of each failure:
-https://agentwik-labs.github.io/skillyard/#/examples
+https://skillhawk.ai/#/examples
 
 **Will an agent load it at the right time?**
 - [ ] The description says what it does and when to use it, with phrases people actually type.

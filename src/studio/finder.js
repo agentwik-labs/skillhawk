@@ -1,5 +1,5 @@
 // Find existing skills that might already fix a theme, before (or alongside) drafting a new one.
-// Searches a Skillyard registry: the team's own when SKILLYARD_REGISTRY is set, else the public library
+// Searches a Skillhawk registry: the team's own when SKILLYARD_REGISTRY is set, else the public library
 // (a static export: api/index.json, api/skills/@scope/name.json, .../files/<path>). Public skills only.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -8,7 +8,7 @@ import { askJson } from './llm.js';
 import { validateFiles } from '../skill.js';
 import { scanFiles } from '../scan.js';
 
-export const PUBLIC_LIBRARY = 'https://agentwik-labs.github.io/skillyard';
+export const PUBLIC_LIBRARY = 'https://skillhawk.ai';
 const STOP = new Set('the a an and or of to in on for with without from by is are be it its this that what when who how than then into over after before not no do does did done make makes made use uses used user users agent agents asked ask says said says just only also more less any all every each nobody something'.split(' '));
 
 // Crude stemming (first five letters) so "verify" meets "verification" and "scoped" meets "scope".

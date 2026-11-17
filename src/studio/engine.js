@@ -453,8 +453,8 @@ export async function notify(proposals, { test = false } = {}) {
   if (!url) return false;
   const pts = (x) => `${x > 0 ? '+' : ''}${Math.round(x * 100)} pts`;
   const lines = test
-    ? ['Skillyard Studio is connected. New skill proposals will be posted here.']
-    : [`Skillyard Studio has ${proposals.length} new skill proposal${proposals.length === 1 ? '' : 's'} waiting for review:`,
+    ? ['Skillhawk Studio is connected. New skill proposals will be posted here.']
+    : [`Skillhawk Studio has ${proposals.length} new skill proposal${proposals.length === 1 ? '' : 's'} waiting for review:`,
       ...proposals.map((p) => `• ${p.kind === 'improve' ? 'Improve' : 'New'} ${p.skill}: ${p.title}${p.eval ? ` (${pts(p.eval.lift)} in tests)` : ''}`)];
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: lines.join('\n') }) });
   if (!res.ok) throw new Error(`webhook answered ${res.status}`);

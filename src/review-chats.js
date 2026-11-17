@@ -1,11 +1,11 @@
-// skillyard review --chats : improve EXISTING skills from what happened in your agent sessions.
+// skillhawk review --chats : improve EXISTING skills from what happened in your agent sessions.
 //
 // Usage:
-//   skillyard review --chats [--yes] [--logs <dir>] [--skills <dir[,dir]>] [--data <dir>] [--exclude <path[,path]>]
+//   skillhawk review --chats [--yes] [--logs <dir>] [--skills <dir[,dir]>] [--data <dir>] [--exclude <path[,path]>]
 //                            [--test] [--allow-model] [--json]
-//   skillyard review --chats --list                  show saved proposals
-//   skillyard review --chats --apply <id>            apply one proposal (backs up the old SKILL.md first)
-//   skillyard review --chats --reject <id>           reject one (it will not be proposed again)
+//   skillhawk review --chats --list                  show saved proposals
+//   skillhawk review --chats --apply <id>            apply one proposal (backs up the old SKILL.md first)
+//   skillhawk review --chats --reject <id>           reject one (it will not be proposed again)
 //
 // What it does: finds corrections ("no, I said...", "don't...", redo requests), repeated mistakes, and skills that
 // should have fired but did not (or fired and were still corrected), then attributes each to an installed skill or to
@@ -227,7 +227,7 @@ export function buildProposals(corrections, skills) {
     const repeated = [...types.values()].some((n) => n >= 2) || new Set(items.map((c) => c.session)).size >= 2;
     const id = sha(`${skill ? skill.name : 'none'}:${items.map((c) => c.id).sort().join(',')}`).slice(0, 8);
     const base = { id, status: 'pending', created: new Date().toISOString(), count: items.length, repeated, evidence: items.slice(0, 6).map(evidenceOf) };
-    if (!skill) { out.push({ ...base, skill: null, kind: 'no-skill', note: 'No installed skill covers these. Run `skillyard studio` to draft a new one.' }); continue; }
+    if (!skill) { out.push({ ...base, skill: null, kind: 'no-skill', note: 'No installed skill covers these. Run `skillhawk studio` to draft a new one.' }); continue; }
     const before = fs.readFileSync(skill.md, 'utf8');
     const missed = items.filter((c) => c.how === 'missed-fire').map((c) => c.id);
     const after = draftEdit(before, items, missed);
@@ -333,7 +333,7 @@ export async function run(args = [], flags = {}) {
     if (flags.yes) grant(data, 'readLogs', 'Claude Code sessions, read locally');
     else {
       out('Reading your agent session logs needs your consent. Everything stays on this machine; secrets, emails and phone numbers are redacted.');
-      out('Re-run with --yes to allow it (or allow it in Skillyard Studio).');
+      out('Re-run with --yes to allow it (or allow it in Skillhawk Studio).');
       return { needsConsent: true, proposals: [] };
     }
   }
@@ -375,7 +375,7 @@ export async function run(args = [], flags = {}) {
   const pending = [...fresh, ...saved.filter((s) => s.status === 'pending' && !fresh.includes(s))];
   pending.forEach((p) => show(p, out));
   if (!pending.length) out('Nothing to propose.');
-  else out(`\nNothing is changed yet. Apply with: skillyard review --chats --apply <id>   Reject with: --reject <id>`);
+  else out(`\nNothing is changed yet. Apply with: skillhawk review --chats --apply <id>   Reject with: --reject <id>`);
   const result = { read: files.length - skipped, excluded: skipped, corrections: corrections.length, proposals: pending };
   if (flags.json) console.log(JSON.stringify(result, null, 1));
   return result;

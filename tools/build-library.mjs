@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds web/media/library.json: Skillyard's own judgement of every public skill in a registry.
+// Builds web/media/library.json: Skillhawk's own judgement of every public skill in a registry.
 // Each skill is graded by the reviewer (src/review.js) and checked by the security audit (src/secure.js, which also
 // runs src/scan.js). Nothing here is invented: a skill that cannot be reviewed is left out, not guessed.
 //
@@ -41,7 +41,7 @@ if (data) {
     const m = v.manifest;
     items.push({ id: s.id, scope: s.scope === 'skillyard' ? 'public' : 'community', name: s.name, title: m.title || s.name,
       category: m.category || 'other', description: oneLine(m.summary || m.description), dir,
-      source: s.source ? { repo: s.source.repo.replace('https://github.com/', ''), licence: s.source.license || m.license || null } : { repo: 'agentwik-labs/skillyard', licence: m.license || 'MIT' } });
+      source: s.source ? { repo: s.source.repo.replace('https://github.com/', ''), licence: s.source.license || m.license || null } : { repo: 'agentwik-labs/skillhawk', licence: m.license || 'MIT' } });
   }
 } else {
   for (const d of dirs.split(',')) for (const sd of findSkillDirs([d])) {
@@ -49,7 +49,7 @@ if (data) {
     let m = {}; try { m = JSON.parse(fs.readFileSync(path.join(sd, 'skill.json'), 'utf8')); } catch { /* frontmatter only */ }
     const own = path.resolve(d) === path.join(ROOT, 'registry/public');
     items.push({ id: `@${own ? 'skillyard' : 'community'}/${name}`, scope: own ? 'public' : 'community', name, title: m.title || name, category: m.category || 'other',
-      description: null, dir: sd, source: { repo: own ? 'agentwik-labs/skillyard' : null, licence: m.license || null } });
+      description: null, dir: sd, source: { repo: own ? 'agentwik-labs/skillhawk' : null, licence: m.license || null } });
   }
 }
 
@@ -93,7 +93,7 @@ for (const want of ['community', 'public', 'community', 'public', 'community', '
 
 const lib = {
   generatedAt: new Date().toISOString(),
-  method: 'Grade from skillyard review (A to F, line-level findings). Security from skillyard secure, which includes the skill scanner. Same code as the CLI.',
+  method: 'Grade from skillhawk review (A to F, line-level findings). Security from skillhawk secure, which includes the skill scanner. Same code as the CLI.',
   total: skills.length, scopes: { public: skills.filter((s) => s.scope === 'public').length, community: skills.filter((s) => s.scope === 'community').length },
   grades, secure: secureCounts, featured, skills,
 };

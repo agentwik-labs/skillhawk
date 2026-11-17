@@ -3,7 +3,7 @@
   "description": "Skill reviewer: grade SKILL.md files A-F, find duplicate and overlapping skills, apply safe fixes",
   "version": "1.0.0",
   "author": {
-    "name": "Skillyard Community"
+    "name": "Skillhawk Community"
   },
   "skills": "./skills",
   "agents": "./agents"

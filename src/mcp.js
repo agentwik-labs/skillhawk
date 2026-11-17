@@ -7,9 +7,9 @@ import { parseSkillRef } from './skill.js';
 import { loadMap, queryMap, formatHits, sectionOf, localSkillText } from './map.js';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
-const SERVER_INFO = { name: 'skillyard', title: 'Skillyard skill registry', version: '0.1.0' };
+const SERVER_INFO = { name: 'skillyard', title: 'Skillhawk skill registry', version: '0.1.0' };
 const INSTRUCTIONS = [
-  'Skillyard holds reusable skills: tested instructions for specific kinds of work, including your organization\'s private',
+  'Skillhawk holds reusable skills: tested instructions for specific kinds of work, including your organization\'s private',
   'playbooks (deploy runbooks, code standards, compliance rules, brand voice).',
   'Before starting a non-trivial task, call search_skills with a few keywords. If a skill matches, call get_skill and',
   'follow its instructions; use read_skill_file for any references/ templates/ or scripts/ it mentions.',
@@ -65,7 +65,7 @@ const TOOLS = [
 const MAP_TOOL = {
   name: 'map_query',
   title: 'Query the repo map',
-  description: 'Find the files and symbols (with line numbers) that match a question, using the local skillyard map (built by `skillyard map`). Call this before opening files; then read only the lines it points to.',
+  description: 'Find the files and symbols (with line numbers) that match a question, using the local skillhawk map (built by `skillhawk map`). Call this before opening files; then read only the lines it points to.',
   inputSchema: { type: 'object', properties: { question: { type: 'string', description: 'Keywords or a short question, e.g. "where is the security scan"' }, limit: { type: 'number', description: 'Max hits (default 8)' } }, required: ['question'] },
   annotations: { readOnlyHint: true },
 };
@@ -163,7 +163,7 @@ async function callTool(registry, name, args, opts = {}) {
   try {
     if (name === 'map_query' && opts.root) {
       const map = loadMap(opts.root);
-      if (!map) return text('No map found. Run `skillyard map` in the repo first.', true);
+      if (!map) return text('No map found. Run `skillhawk map` in the repo first.', true);
       return text(formatHits(queryMap(map, args.question || '', Math.min(Number(args.limit) || 8, 30))));
     }
     if (name === 'skill_section') {
@@ -209,7 +209,7 @@ function skillText(info) {
   const header = [
     `# Skill ${info.id}@${info.version}`,
     `Supporting files${others.length ? ` (read with read_skill_file): ${others.join(', ')}` : ': none'}`,
-    'Scripts are not executed by the registry. To run one, install the skill locally: npx skillyard install ' + info.id,
+    'Scripts are not executed by the registry. To run one, install the skill locally: npx skillhawk install ' + info.id,
     '',
     '---',
     '',

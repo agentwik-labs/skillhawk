@@ -7,7 +7,7 @@ const dataDir = (f) => f.data || process.env.SKILLYARD_DATA || 'data';
 
 export async function orgSettings(args, f) {
   const slug = (args[0] && !args[0].startsWith('-') ? args[0] : null) || (f.org !== true ? f.org : null);
-  if (!slug) throw new Error('usage: skillyard org settings <org> --beacon on|off [--i-have-legal-review] [--data dir]');
+  if (!slug) throw new Error('usage: skillhawk org settings <org> --beacon on|off [--i-have-legal-review] [--data dir]');
   const store = new Store(dataDir(f));
   if (!store.getOrg(slug)) throw new Error(`org ${slug} not found`);
   if (f.beacon === undefined) {

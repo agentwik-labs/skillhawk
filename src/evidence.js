@@ -82,11 +82,11 @@ export function buildEvidence(store, { org, leaked, leakedName = 'leaked.md', ou
   const verify = [
     '# Verifying this evidence pack', '',
     '1. Confirm `evidence.json` matches the signature, using the org public key in `public-key.pem`:', '',
-    '   `skillyard evidence verify <this directory>`', '',
+    '   `skillhawk evidence verify <this directory>`', '',
     '   This checks the ed25519 signature in `evidence.sig.json` against `public-key.pem` and the sha256 of `evidence.json`. A changed byte in evidence.json makes it fail.', '',
     '2. Confirm the public key is the org key: compare `public-key.pem` with the key the registry publishes at `GET /api/orgs/' + org + '` (field `publicKey`).', '',
     '3. Re-hash the leaked file: `shasum -a 256 <leaked file>` must equal `leakedFile.sha256` in evidence.json.', '',
-    '4. Audit log chain: on the registry host run `skillyard audit verify --data <dir>`; the head hash must be at or after the one in evidence.json (`auditLog.head`).', '',
+    '4. Audit log chain: on the registry host run `skillhawk audit verify --data <dir>`; the head hash must be at or after the one in evidence.json (`auditLog.head`).', '',
     'The chain detects edited, removed or inserted entries in the middle of the log. A log truncated at its very end is only detectable by comparing against a head hash saved earlier, such as the one here.', '',
   ].join('\n');
 
@@ -112,14 +112,14 @@ export function verifyEvidence(dir) {
 
 export async function evidenceCmd(args, f) {
   if (args[0] === 'verify') {
-    if (!args[1]) throw new Error('usage: skillyard evidence verify <evidence-dir>');
+    if (!args[1]) throw new Error('usage: skillhawk evidence verify <evidence-dir>');
     const r = verifyEvidence(args[1]);
     console.log(r.ok ? 'ok   evidence.json signature valid' : `FAIL ${r.error || 'evidence.json differs from what was signed'}`);
     if (!r.ok) process.exitCode = 1;
     return;
   }
   const file = args[0];
-  if (!file || !f.org || f.org === true) throw new Error('usage: skillyard evidence <leaked.md> --org <org> [--out evidence/] [--data dir]  |  evidence verify <dir>');
+  if (!file || !f.org || f.org === true) throw new Error('usage: skillhawk evidence <leaked.md> --org <org> [--out evidence/] [--data dir]  |  evidence verify <dir>');
   const out = f.out && f.out !== true ? f.out : 'evidence';
   const { evidence } = buildEvidence(new Store(dataDir(f)), { org: f.org, leaked: fs.readFileSync(file), leakedName: path.basename(file), out });
   const t = evidence.topCandidate;

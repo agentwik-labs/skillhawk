@@ -472,7 +472,7 @@ const secretOf = (f) => {
 
 export async function run(args, f = {}) {
   const dir = args[0];
-  if (!dir || !f.recipient || !f.version || f.recipient === true || f.version === true) throw new Error('usage: skillyard mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> [--marks marks.json] [--layers zw,wording,canary]');
+  if (!dir || !f.recipient || !f.version || f.recipient === true || f.version === true) throw new Error('usage: skillhawk mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> [--marks marks.json] [--layers zw,wording,canary]');
   const skillFile = path.join(dir, 'SKILL.md');
   if (!fs.existsSync(skillFile)) throw new Error(`${dir} has no SKILL.md`);
   const out = path.resolve(f.out && f.out !== true ? f.out : `${path.basename(path.resolve(dir))}.${f.recipient}`);
@@ -499,7 +499,7 @@ export async function run(args, f = {}) {
 
 export async function traceCmd(args, f = {}) {
   const file = args[0];
-  if (!file || !f.marks || f.marks === true) throw new Error('usage: skillyard trace <leaked.md> --marks marks.json --secret <s> [--json]');
+  if (!file || !f.marks || f.marks === true) throw new Error('usage: skillhawk trace <leaked.md> --marks marks.json --secret <s> [--json]');
   const candidates = JSON.parse(fs.readFileSync(f.marks, 'utf8'));
   const res = trace(fs.readFileSync(file, 'utf8'), candidates, { orgSecret: secretOf(f) });
   if (f.json) return void console.log(JSON.stringify(res, null, 2));

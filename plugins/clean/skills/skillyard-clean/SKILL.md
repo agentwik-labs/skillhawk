@@ -4,13 +4,13 @@ description: Cleans up the scripts inside agent skills and learns a coding-stand
 license: MIT
 ---
 
-# Skillyard clean
+# Skillhawk clean
 
 Two deterministic jobs, no model calls and no network.
 
 ## Job 1: skill scripts
 
-1. Run `npx skillyard clean scripts <skill-dir...>` (add `--json` for machine output). `skillyard review` prints the same findings in a "scripts" section.
+1. Run `npx skillhawk clean scripts <skill-dir...>` (add `--json` for machine output). `skillhawk review` prints the same findings in a "scripts" section.
 2. Report findings by severity with `file:line`, the rule and the fix. High means a missing `set -e` or a hard-coded home path.
 3. Offer to apply the fixes, then re-run to confirm. Do not rewrite a script's logic unasked.
 
@@ -18,14 +18,14 @@ Rules checked: unused functions, variables and imports; network, subprocess and 
 
 ## Job 2: coding standards
 
-1. Run `npx skillyard clean standards . --from-git --out skills/coding-standards`.
+1. Run `npx skillhawk clean standards . --from-git --out skills/coding-standards`.
 2. If the user has an export of PR review comments (markdown, text or JSON), add `--from-reviews <file>`. Repeated requests become rules with counts.
-3. Read the generated `SKILL.md`, delete any rule the team disagrees with, and keep the examples. It must grade B or better in `skillyard review`.
+3. Read the generated `SKILL.md`, delete any rule the team disagrees with, and keep the examples. It must grade B or better in `skillhawk review`.
 
 ## Example
 
 ```
-$ skillyard clean standards . --from-git --from-reviews reviews.json
+$ skillhawk clean standards . --from-git --from-reviews reviews.json
 learned conventions from 415 files and 200 commits, 3 rule(s) from review comments
   x7  Add a unit test for the new branch
 review: A (no findings)

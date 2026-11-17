@@ -60,7 +60,7 @@ export function detectAgents(cwd) {
 
 /**
  * Write a bundle ({id, name, version, checksum, files: {rel: base64}}) for one agent.
- * Refuses to overwrite a directory that was not installed by skillyard unless force is set.
+ * Refuses to overwrite a directory that was not installed by skillhawk unless force is set.
  */
 export function installBundle(agent, bundle, { global = false, cwd = process.cwd(), force = false } = {}) {
   const a = AGENTS[agent];
@@ -68,7 +68,7 @@ export function installBundle(agent, bundle, { global = false, cwd = process.cwd
   const dir = a.dir(bundle.name, opts);
   if (fs.existsSync(dir)) {
     const marker = readMarker(dir);
-    if (!marker && !force) throw new Error(`${dir} exists and was not installed by skillyard (use --force to replace it)`);
+    if (!marker && !force) throw new Error(`${dir} exists and was not installed by skillhawk (use --force to replace it)`);
     if (marker && marker.id !== bundle.id && !force) throw new Error(`${dir} holds ${marker.id}; ${bundle.id} has the same name (use --force to replace it)`);
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -102,7 +102,7 @@ export function uninstall(agent, name, { global = false, cwd = process.cwd() } =
   return true;
 }
 
-/** Skills installed by skillyard for one agent: [{name, id, version, dir}]. */
+/** Skills installed by skillhawk for one agent: [{name, id, version, dir}]. */
 export function listInstalled(agent, { global = false, cwd = process.cwd() } = {}) {
   const a = AGENTS[agent];
   const root = a.root({ global: global && !a.projectOnly, cwd });

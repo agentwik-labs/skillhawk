@@ -1,1 +1,1 @@
-// Replaced by `skillyard export site` with: window.SKILLYARD_STATIC = true;
+// Replaced by `skillhawk export site` with: window.SKILLYARD_STATIC = true;

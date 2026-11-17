@@ -1,9 +1,10 @@
 {
-  "name": "skillyard",
+  "name": "skillhawk",
   "version": "0.2.0",
   "description": "A skill registry for AI agents: open-source and company-private Agent Skills, installable into Claude Code, Codex, Cursor and any AGENTS.md agent, and served over MCP.",
   "type": "module",
   "bin": {
+    "skillhawk": "bin/skillyard.js",
     "skillyard": "bin/skillyard.js"
   },
   "files": [
@@ -32,11 +33,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/agentwik-labs/skillyard.git"
+    "url": "git+https://github.com/agentwik-labs/skillhawk.git"
   },
-  "homepage": "https://agentwik-labs.github.io/skillyard/",
+  "homepage": "https://skillhawk.ai/",
   "bugs": {
-    "url": "https://github.com/agentwik-labs/skillyard/issues"
+    "url": "https://github.com/agentwik-labs/skillhawk/issues"
   },
   "keywords": [
     "agent-skills",

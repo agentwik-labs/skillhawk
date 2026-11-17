@@ -10,7 +10,7 @@ async function orgOf(reg, f) {
 
 export async function revokeCmd(args, f) {
   const member = f.user && f.user !== true ? f.user : args[0];
-  if (!member) throw new Error('usage: skillyard revoke --user <token-name|member> [--org o]');
+  if (!member) throw new Error('usage: skillhawk revoke --user <token-name|member> [--org o]');
   const reg = new RemoteRegistry(loadConfig());
   const org = await orgOf(reg, f);
   const r = await reg.request('POST', `/api/orgs/${org}/revoke`, { member });
@@ -28,13 +28,13 @@ export function formatReport(h) {
     L.push('| Skill | Version | Times | First | Last | How | Mark |', '| --- | --- | --- | --- | --- | --- | --- |');
     for (const r of h.held) L.push(`| ${r.skill} | ${r.version} | ${r.count} | ${r.first?.slice(0, 10) || ''} | ${r.last?.slice(0, 10) || ''} | ${r.via.join(', ') || 'marked copy'} | ${r.fingerprint ? `\`${r.fingerprint}\`` : ''} |`);
   } else L.push('This person never pulled a skill.');
-  L.push('', 'Copies pulled as files may still sit on their machines until the lease expires (default 7 days, removed by `skillyard sync`); marks identify a leaked copy.');
+  L.push('', 'Copies pulled as files may still sit on their machines until the lease expires (default 7 days, removed by `skillhawk sync`); marks identify a leaked copy.');
   return `${L.join('\n')}\n`;
 }
 
 export async function offboardCmd(args, f) {
   const member = args[0];
-  if (!member) throw new Error('usage: skillyard offboard <member> [--org o] [--out report.md]');
+  if (!member) throw new Error('usage: skillhawk offboard <member> [--org o] [--out report.md]');
   const reg = new RemoteRegistry(loadConfig());
   const org = await orgOf(reg, f);
   await reg.request('POST', `/api/orgs/${org}/revoke`, { member });

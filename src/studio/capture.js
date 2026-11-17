@@ -212,7 +212,7 @@ export function listSessionFiles(source) {
     try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
     for (const e of ents) {
       const p = path.join(d, e.name);
-      // Skip subagents and Skillyard's own eval/model runs, which would otherwise read as conversations.
+      // Skip subagents and Skillhawk's own eval/model runs, which would otherwise read as conversations.
       if (e.isDirectory() && depth < 5 && e.name !== 'subagents' && !/skillyard-(?:eval|llm|draft)/.test(e.name)) walk(p, depth + 1);
       else if (e.isFile() && e.name.endsWith('.jsonl')) out.push(p);
     }

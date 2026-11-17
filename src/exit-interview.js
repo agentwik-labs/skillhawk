@@ -79,7 +79,7 @@ async function ask(member, seeds) {
 
 export async function exitInterviewCmd(args, f) {
   const member = args[0];
-  if (!member) throw new Error('usage: skillyard exit-interview <member> [--answers a.json] [--from-logs dir] [--out skills/] [--force]');
+  if (!member) throw new Error('usage: skillhawk exit-interview <member> [--answers a.json] [--from-logs dir] [--out skills/] [--force]');
   const seeds = f['from-logs'] && f['from-logs'] !== true ? await seedFromLogs(path.resolve(f['from-logs'])) : [];
   const raw = f.answers && f.answers !== true ? JSON.parse(fs.readFileSync(f.answers, 'utf8')) : await ask(member, seeds);
   const sets = Array.isArray(raw.skills) ? raw.skills : [raw];
@@ -95,6 +95,6 @@ export async function exitInterviewCmd(args, f) {
     fs.writeFileSync(mf, `${JSON.stringify({ ...m, visibility: 'private', draft: true, capturedFrom: member }, null, 2)}\n`);
     drafts.push({ name: r.name, dir: r.dir, grade: check.rev.grade });
   }
-  console.log(`\n${drafts.length} private draft${drafts.length === 1 ? '' : 's'} saved in ${out}. Publish with: skillyard publish <dir> --org <org> (the org's normal checks apply).`);
+  console.log(`\n${drafts.length} private draft${drafts.length === 1 ? '' : 's'} saved in ${out}. Publish with: skillhawk publish <dir> --org <org> (the org's normal checks apply).`);
   return { drafts, seeds };
 }

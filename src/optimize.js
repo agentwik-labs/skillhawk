@@ -1,4 +1,4 @@
-// skillyard optimize: cut a skill's tokens without losing meaning, and keep only candidates that are not worse.
+// skillhawk optimize: cut a skill's tokens without losing meaning, and keep only candidates that are not worse.
 // Static pass (always, no model): deterministic text cuts. Model pass (--allow-model): shorter rewrites scored by lift.
 // A candidate is kept only if the review grade/score hold, the trigger cases (tests/cases.yaml) still pass,
 // code blocks and frontmatter survive, and tokens drop.
@@ -297,7 +297,7 @@ export function librarySummary(rows) {
 export async function run(args, flags = {}) {
   if (flags.all) {
     const root = typeof flags.all === 'string' ? flags.all : args[0];
-    if (!root) throw new Error('usage: skillyard optimize --all <dir>');
+    if (!root) throw new Error('usage: skillhawk optimize --all <dir>');
     const dirs = findSkillDirs([root]);
     if (!dirs.length) throw new Error(`no skills under ${root}`);
     const rows = [];
@@ -309,7 +309,7 @@ export async function run(args, flags = {}) {
     return;
   }
   const dir = args[0];
-  if (!dir) throw new Error('usage: skillyard optimize <skill-dir> [--rounds 3] [--allow-model] [--model haiku] [--out dir] [--apply]  |  optimize --all <dir>');
+  if (!dir) throw new Error('usage: skillhawk optimize <skill-dir> [--rounds 3] [--allow-model] [--model haiku] [--out dir] [--apply]  |  optimize --all <dir>');
   const str = (v, d) => (v && v !== true ? v : d);
   const r = await optimizeSkill(dir, { allowModel: !!(flags['allow-model'] || flags.allowModel), rounds: Number(str(flags.rounds, 3)), model: str(flags.model, 'haiku'), log: (l) => console.log(l) });
   console.log(report(r));

@@ -3,7 +3,7 @@
   "description": "Clean code: review the scripts bundled in skills, and learn a coding-standards skill from your repo and PR review comments (skill + subagent)",
   "version": "1.0.0",
   "author": {
-    "name": "Skillyard Community"
+    "name": "Skillhawk Community"
   },
   "skills": "./skills",
   "agents": "./agents"

@@ -39,8 +39,8 @@ The price for an extra seat is $20. The owner set the base and Team prices but n
 ## Billing
 
 - **Operator path (now):**
-  - `skillyard org plan <org> --plan team --seats 7 --status active [--pilot-ends date]` calls `PATCH /api/orgs/:org/plan` with the server-admin token. With `--data`, it edits a stopped server's data dir.
-  - `skillyard org billing <org>` shows the plan, seats used and purchased, the price, access and enforcement.
+  - `skillhawk org plan <org> --plan team --seats 7 --status active [--pilot-ends date]` calls `PATCH /api/orgs/:org/plan` with the server-admin token. With `--data`, it edits a stopped server's data dir.
+  - `skillhawk org billing <org>` shows the plan, seats used and purchased, the price, access and enforcement.
   - First customers can pay through a Stripe Payment Link, and the operator then sets their plan by hand.
 - **Stripe path (once the owner creates the account):**
   - **Configuration:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAM`, `STRIPE_PRICE_SEAT`. Without them, checkout returns 501.

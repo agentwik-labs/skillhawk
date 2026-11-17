@@ -118,7 +118,7 @@ function mapValidation(kind, msg, lines, fmLines) {
   const ref = /references (\S+), which is not in/.exec(msg);
   if (ref) return f('broken-link', 'medium', lineOf(lines, new RegExp(ref[1].replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'))), `Ship ${ref[1]} in the skill or remove the reference.`);
   if (/directory name differs|category|skill\.json/.test(msg)) return f('metadata', kind === 'error' ? 'high' : 'low', 1, 'Fix the metadata so name, folder and skill.json agree.', /skill\.json/.test(msg) ? 'skill.json' : 'SKILL.md');
-  return f('validate', kind === 'error' ? 'high' : 'low', 1, 'Fix per `skillyard validate`.');
+  return f('validate', kind === 'error' ? 'high' : 'low', 1, 'Fix per `skillhawk validate`.');
 }
 
 /** Contradictory instruction pairs among the given [{line, text, key}] bullets. */
@@ -412,7 +412,7 @@ export async function run(args, flags = {}) {
 
 export function render(reviews, library, fixed, grades) {
   const o = [];
-  o.push(`skillyard review: ${reviews.length} skill${reviews.length === 1 ? '' : 's'}`);
+  o.push(`skillhawk review: ${reviews.length} skill${reviews.length === 1 ? '' : 's'}`);
   if (fixed.length) {
     o.push('', 'fixed (mechanical only, prose untouched):');
     for (const f of fixed) for (const c of f.changes) o.push(`  ${f.dir}: ${c}`);

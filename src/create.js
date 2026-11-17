@@ -1,4 +1,4 @@
-// skillyard create: one front door to a complete, review-passing skill.
+// skillhawk create: one front door to a complete, review-passing skill.
 // Sources: an interview (TTY), --answers a.json, --from doc.md (deterministic extraction; --allow-model may fill gaps),
 // or --from-chats (a "no skill covers this" proposal from `review --chats` storage or Studio's state).
 // Reuses the generators (web/generators.js via generate.js), review, secure and the static trigger test.
@@ -155,7 +155,7 @@ export function pickNoSkillProposal(data, id) {
   try { studio = JSON.parse(fs.readFileSync(path.join(data, 'state.json'), 'utf8')).proposals || []; } catch { /* none */ }
   const all = [...fromChats, ...studio].filter((p) => p.status === 'pending' && (p.kind === 'no-skill' || (p.kind === 'no-skill' && !p.skill)));
   const p = id && id !== true ? all.find((x) => x.id === id) : all.sort((a, b) => String(b.created || b.createdAt).localeCompare(String(a.created || a.createdAt)))[0];
-  if (!p) throw new Error(`no pending "no skill covers this" proposal in ${data} (run skillyard review --chats first)`);
+  if (!p) throw new Error(`no pending "no skill covers this" proposal in ${data} (run skillhawk review --chats first)`);
   return p;
 }
 
@@ -177,7 +177,7 @@ export function answersFromProposal(p) {
 // ---- cases + assembly ---------------------------------------------------------------------------
 
 export function casesYaml({ fire = [], notFire = [], request = '', checks = [] }) {
-  const o = ['# Trigger cases: does an agent pick THIS skill from its description alone? (skillyard test <dir>)'];
+  const o = ['# Trigger cases: does an agent pick THIS skill from its description alone? (skillhawk test <dir>)'];
   o.push('should_fire:', ...fire.map((p) => `  - ${q(p)}`));
   if (notFire.length) o.push('should_not_fire:', ...notFire.map((p) => `  - ${q(p)}`));
   if (request && checks.length) o.push('', 'behaviour:', `  - prompt: ${q(request)}`, `    rubric: ${q(`A good answer: ${checks.join('; ')}`)}`);
@@ -336,7 +336,7 @@ export async function createCmd(args, f, io = {}) {
     summary(c).forEach((l) => say(l));
     if (!gradeOk(c.rev.grade)) {
       for (const x of c.rev.findings.slice(0, 6)) say(`  ${x.severity.padEnd(6)} ${x.file}:${x.line} [${x.rule}] ${x.message}\n         fix: ${x.fix || 'edit the line'}`);
-      say(`fix and re-check: skillyard review ${made.dir} --fix`);
+      say(`fix and re-check: skillhawk review ${made.dir} --fix`);
     }
     if (!c.ok) process.exitCode = 1;
     return { ...made, check: c };

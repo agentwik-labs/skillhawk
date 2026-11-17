@@ -1,8 +1,8 @@
-// skillyard savings: what are skills worth in dollars? Compares sessions where a skill fired with comparable sessions
+// skillhawk savings: what are skills worth in dollars? Compares sessions where a skill fired with comparable sessions
 // (same repo, similar first prompt by keyword overlap) where it did not. Local logs only, no model, no network.
 // Method, plainly: per skill, corrections / redo turns / dollars per task in matched sessions with vs without the skill;
 // the difference times the number of tasks done with the skill is the estimate. It is a correlation, not an experiment
-// (use `skillyard ab` for that), so every row carries its sample size and a confidence label.
+// (use `skillhawk ab` for that), so every row carries its sample size and a confidence label.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -138,7 +138,7 @@ export function estimate(sessions, opts = {}) {
 }
 
 const usd = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(2)}`;
-const METHOD = (c) => `Method: for each skill, sessions where it fired are compared with sessions where it did not, in the same repo with overlapping first-prompt keywords. Differences in corrections per task (${c.correctionMinutes} min each), redo turns per task (${c.redoMinutes} min each) and token cost per task are multiplied by the tasks done with the skill; time is valued at $${c.hourlyRate}/h, tokens at list prices in src/tokens.js. This is a correlation, not an experiment: confidence is low under 10 matched sessions, medium under 30. Run \`skillyard ab\` to prove a specific skill.`;
+const METHOD = (c) => `Method: for each skill, sessions where it fired are compared with sessions where it did not, in the same repo with overlapping first-prompt keywords. Differences in corrections per task (${c.correctionMinutes} min each), redo turns per task (${c.redoMinutes} min each) and token cost per task are multiplied by the tasks done with the skill; time is valued at $${c.hourlyRate}/h, tokens at list prices in src/tokens.js. This is a correlation, not an experiment: confidence is low under 10 matched sessions, medium under 30. Run \`skillhawk ab\` to prove a specific skill.`;
 
 export function render(r) {
   const out = [`Skill savings (estimate): ${usd(r.total)} across ${r.sessions} sessions (${r.skills.length} skills seen)`, ''];
@@ -154,7 +154,7 @@ export function render(r) {
 
 export function statement(r, days) {
   const top = r.skills.filter((s) => s.dollars > 0).slice(0, 5);
-  const lines = [`# Skillyard savings statement`, '', `Skillyard saved an estimated **${usd(Math.max(0, r.total))}** in the last ${days || 'all'} days across ${r.sessions} sessions.`, ''];
+  const lines = [`# Skillhawk savings statement`, '', `Skillhawk saved an estimated **${usd(Math.max(0, r.total))}** in the last ${days || 'all'} days across ${r.sessions} sessions.`, ''];
   lines.push('## Top skills', '');
   if (!top.length) lines.push('No skill showed a positive effect yet.');
   else {

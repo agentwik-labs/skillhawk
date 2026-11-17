@@ -3,7 +3,7 @@
   "description": "Skill optimizer: cut a skill's tokens without losing meaning, gated by review grade, trigger cases and lift",
   "version": "1.0.0",
   "author": {
-    "name": "Skillyard Community"
+    "name": "Skillhawk Community"
   },
   "skills": "./skills"
 }

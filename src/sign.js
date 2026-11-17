@@ -59,7 +59,7 @@ export const dirToFiles = (dir) => Object.entries(readSkillDir(dir)).map(([p, co
 // ---- CLI ------------------------------------------------------------------
 
 export async function keysCmd(args, f) {
-  if (args[0] !== 'create' || !f.out || f.out === true) throw new Error('usage: skillyard keys create --out <dir>');
+  if (args[0] !== 'create' || !f.out || f.out === true) throw new Error('usage: skillhawk keys create --out <dir>');
   const out = path.resolve(f.out);
   const priv = path.join(out, 'skillyard-private.pem');
   const pub = path.join(out, 'skillyard-public.pem');
@@ -73,7 +73,7 @@ export async function keysCmd(args, f) {
 
 export async function signCmd(args, f) {
   const dir = args[0];
-  if (!dir || !f.key || f.key === true) throw new Error('usage: skillyard sign <skill-dir> --key <private.pem>');
+  if (!dir || !f.key || f.key === true) throw new Error('usage: skillhawk sign <skill-dir> --key <private.pem>');
   if (!fs.existsSync(path.join(dir, 'SKILL.md'))) throw new Error(`${dir} has no SKILL.md`);
   const sig = signFiles(dirToFiles(dir), fs.readFileSync(f.key, 'utf8'));
   fs.writeFileSync(path.join(dir, SIGNATURE_FILE), `${JSON.stringify(sig, null, 2)}\n`);
@@ -82,7 +82,7 @@ export async function signCmd(args, f) {
 
 export async function verifyCmd(args, f) {
   const dir = args[0];
-  if (!dir || !f.pub || f.pub === true) throw new Error('usage: skillyard verify <skill-dir> --pub <public.pem>');
+  if (!dir || !f.pub || f.pub === true) throw new Error('usage: skillhawk verify <skill-dir> --pub <public.pem>');
   const sigPath = path.join(dir, SIGNATURE_FILE);
   if (!fs.existsSync(sigPath)) { console.log(`FAIL ${dir}: no ${SIGNATURE_FILE}`); process.exitCode = 1; return; }
   const r = verifyFiles(dirToFiles(dir), JSON.parse(fs.readFileSync(sigPath, 'utf8')), fs.readFileSync(f.pub, 'utf8'));
