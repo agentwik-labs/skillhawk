@@ -1,7 +1,7 @@
 {
   "name": "skillhawk",
-  "version": "0.4.0",
-  "description": "Check your AI agent skills before your agents run them: grade, security-scan and compile SKILL.md files, find agents nobody is watching. CLI and local MCP server.",
+  "version": "0.5.1",
+  "description": "Find every coding agent that runs without you (cron, launchd, scheduled CI, unattended sessions) and which account it bills: subscription or API key. Also grades, security-scans and compiles agent skills. CLI and local MCP server.",
   "mcpName": "io.github.agentwik-labs/skillhawk",
   "type": "module",
   "bin": {
@@ -17,6 +17,7 @@
     "registry",
     "seed",
     "sources",
+    "skills",
     "README.md",
     "LICENSE"
   ],

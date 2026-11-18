@@ -20,8 +20,8 @@ test('waitlist cards say so, and Watch matches src/plans.js PREORDERS', () => {
   assert.equal(w.price, `$${PREORDERS.watch.monthlyUsd}`);
   assert.match(w.per, new RegExp(`\\$${PREORDERS.watch.yearlyUsd} a year`));
   for (const p of PRICING.plans.filter((x) => x.preorder)) assert.match(p.blurb, /^Waitlist\./, `${p.id} says waitlist`);
-  assert.match(PRICING.note, /not built/);
-  assert.match(w.blurb, /Not built yet/);
+  assert.match(PRICING.note, /not on sale yet/);
+  assert.match(w.blurb, /not on sale yet/, 'Watch must say it cannot be bought yet');
 });
 
 test('listed prices match src/plans.js', () => {

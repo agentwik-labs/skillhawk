@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skillhawk: see which AI agents are still running unwatched</title>
-  <meta name="description" content="Free, open-source CLI: find coding agents, unattended sessions and dev servers still running, and check your AI skills. Watch alerts are planned.">
+  <title>Skillhawk: which account do your unattended agents bill?</title>
+  <meta name="description" content="Free open-source CLI: find every coding agent that runs without you (cron, launchd, scheduled CI) and which account it bills, subscription or API key.">
   <meta name="theme-color" content="#ffffff">
   <link rel="canonical" href="https://skillhawk.ai/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Skillhawk">
   <meta property="og:title" content="Skillhawk: check your AI skills before your agents run them">
-  <meta property="og:description" content="Your agents keep running after you stop watching. One free command lists them and what they cost. Watch alerts are planned, not built yet.">
+  <meta property="og:description" content="Your agents run without you. One free command shows which account each one bills: your subscription or a pay-per-token API key.">
   <meta property="og:url" content="https://skillhawk.ai/">
   <meta property="og:image" content="https://skillhawk.ai/media/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Your agents keep running after you stop watching. npx skillhawk agents">
+  <meta property="og:image:alt" content="Your agents run without you. Know which account they bill. npx skillhawk agents">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://skillhawk.ai/media/og.png">
   <meta name="twitter:title" content="Skillhawk: build, check and protect your company's AI skills">
-  <meta name="twitter:description" content="Your agents keep running after you stop watching. One free command lists them. Watch alerts are planned, not built yet.">
+  <meta name="twitter:description" content="Your agents run without you. One free command shows which account each one bills.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -66,5 +66,6 @@
   <script src="config.js"></script>
   <script src="static.js"></script>
   <script type="module" src="app.js"></script>
+  <script src="webmcp.js" defer></script>
 </body>
 </html>

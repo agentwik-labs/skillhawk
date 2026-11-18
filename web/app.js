@@ -282,11 +282,11 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 // (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
 const PILOT = 'Pro: $20 a month, waitlist; the hosted vault is not running yet. The vault is open source. Team features by request.';
-// Watch is planned and not built. Each row states what the free command does today and what Watch is planned to add.
-const WATCH = { id: 'watch', step: 'Watch', h: 'Planned: alerts for agents nobody is watching, and skills that break.', tier: 'Watch: not built. Planned at $9 a month. Join the waitlist (free, no payment); the commands below work today.',
-  promise: 'Agents keep running after you stop watching, and models, agents and tools change under your skills. Today you can run these checks yourself. Watch is our plan to alert you when an agent runs unattended or keeps spending with no human, and to re-check your skills when something changes, sending any fix as a pull request.',
+// Watch is built (private repo skillhawk-watch) and not on sale yet. Each row states what the free command does today and what Watch adds.
+const WATCH = { id: 'watch', step: 'Watch', h: 'Watch: a guard for agents that run without you.', tier: 'Watch: built, not on sale yet; $9 a month when it is. Join the waitlist (free, no payment); the commands below work today.',
+  promise: 'Unattended agents are where surprise bills come from: a scheduled run that picks up an API key, or a loop nobody stops. Today the free command shows which agents run without you and which account each bills. Watch (built, not on sale yet) runs in the background: it warns when a job starts billing an API key, tracks cost per headless job and can stop one that runs away.',
   tools: [
-    { name: 'Agent alerts', cmd: 'skillhawk agents --notify desktop', what: 'Today: run it yourself, or on a schedule you set up; --notify sends a desktop or Slack alert. Planned for Watch: the alerts set up for you, for agents running unattended, sessions spending with no human and dev servers left running.', out: '! claude  up 3d 4h  no terminal  1 child process\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
+    { name: 'Agent alerts', cmd: 'skillhawk agents --notify desktop', what: 'Today: run it yourself or on a schedule you set up; --notify sends a desktop or Slack alert with counts only. Watch (built, not on sale yet) does this in the background: warnings when a job starts billing an API key, cost per headless job, and a stop for runaway jobs.', out: '! claude  up 3d 4h  no terminal  1 child process\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
     { name: 'New-model check', cmd: 'skillhawk watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Watch: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
     { name: 'Supply-chain check', cmd: 'skillhawk secure . --gate high', what: 'Today: scan the skills, MCP servers, hooks and scripts you use. Planned for Watch: re-scan them when they change upstream.', out: null, noOut: 'Full output in the Check section.' },
     { name: 'Agent format check', cmd: 'skillhawk compile release-notes --to all', what: 'Today: compile to five agents and check each file against its limits. Planned for Watch: re-check when an agent changes its format or limits, and open a pull request.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
@@ -321,7 +321,7 @@ const JOURNEY = [
     tools: [
       { name: 'Map', cmd: 'skillhawk map', what: 'Writes an index of files, symbols, imports and skills (map.json, MAP.md) that agents can query.', out: 'mapped 7 files, 1 skills -> .skillyard/map/{map.json,MAP.md}' },
       { name: 'Tokens', cmd: 'skillhawk tokens --days 7', what: 'Tokens and estimated cost from Claude Code logs, per day, repo, skill and session.', out: null, live: 'tokens', note: 'One developer\'s real week, November 5 to 12.', noOut: 'Reads your own Claude Code logs, so the output is yours. A summary of one developer\'s measured week is in the Proof section of the home page.' },
-      { name: 'Agents', cmd: 'skillhawk agents --notify desktop', what: 'Agent processes, Claude Code sessions working with no human input (with cost since a human last wrote), scheduled agents and dev servers left running. Read-only; prints the command to stop each one.', out: '! claude  up 3d 4h  no terminal  2 child processes\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
+      { name: 'Agents', cmd: 'skillhawk agents --notify desktop', what: 'Agent processes, Claude Code sessions working with no human input (with cost since a human last wrote), scheduled agents with the account each one bills (subscription or API key), API keys your shell exports, and dev servers left running. Read-only; prints the command to stop each one.', out: '! cron  claude  */30 * * * *\n    bills: API key, pay per token (ANTHROPIC_API_KEY)\n! ~/.zshrc: ANTHROPIC_API_KEY', note: 'Output from example data.' },
       { name: 'Savings ledger', cmd: 'skillhawk savings --statement out.md', what: 'Estimated dollars saved per skill from corrections, redo turns and tokens, with its confidence stated.', out: 'This is a correlation, not an experiment: confidence is low under 10 matched sessions' },
     ] },
 ];
@@ -354,15 +354,15 @@ const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged co
 // Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
 const PRICING = {
   heading: 'Free checks today. Watch planned at $9 a month.',
-  note: 'Prices in USD. Watch is not built, and the hosted Pro vault is not running yet: join a waitlist, no payment collected. Teams: tell us what you need.',
+  note: 'Prices in USD. Watch is built and not on sale yet, and the hosted Pro vault is not running yet: join a waitlist, no payment collected. Teams: tell us what you need.',
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
       blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
       items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
-      blurb: 'Waitlist. Not built yet. Planned: alerts when an agent runs unattended or keeps spending with no human, and re-checks of your skills when a model, an agent or a tool changes.',
-      items: ['Agent alerts: unattended agents, sessions spending with no human, dev servers left running', 'New-model check', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
+      blurb: 'Waitlist. Built, not on sale yet. A background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one.',
+      items: ['Warning when a scheduled agent starts billing an API key', 'Cost per headless job, per day', 'Stop a runaway job (opt-in)', 'Desktop or Slack alerts', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
       cta: { label: 'Join the waitlist', preorder: 'watch' } },
     { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
       blurb: 'Waitlist. The vault software is built and open source; the hosted vault is not running yet.',
@@ -386,7 +386,7 @@ function lpNav() {
 function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
-      <div><h2 class="lp-h">See what your agents are doing.</h2><p class="lp-install"><code>npx skillhawk agents</code> · <a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
+      <div><h2 class="lp-h">Know which account your agents bill.</h2><p class="lp-install"><code>npx skillhawk agents</code> · <a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
       <ul class="jf"><li><a href="tools/">All commands</a></li><li><a href="proof/">Proof</a></li><li><a href="#/browse">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li><li><a href="learn/">Answers</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
@@ -452,8 +452,8 @@ function pricingSection(id = 'pricing') {
 function preorderCta(id) {
   const paid = CFG.preorder?.watch;
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="pilot">
-      <h2 class="lp-h" id="${id}-h">Want to know when an agent is running with nobody watching?</h2>
-      <p class="v-lede">Watch is planned: an alert when a coding agent runs unattended, a session keeps spending with no human message, or a dev server is left running; and a re-check of your skills when a model or agent changes. Not built yet; planned at $9 a month. The free command above does the check on demand today.</p>
+      <h2 class="lp-h" id="${id}-h">Want a warning before an unattended agent bills the wrong account?</h2>
+      <p class="v-lede">Watch is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. Built and in testing; not on sale yet, $9 a month when it is. The free command above does the check on demand today.</p>
       <div class="po-row" id="reserve-watch">${paid
         ? `<a class="lp-action" href="${esc(paid)}">Pre-order Watch, $9 a month</a>`
         : signupSentence({ lead: 'Join the waitlist:', button: 'Join', tag: 'preorder-watch', id: `${id}-watch`, note: 'Free to join; no payment is collected. First 10 on the list: a free written review of your agent setup and skills, by email.' })}</div>
@@ -661,31 +661,34 @@ C  notes-v2               1 finding
                       when to use the skill
 A  lint-everything        no findings`;
 const AGENTS_OUT = `$ npx skillhawk agents
-skillhawk agents: 2 need a look
+skillhawk agents: 3 need a look
+
+Scheduled agents
+ !  cron     claude  */30 * * * *
+      bills: API key, pay per token
+             (ANTHROPIC_API_KEY)
+    launchd  claude  nightly.plist
+      bills: subscription token
+
+API keys your shell exports
+ !  ~/.zshrc: ANTHROPIC_API_KEY
 
 Agent processes
- !  100  claude  up 3d 4h    no terminal
-          1 child process
-    200  claude  up 1h 10m   ttys003
+ !  100  claude  up 3d 4h  no terminal
 
-Dev servers left running
- !  300  up 26d 1h  port 4400
-          node server.cjs
-
-Nothing was stopped. To stop them
-yourself: kill 100 300`;
+Nothing was stopped.`;
 const CHECKS = [
-  { name: 'Agents', what: 'Agents and dev servers still running that nobody is watching, and what a session has cost since a human last wrote. Read-only.', cmd: 'npx skillhawk agents', out: '! claude  up 3d 4h  no terminal  2 child processes   (example data)' },
+  { name: 'Agents', what: 'Every agent that runs without you (processes, unattended sessions, cron, launchd, scheduled CI) and which account each one bills. Read-only.', cmd: 'npx skillhawk agents', out: '! cron claude */30 * * * *  bills: API key (example data)' },
   { name: 'Review', what: 'Grades every skill A to F with line-level findings: contradictions, vague rules, broken links, skills that crowd each other out.', cmd: 'npx skillhawk review .', out: 'C notes-v2: description never says when to use it' },
   { name: 'Secure', what: 'Audits skills, MCP configs, hooks and scripts. A non-zero exit makes it a CI gate.', cmd: 'npx skillhawk secure .', out: 'HIGH settings.json:2 "Bash(*)" runs any shell command' },
   { name: 'Compile', what: 'One skill, native files for five agents, each checked against its limits.', cmd: 'npx skillhawk compile ./skill', out: 'copilot: FAIL size 4301/4000 chars' },
 ];
 
 function heroReserve(id) {
-  const note = 'Free to join; no payment is collected. Watch is not built yet; we email you when it is.';
+  const note = 'Free to join; no payment is collected. Watch is built and not on sale yet; we email you when it is.';
   if (!signupOn()) return `<p class="hr-alt"><a class="lp-action" href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></p><p class="hr-note">${note}</p>`;
   return `<form class="hero-form signup" data-tag="preorder-watch" id="${id}">
-      <label for="${id}-email">Watch: an alert when an agent runs unattended or keeps spending with no one watching. Planned at $9 a month. Join the waitlist:</label>
+      <label for="${id}-email">Watch: a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. $9 a month when it goes on sale. Join the waitlist:</label>
       <div class="hf-row"><input id="${id}-email" name="email" type="email" required placeholder="you@company.com" autocomplete="email"><button type="submit">Join the waitlist</button></div>
       <p class="hf-bonus"><b>First 10 on the list:</b> a free written review of your agent setup and skills, by email.</p>
     </form>
@@ -711,10 +714,10 @@ async function viewShowcase() {
 
     <section class="h2-hero" aria-labelledby="hero-h">
       <div class="h2-copy">
-        <h1 id="hero-h" class="lp-sentence h2-h1">Your agents keep running after you stop watching.</h1>
-        <p class="h2-lede">One command lists every coding agent, unattended session and dev server still going, and what a session has cost since you last typed. Free, open source, and nothing leaves your machine.</p>
+        <h1 id="hero-h" class="lp-sentence h2-h1">Your agents run without you. Know which account they bill.</h1>
+        <p class="h2-lede">One free command finds every coding agent that runs without you (cron, launchd, scheduled CI, sessions left working) and shows which account each one bills: your subscription, or an API key that charges per token. Open source; nothing leaves your machine.</p>
         ${cmd('npx skillhawk agents')}
-        <p class="h2-own">On the founder's own machine, one run flagged <b>${OWN_RUN.flagged}</b>: ${esc(OWN_RUN.detail)}. (${OWN_RUN.date})</p>
+        <p class="h2-own">Why it matters: when <code>ANTHROPIC_API_KEY</code> is set, Claude Code uses it instead of your subscription, and <code>claude -p</code> always does (<a href="https://code.claude.com/docs/en/env-vars">Claude Code docs</a>). One Max subscriber's scheduled jobs billed <b>$1,800+ in two days</b> that way (<a href="https://github.com/anthropics/claude-code/issues/37686">GitHub #37686</a>).</p>
         ${heroReserve('su-hero')}
       </div>
       <figure class="h2-term"><figcaption>Real output format, example data, trimmed</figcaption><pre tabindex="0" aria-label="Example output of skillhawk agents">${esc(AGENTS_OUT)}</pre></figure>
@@ -724,7 +727,7 @@ async function viewShowcase() {
       <h2 id="checks-h" class="h2-h">Four free checks, one command each.</h2>
       <ul class="h2-cards">${CHECKS.map((c) => `<li><h3>${esc(c.name)}</h3><p>${esc(c.what)}</p>${cmd(c.cmd)}<pre aria-label="Example output">${esc(c.out)}</pre></li>`).join('')}</ul>
       <p class="h2-more"><a href="tools/">Every command, with example output →</a></p>
-      <p class="h2-more">Answers: <a href="learn/see-which-ai-coding-agents-are-still-running/">which agents are still running</a> · <a href="learn/how-much-is-claude-code-costing-me/">what Claude Code is costing you</a> · <a href="learn/stop-a-background-ai-agent-safely/">stopping one safely</a></p>
+      <p class="h2-more">Answers: <a href="learn/why-is-claude-code-billing-my-api-key-instead-of-my-subscription/">why Claude Code bills an API key</a> · <a href="learn/see-which-ai-coding-agents-are-still-running/">which agents are still running</a> · <a href="learn/how-much-is-claude-code-costing-me/">what Claude Code is costing you</a> · <a href="learn/stop-a-background-ai-agent-safely/">stopping one safely</a></p>
     </section>
 
     <section class="h2-sec" id="proof" aria-labelledby="proof-h">

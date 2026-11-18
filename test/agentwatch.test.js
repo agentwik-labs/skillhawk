@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   etimeSeconds, parsePs, parseLsof, findAgentProcesses, findLeftoverServers, findUnattendedSessions, findScheduled,
+  billingOf, shellCredentials,
   collect, summary, notify, render,
 } from '../src/agentwatch.js';
 
@@ -115,7 +116,7 @@ test('summary and notifications carry counts only, never commands or prompts; Sl
   const d = tmp();
   fs.writeFileSync(path.join(d, 'ps.txt'), PS);
   fs.writeFileSync(path.join(d, 'lsof.txt'), LSOF);
-  const r = await collect({ fromPs: path.join(d, 'ps.txt'), fromLsof: path.join(d, 'lsof.txt'), logs: path.join(d, 'none'), noCrontab: true, unitDir: path.join(d, 'none'), repo: d });
+  const r = await collect({ fromPs: path.join(d, 'ps.txt'), fromLsof: path.join(d, 'lsof.txt'), logs: path.join(d, 'none'), noCrontab: true, noShell: true, unitDir: path.join(d, 'none'), repo: d });
   assert.equal(r.flagged.agents.length, 1);
   assert.equal(r.flagged.servers.length, 1);
   const text = summary(r);
@@ -131,7 +132,7 @@ test('summary and notifications carry counts only, never commands or prompts; Sl
 test('CLI: agents --json from fixtures; --fail-on-flag exits 3', () => {
   const d = tmp();
   fs.writeFileSync(path.join(d, 'ps.txt'), PS);
-  const args = [path.join(ROOT, 'bin', 'skillyard.js'), 'agents', '--from-ps', path.join(d, 'ps.txt'), '--logs', path.join(d, 'none'), '--no-crontab', '--unit-dir', path.join(d, 'none'), '--repo', d];
+  const args = [path.join(ROOT, 'bin', 'skillyard.js'), 'agents', '--from-ps', path.join(d, 'ps.txt'), '--logs', path.join(d, 'none'), '--no-crontab', '--no-shell', '--unit-dir', path.join(d, 'none'), '--repo', d];
   const j = spawnSync(process.execPath, [...args, '--json'], { encoding: 'utf8' });
   assert.equal(j.status, 0, j.stderr);
   const r = JSON.parse(j.stdout);
@@ -139,4 +140,36 @@ test('CLI: agents --json from fixtures; --fail-on-flag exits 3', () => {
   const f = spawnSync(process.execPath, [...args, '--fail-on-flag'], { encoding: 'utf8' });
   assert.equal(f.status, 3);
   assert.match(f.stdout, /skillhawk agents: 1 need a look/);
+});
+
+test('billing: which account each scheduled agent will bill, names only, never values', () => {
+  const d = tmp();
+  const units = path.join(d, 'LaunchAgents'); fs.mkdirSync(units);
+  const job = path.join(d, 'job'); fs.mkdirSync(job);
+  fs.writeFileSync(path.join(job, '.env'), 'ANTHROPIC_API_KEY=sk-ant-api03-SECRETVALUE\nOTHER=1\n');
+  fs.writeFileSync(path.join(job, 'run.sh'), '#!/bin/bash\nset -a; source .env; set +a\nclaude -p "triage"\n');
+  fs.writeFileSync(path.join(units, 'com.me.triage.plist'), `<plist><key>WorkingDirectory</key><string>${job}</string><array><string>/bin/bash</string><string>${path.join(job, 'run.sh')}</string></array></plist>`);
+  fs.writeFileSync(path.join(units, 'com.me.sub.plist'), '<plist><key>EnvironmentVariables</key><dict><key>CLAUDE_CODE_OAUTH_TOKEN</key><string>x</string></dict><string>/usr/local/bin/claude</string></plist>');
+  const wf = path.join(d, '.github', 'workflows'); fs.mkdirSync(wf, { recursive: true });
+  fs.writeFileSync(path.join(wf, 'nightly.yml'), 'on:\n  schedule:\n    - cron: "0 3 * * *"\njobs:\n  x:\n    steps:\n      - uses: anthropics/claude-code-action@v1\n        with:\n          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}\n');
+  const s = findScheduled({ crontab: 'ANTHROPIC_API_KEY=sk-ant-x\n*/30 * * * * claude -p "sweep"\n', unitDirs: [units], workflowDirs: [wf] });
+  const by = Object.fromEntries(s.map((x) => [`${x.kind}:${x.detail.split(' ')[0]}`, x.billing.bills]));
+  assert.equal(by['cron:*/30'], 'api-key', 'crontab-level variable applies to the job');
+  assert.equal(by['launchd:com.me.triage.plist'], 'api-key', 'script loads .env from its working directory');
+  assert.equal(by['launchd:com.me.sub.plist'], 'subscription');
+  assert.equal(by['github-actions:0'], 'api-key');
+  assert.doesNotMatch(JSON.stringify(s), /SECRETVALUE|sk-ant-x/);
+  assert.deepEqual(billingOf(['claude -p hi']), { bills: 'unknown', vars: [] });
+});
+
+test('shell exports of API keys are flagged, and render says what it means', async () => {
+  const d = tmp();
+  const rc = path.join(d, '.zshrc'); fs.writeFileSync(rc, '# keys\nexport ANTHROPIC_API_KEY=sk-ant-api03-abc\nexport PATH=$PATH:/x\n');
+  assert.deepEqual(shellCredentials({ files: [rc] }).map((x) => x.vars), [['ANTHROPIC_API_KEY']]);
+  fs.writeFileSync(path.join(d, 'ps.txt'), '');
+  const r = await collect({ fromPs: path.join(d, 'ps.txt'), logs: path.join(d, 'none'), noCrontab: true, shellFile: rc, unitDir: path.join(d, 'none'), repo: d });
+  assert.equal(r.flaggedCount, 1);
+  assert.match(render(r), /bill this key per token, even when you are signed in to a subscription/);
+  assert.match(summary(r), /an API key exported by your shell/);
+  assert.doesNotMatch(render(r) + summary(r), /sk-ant-api03-abc/);
 });

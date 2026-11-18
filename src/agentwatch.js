@@ -4,6 +4,7 @@
 //      spent since a human last wrote.
 //   3. Scheduled agents: crontab, launchd / systemd user jobs and GitHub Actions schedules that start an agent.
 //   4. Leftover dev servers: interpreter processes listening on a port, detached, running for a long time.
+//   5. Which account each scheduled agent bills (API key, subscription token, cloud) and API keys your shell exports.
 // Prompts and file contents are never printed or sent; commands are shortened and secrets redacted.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -137,13 +138,75 @@ export async function findUnattendedSessions({ logs, now = Date.now(), days = DE
 }
 
 /** Scheduled jobs that start an agent: crontab text, launchd/systemd unit dirs, GitHub workflow dirs. */
+
+// ---- which account a run will bill -------------------------------------------------------------
+// Names only: values are never read into output. Claude Code docs: when ANTHROPIC_API_KEY is set it is used instead
+// of a Claude subscription, and in non-interactive mode (-p) it is always used when present.
+const CRED = [
+  ['ANTHROPIC_API_KEY', 'api-key'], ['ANTHROPIC_AUTH_TOKEN', 'api-key'], ['OPENAI_API_KEY', 'api-key'], ['CODEX_API_KEY', 'api-key'],
+  ['GEMINI_API_KEY', 'api-key'], ['GOOGLE_API_KEY', 'api-key'], ['CLAUDE_CODE_USE_BEDROCK', 'cloud'], ['CLAUDE_CODE_USE_VERTEX', 'cloud'],
+  ['CLAUDE_CODE_OAUTH_TOKEN', 'subscription'],
+];
+const ENV_LOAD_RE = /(?:^|[\s;&(])(?:source|\.)\s+[^\s;&|]*\.env\b|dotenv|--env-file|EnvironmentFile\s*=|set\s+-a/;
+const RANK = { 'api-key': 3, cloud: 2, subscription: 1 };
+
+function varsIn(text) {
+  const t = String(text || '');
+  return CRED.filter(([v]) => new RegExp(`\\b${v}\\b`).test(t)).map(([v, kind]) => ({ v, kind }));
+}
+
+/** What a job will bill, from its own text plus a .env it loads (names only). */
+export function billingOf(texts, { dirs = [] } = {}) {
+  const found = new Map();
+  const add = (list, via) => { for (const x of list) if (!found.has(x.v)) found.set(x.v, { ...x, via }); };
+  for (const t of texts) add(varsIn(t), 'job');
+  if (texts.some((t) => ENV_LOAD_RE.test(String(t || '')))) {
+    for (const d of dirs) {
+      for (const name of ['.env', '.env.local']) {
+        try { add(varsIn(fs.readFileSync(path.join(d, name), 'utf8').split('\n').map((l) => l.split('=')[0]).join('\n')), name); } catch { /* none */ }
+      }
+    }
+  }
+  // GitHub Actions inputs
+  for (const t of texts) {
+    if (/claude_code_oauth_token\s*:/.test(t)) add([{ v: 'CLAUDE_CODE_OAUTH_TOKEN', kind: 'subscription' }], 'workflow');
+    if (/anthropic_api_key\s*:/.test(t)) add([{ v: 'ANTHROPIC_API_KEY', kind: 'api-key' }], 'workflow');
+    if (/use_bedrock\s*:\s*['"]?true|use_vertex\s*:\s*['"]?true/.test(t)) add([{ v: 'CLAUDE_CODE_USE_BEDROCK', kind: 'cloud' }], 'workflow');
+  }
+  const vars = [...found.values()];
+  if (!vars.length) return { bills: 'unknown', vars: [] };
+  const top = vars.reduce((a, b) => (RANK[b.kind] > RANK[a.kind] ? b : a));
+  return { bills: top.kind, vars: vars.map((x) => x.v) };
+}
+
+/** API keys exported by shell start-up files: every `claude -p` started from that shell bills the key. */
+export function shellCredentials({ files } = {}) {
+  const home = os.homedir();
+  const list = files || ['.zshenv', '.zshrc', '.zprofile', '.bashrc', '.bash_profile', '.profile', '.config/fish/config.fish'].map((f) => path.join(home, f));
+  const out = [];
+  for (const f of list) {
+    let text = '';
+    try { text = fs.readFileSync(f, 'utf8'); } catch { continue; }
+    const vars = CRED.filter(([v, kind]) => kind === 'api-key' && new RegExp(`^\\s*(?:export\\s+|set\\s+-gx\\s+)${v}\\b`, 'm').test(text)).map(([v]) => v);
+    if (vars.length) out.push({ file: f.startsWith(home) ? `~${f.slice(home.length)}` : f, vars });
+  }
+  return out;
+}
+
+const billLabel = (b) => (!b || b.bills === 'unknown' ? 'bills: no key set in the job (it uses the account the agent is signed in with, unless its environment sets a key)'
+  : b.bills === 'api-key' ? `bills: API key, pay per token (${b.vars.join(', ')})`
+    : b.bills === 'cloud' ? `bills: cloud provider (${b.vars.join(', ')})` : `bills: subscription token (${b.vars.join(', ')})`);
+
 export function findScheduled({ crontab = '', unitDirs = [], workflowDirs = [] } = {}) {
   const out = [];
+  const cronEnv = [];
   for (const line of String(crontab).split('\n')) {
     const l = line.trim();
     if (!l || l.startsWith('#')) continue;
+    if (/^[A-Za-z_][A-Za-z0-9_]*\s*=/.test(l)) { cronEnv.push(l.split('=')[0].trim()); continue; }
     const a = agentName(l);
-    if (a) out.push({ kind: 'cron', agent: a, where: 'crontab', detail: short(l) });
+    const dir = /\bcd\s+([^\s;&]+)/.exec(l)?.[1]?.replace(/^~(?=\/|$)/, os.homedir());
+    if (a) out.push({ kind: 'cron', agent: a, where: 'crontab', detail: short(l), billing: billingOf([l, cronEnv.join('\n')], { dirs: dir ? [dir] : [] }) });
   }
   for (const dir of unitDirs) {
     let files = [];
@@ -154,12 +217,16 @@ export function findScheduled({ crontab = '', unitDirs = [], workflowDirs = [] }
       const plain = text.replace(/<[^>]+>/g, ' ');
       let a = agentName(plain);
       let via = '';
+      let scriptText = '';
+      let scriptDir = '';
       // A job often runs a script that starts the agent: look one level into scripts it names.
       if (!a) for (const p of plain.match(/(?:\/|~\/)[^\s"'<>]+\.(?:sh|bash|zsh|mjs|cjs|js|ts|py)\b/g) || []) {
         const file = p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p;
-        try { if (fs.statSync(file).size < 500_000 && (a = agentName(fs.readFileSync(file, 'utf8')))) { via = ` via ${path.basename(file)}`; break; } } catch { /* missing or unreadable */ }
+        try { if (fs.statSync(file).size < 500_000 && (a = agentName(scriptText = fs.readFileSync(file, 'utf8')))) { via = ` via ${path.basename(file)}`; scriptDir = path.dirname(file); break; } } catch { /* missing or unreadable */ }
       }
-      if (a) out.push({ kind: f.endsWith('.plist') ? 'launchd' : 'systemd', agent: a, where: redact(path.join(dir, f)), detail: `${f}${via}` });
+      const workDir = /WorkingDirectory<\/key>\s*<string>([^<]+)</.exec(text)?.[1] || /^WorkingDirectory\s*=\s*(\S+)/m.exec(text)?.[1];
+      if (a) out.push({ kind: f.endsWith('.plist') ? 'launchd' : 'systemd', agent: a, where: redact(path.join(dir, f)), detail: `${f}${via}`,
+        billing: billingOf([text, scriptText], { dirs: [workDir, scriptDir].filter(Boolean) }) });
     }
   }
   for (const dir of workflowDirs) {
@@ -170,7 +237,7 @@ export function findScheduled({ crontab = '', unitDirs = [], workflowDirs = [] }
       try { text = fs.readFileSync(path.join(dir, f), 'utf8'); } catch { continue; }
       if (!/^\s*schedule\s*:/m.test(text)) continue;
       const a = /anthropics\/claude-code-action/.test(text) ? 'claude' : agentName(text);
-      if (a) out.push({ kind: 'github-actions', agent: a, where: path.join(dir, f), detail: (/cron:\s*['"]?([^'"\n]+)/.exec(text)?.[1] || 'schedule').trim() });
+      if (a) out.push({ kind: 'github-actions', agent: a, where: path.join(dir, f), detail: (/cron:\s*['"]?([^'"\n]+)/.exec(text)?.[1] || 'schedule').trim(), billing: billingOf([text]) });
     }
   }
   return out;
@@ -198,12 +265,16 @@ export async function collect(f = {}, now = Date.now()) {
     unitDirs: f.unitDir ? [].concat(f.unitDir) : [path.join(home, 'Library', 'LaunchAgents'), path.join(home, '.config', 'systemd', 'user')],
     workflowDirs: [path.join(f.repo || process.cwd(), '.github', 'workflows')],
   });
+  const shell = f.noShell ? [] : shellCredentials(f.shellFile ? { files: [].concat(f.shellFile) } : {});
   const flagged = {
     agents: agents.filter((a) => a.seconds >= th.runningHours * 3600),
     sessions,
     servers,
+    billing: scheduled.filter((s) => s.billing?.bills === 'api-key'),
+    shell,
   };
-  return { thresholds: th, agents, sessions, servers, scheduled, flagged, flaggedCount: flagged.agents.length + flagged.sessions.length + flagged.servers.length };
+  return { thresholds: th, agents, sessions, servers, scheduled, shell, flagged,
+    flaggedCount: flagged.agents.length + flagged.sessions.length + flagged.servers.length + flagged.billing.length + flagged.shell.length };
 }
 
 export const ago = (s) => (s >= 86400 ? `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h` : s >= 3600 ? `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m` : `${Math.max(0, Math.floor(s / 60))}m`);
@@ -233,7 +304,14 @@ export function render(r) {
   L.push('');
   L.push(`Scheduled agents (${r.scheduled.length})`);
   if (!r.scheduled.length) L.push('  none found in crontab, launchd/systemd user jobs or this repo\'s GitHub workflows');
-  for (const s of r.scheduled) L.push(`   ${s.kind.padEnd(14)} ${s.agent.padEnd(7)} ${s.detail}  (${s.where})`);
+  for (const s of r.scheduled) {
+    L.push(` ${s.billing?.bills === 'api-key' ? '!' : ' '} ${s.kind.padEnd(14)} ${s.agent.padEnd(7)} ${s.detail}  (${s.where})`);
+    L.push(`     ${billLabel(s.billing)}`);
+  }
+  L.push('');
+  L.push(`API keys your shell exports (${(r.shell || []).length})`);
+  if (!(r.shell || []).length) L.push('  none found in your shell start-up files');
+  for (const c of r.shell || []) L.push(` ! ${c.file}: ${c.vars.join(', ')}. Agents started from this shell, including \`claude -p\` in scripts, bill this key per token, even when you are signed in to a subscription.`);
   const pids = [...r.flagged.agents.map((a) => a.pid), ...r.flagged.servers.map((s) => s.pid)];
   if (pids.length) { L.push(''); L.push(`Nothing was stopped. To stop the flagged processes yourself: kill ${pids.join(' ')}`); }
   return L.join('\n');
@@ -245,6 +323,8 @@ export function summary(r) {
   if (r.flagged.agents.length) parts.push(`${r.flagged.agents.length} agent process${r.flagged.agents.length === 1 ? '' : 'es'} running over ${r.thresholds.runningHours}h`);
   if (r.flagged.sessions.length) { const c = r.flagged.sessions.reduce((n, s) => n + s.cost, 0); parts.push(`${r.flagged.sessions.length} session${r.flagged.sessions.length === 1 ? '' : 's'} working unattended (~$${c.toFixed(2)} since a human last wrote)`); }
   if (r.flagged.servers.length) parts.push(`${r.flagged.servers.length} dev server${r.flagged.servers.length === 1 ? '' : 's'} left running`);
+  if (r.flagged.billing?.length) parts.push(`${r.flagged.billing.length} scheduled agent${r.flagged.billing.length === 1 ? '' : 's'} billing an API key`);
+  if (r.flagged.shell?.length) parts.push('an API key exported by your shell');
   return parts.length ? `Skillhawk on ${os.hostname()}: ${parts.join('; ')}. Run \`skillhawk agents\` to see them.` : '';
 }
 

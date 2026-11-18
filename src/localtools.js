@@ -41,7 +41,7 @@ export const LOCAL_TOOLS = [
   {
     name: 'check_agents',
     title: 'Find agents nobody is watching',
-    description: 'List coding-agent processes on this machine (Claude Code, Codex, Gemini, Cursor, Aider...), sessions still working with no human message for hours, dev servers left running, and scheduled agents (cron, launchd/systemd, GitHub Actions schedules). Read-only: it never stops anything.',
+    description: 'List coding agents that run without a human on this machine: agent processes (Claude Code, Codex, Gemini, Cursor, Aider...), sessions still working with no human message for hours, scheduled agents (cron, launchd/systemd, GitHub Actions schedules) with the account each one bills (subscription or API key), API keys exported by shell start-up files, and dev servers left running. Prints variable names, never values. Read-only: it never stops anything.',
     inputSchema: {
       type: 'object',
       properties: {

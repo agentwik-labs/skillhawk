@@ -2,9 +2,24 @@
 
 > Not affiliated with [Berserk-hub150/skillhawk](https://github.com/Berserk-hub150/skillhawk), a separate SKILL.md security scanner with a similar name.
 
-A skill registry for AI agents. Keep open-source skills and your company's private ones in one place, and install
-them into **Claude Code, OpenAI Codex, Cursor and any AGENTS.md agent** (Gemini CLI, Copilot, Windsurf, Aider), or let
-agents search and load them live over **MCP**.
+**Your agents run without you. Know which account they bill.** One free command finds every coding agent that runs
+without a human (cron, launchd and systemd jobs, scheduled GitHub workflows, Claude Code sessions still working hours
+after anyone typed, dev servers left running) and shows which account each scheduled agent bills: your subscription,
+or an API key that charges per token. Claude Code uses `ANTHROPIC_API_KEY` instead of your subscription whenever it is
+set, and `claude -p` always does ([docs](https://code.claude.com/docs/en/env-vars)), which is how scheduled jobs end up
+on pay-per-token billing ([example: $1,800+ in two days](https://github.com/anthropics/claude-code/issues/37686)).
+
+```
+npx skillhawk agents        # read-only; prints variable names, never values
+```
+
+The same CLI also checks agent skills: grades every `SKILL.md` A-F, scans skills and MCP configs for security problems,
+and compiles a skill for Codex, Cursor, Copilot and Gemini. Everything is also available to your agent as a local MCP
+server (`npx -y skillhawk mcp`).
+
+The rest of this README covers the skill registry and vault: keep open-source skills and your company's private ones
+in one place, install them into **Claude Code, OpenAI Codex, Cursor and any AGENTS.md agent**, or let agents load them
+over **MCP**.
 
 A *skill* is a folder with a `SKILL.md` (YAML frontmatter + instructions) and optional `scripts/`, `references/` and
 `templates/`, following the [Agent Skills](https://agentskills.io) format. Skillhawk adds what a team needs around

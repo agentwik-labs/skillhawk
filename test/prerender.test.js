@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -25,7 +26,7 @@ after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 test('landing text is in index.html without JavaScript, and the SPA scripts are still there', () => {
   const html = read('index.html');
-  assert.match(textOf(html), /Your agents keep running after you stop watching/);
+  assert.match(textOf(html), /Your agents run without you\. Know which account they bill/);
   assert.match(textOf(html), /skillhawk review skills\//);
   assert.match(html, /<link rel="canonical" href="https:\/\/example\.test\/base\/">/);
   assert.match(html, /src="app\.js/);
@@ -54,9 +55,9 @@ test('static pages exist with title, description, canonical and real text', () =
   assert.match(textOf(read('proof/scan/index.html')), /511 unique skills/);
 });
 
-test('eight learn pages answer first, cite sources, and carry FAQPage JSON-LD', () => {
+test('nine learn pages answer first, cite sources, and carry FAQPage JSON-LD', () => {
   const dirs = fs.readdirSync(path.join(out, 'learn')).filter((d) => fs.statSync(path.join(out, 'learn', d)).isDirectory());
-  assert.equal(dirs.length, 8);
+  assert.equal(dirs.length, 9);
   const painpoints = '/private/tmp/claude-501/painpoints.md';
   for (const d of dirs) {
     const html = read(`learn/${d}/index.html`);
@@ -80,13 +81,25 @@ test('sitemap lists every static page; robots allows the AI bots; llms files exi
   walk(out);
   for (const f of found) assert.ok(locs.includes(f ? `${SITE}/${f}/` : `${SITE}/`), `${f} missing from sitemap`);
   const robots = read('robots.txt');
-  for (const bot of ['GPTBot', 'ClaudeBot', 'Claude-Web', 'PerplexityBot', 'Google-Extended', 'Bingbot']) assert.match(robots, new RegExp(`User-agent: ${bot}\\nAllow: /`));
+  for (const bot of ['GPTBot', 'ClaudeBot', 'Claude-Web', 'PerplexityBot', 'Google-Extended', 'Bingbot']) assert.match(robots, new RegExp(`User-agent: ${bot}\\nContent-Signal: search=yes, ai-input=yes, ai-train=yes\\nAllow: /`));
   assert.ok(!/Disallow: \//.test(robots));
   assert.match(robots, new RegExp(`Sitemap: ${SITE}/sitemap.xml`));
   assert.match(read('llms.txt'), /^# Skillhawk/);
   const full = read('llms-full.txt');
   assert.match(full, /Are agent skills safe/);
   assert.match(full, /Command: skillhawk review skills\//);
+});
+
+test('agent discovery: skills index with a correct digest, WebMCP script on the landing', () => {
+  const idx = JSON.parse(read('.well-known/agent-skills/index.json'));
+  assert.equal(idx.$schema, 'https://schemas.agentskills.io/discovery/0.2.0/schema.json');
+  assert.equal(idx.skills.length, 1);
+  const s = idx.skills[0];
+  assert.equal(s.name, 'skillhawk'); assert.equal(s.type, 'skill-md'); assert.match(s.description, /which account/);
+  const md = fs.readFileSync(path.join(out, s.url));
+  assert.equal(s.digest, `sha256:${crypto.createHash('sha256').update(md).digest('hex')}`);
+  assert.match(fs.readFileSync(path.join(out, 'index.html'), 'utf8'), /<script src="webmcp\.js[^"]*" defer>/);
+  assert.ok(fs.existsSync(path.join(out, 'webmcp.js')));
 });
 
 test('Cloudflare Web Analytics only on the public skillhawk.ai build, never on other site URLs', () => {

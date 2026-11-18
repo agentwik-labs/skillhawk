@@ -4,6 +4,8 @@
 // replaces <main id="app"> as soon as it runs.
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { LEARN } from './prerender-content.js';
 
 export const DEFAULT_SITE_URL = 'https://skillhawk.ai';
@@ -20,7 +22,11 @@ const slugify = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').repla
 const npx = (cmd) => `npx ${cmd}`;
 const jsonLd = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 const SECURE_LABEL = { clean: 'No security findings', low: 'Low-severity findings', medium: 'Medium-severity findings to review', high: 'High-severity findings' };
-const SITE_DESC = "Free, open-source review, security and test checks for AI agent skills. The vault is open source and runs on your own server; hosted Pro is planned.";
+const SITE_DESC = "Free, open-source CLI that shows which account your unattended coding agents bill (subscription or pay-per-token API key), and grades, security-checks and compiles AI agent skills.";
+// Content Signals (contentsignals.org): search engines, answer engines and model training may all use this site.
+const CONTENT_SIGNAL = 'Content-Signal: search=yes, ai-input=yes, ai-train=yes';
+// Skills published at /.well-known/agent-skills/ (Agent Skills Discovery RFC v0.2.0).
+const AGENT_SKILLS = [{ name: 'skillhawk', dir: fileURLToPath(new URL('../skills/skillhawk/', import.meta.url)) }];
 
 /** Read the landing's journey data out of web/app.js so the static text and the app never disagree. */
 export function loadJourney(webDir) {
@@ -189,12 +195,12 @@ ${body(b)}
     // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
     const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
     const watch = plan('watch');
-    const summary = `Free open-source developer tools.${watch ? ` Watch ${watch.price}${perOf(watch)} (waitlist, not built).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (waitlist).${team ? ' Teams by request.' : ''}`;
+    const summary = `Free open-source developer tools.${watch ? ` Watch ${watch.price}${perOf(watch)} (waitlist; built, not on sale yet).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (waitlist).${team ? ' Teams by request.' : ''}`;
     page({ p: '/pricing/', title: 'Skillhawk pricing: free checks today, Watch planned at $9 a month', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillhawk', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillhawk', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillhawk', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillhawk pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))}, planned, not built yet) is planned to alert you when an agent runs unattended or keeps spending with no human, and to re-check your skills when a model or agent changes. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
     <p><a href="${b}#/?s=pilot">Join the Watch waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
@@ -341,8 +347,8 @@ ${body(b)}
   const indexFile = path.join(out, 'index.html');
   const stepHtml = (s) => `<section id="${s.id}-static"><h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)} <span class="sp-meta">${esc(s.tier)}</span></p><ul>${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="tools/${t.slug}/"><b>${esc(t.name)}</b></a>: ${esc(t.what)} <code>${esc(t.cmd)}</code></li>`).join('')}</ul></section>`;
   const landing = `<div class="sp-landing">
-    <h1>Your agents keep running after you stop watching.</h1>
-    <p class="sp-answer">One free command lists every coding agent, unattended session and dev server still running, and what a session has cost since you last typed. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Watch, on pre-order and not built yet, is planned to send those alerts for you.</p>
+    <h1>Your agents run without you. Know which account they bill.</h1>
+    <p class="sp-answer">One free command finds every coding agent that runs without you (cron, launchd, scheduled CI, sessions left working) and shows which account each one bills: your subscription, or an API key that charges per token. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Watch, built and not on sale yet, is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one.</p>
     <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=su-hero">Join the Watch waitlist</a></p>
     ${journey.WATCH ? `<section><h2>${esc(journey.WATCH.step)}: ${esc(journey.WATCH.h)}</h2><p>${esc(journey.WATCH.promise)} <span class="sp-meta">${esc(journey.WATCH.tier)}</span></p><ul>${journey.WATCH.tools.map((t) => `<li><b>${esc(t.name)}</b>: ${esc(t.what)}</li>`).join('')}</ul></section>` : ''}
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
@@ -365,11 +371,18 @@ ${body(b)}
 
   // ---- sitemap, robots, llms ----------------------------------------------------------------------------------
   write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${esc(u.loc)}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('\n')}\n</urlset>\n`);
-  write('robots.txt', `# Everyone, including AI search and answer crawlers, may read the whole site.\n${BOTS.map((b) => `User-agent: ${b}\nAllow: /\n`).join('\n')}\nSitemap: ${siteUrl}/sitemap.xml\n`);
+  write('robots.txt', `# Everyone, including AI search and answer crawlers, may read the whole site.\n${BOTS.map((b) => `User-agent: ${b}\n${CONTENT_SIGNAL}\nAllow: /\n`).join('\n')}\nSitemap: ${siteUrl}/sitemap.xml\n`);
+  const skillEntries = AGENT_SKILLS.map((k) => {
+    const md = fs.readFileSync(path.join(k.dir, 'SKILL.md'));
+    const description = /^description:\s*(.+)$/m.exec(md.toString('utf8'))?.[1].trim() ?? '';
+    write(`.well-known/agent-skills/${k.name}/SKILL.md`, md);
+    return { name: k.name, type: 'skill-md', description, url: `/.well-known/agent-skills/${k.name}/SKILL.md`, digest: `sha256:${crypto.createHash('sha256').update(md).digest('hex')}` };
+  });
+  write('.well-known/agent-skills/index.json', `${JSON.stringify({ $schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json', skills: skillEntries }, null, 2)}\n`);
   const L = (t, p, d) => `- [${t}](${siteUrl}${p}): ${d}`;
   write('llms.txt', `# Skillhawk
 
-> ${SITE_DESC} Open source (MIT) command-line tools: grade skills A to F, security-check them and the config around them, measure whether they help, compile them for Claude Code, Codex, Cursor, Copilot and Gemini.
+> ${SITE_DESC} Open source (MIT) command-line tools: show agents that run without you and the account each scheduled one bills, grade skills A to F, security-check them and the config around them, measure whether they help, compile them for Claude Code, Codex, Cursor, Copilot and Gemini.
 
 ## Key pages
 ${L('Home', '/', 'What Skillhawk does, step by step')}
@@ -382,6 +395,7 @@ ${L('Learn', '/learn/', 'Sourced answers about skills and instruction files')}
 ${LEARN.map((l) => L(l.title, `/learn/${l.slug}/`, l.desc)).join('\n')}
 
 ## Commands
+- npx skillhawk agents
 - npx skillhawk review <dir>
 - npx skillhawk secure <dir>
 - npx skillhawk scan <dir>
@@ -394,6 +408,7 @@ ${LEARN.map((l) => L(l.title, `/learn/${l.slug}/`, l.desc)).join('\n')}
 ## Source
 - [GitHub](https://github.com/agentwik-labs/skillhawk)
 - Full text of tools and answers: ${siteUrl}/llms-full.txt
+- Agent skill: ${siteUrl}/.well-known/agent-skills/skillhawk/SKILL.md
 `);
   write('llms-full.txt', `# Skillhawk (full text)\n\n> ${SITE_DESC}\n\nSite: ${siteUrl}/\n\n# Tools\n\n${tools.map((t) => `## ${t.name}\nURL: ${siteUrl}/tools/${t.slug}/\n${toolText(t)}`).join('\n')}\n# Data pages\n\n${proofPages.map((x) => `## ${x.title}\nURL: ${siteUrl}${x.p}\n${texts[x.p]}\n`).join('\n')}\n# Answers\n\n${LEARN.map((l) => `## ${l.title}\nURL: ${siteUrl}/learn/${l.slug}/\n${texts[`/learn/${l.slug}/`]}\n`).join('\n')}`);
 

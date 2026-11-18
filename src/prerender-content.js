@@ -27,6 +27,51 @@ Nothing was stopped. To stop the flagged processes yourself: kill 100 300`;
 
 const AGENT_PAGES = [
   {
+    slug: 'why-is-claude-code-billing-my-api-key-instead-of-my-subscription',
+    title: 'Why is Claude Code billing my API key instead of my subscription?',
+    desc: 'When ANTHROPIC_API_KEY is set, Claude Code uses it instead of your Pro or Max plan, and claude -p always does. How scheduled agents end up on pay-per-token billing, and how to check.',
+    answer: 'Because an API key is in the environment the agent runs in. Claude Code\'s documentation says that when `ANTHROPIC_API_KEY` is set, it is used instead of your Claude Pro, Max, Ultra, Team or Enterprise subscription even if you are logged in; in interactive mode you are asked once, and in non-interactive mode (`claude -p`) the key is always used when present. Scheduled agents (cron, launchd, scripts that load a `.env`, CI) usually run non-interactively, so they bill the key per token without asking.',
+    sections: [
+      { h: 'Where the key usually comes from', list: [
+        'Your shell start-up file (`~/.zshrc`, `~/.bashrc`) exports `ANTHROPIC_API_KEY`, so every `claude -p` started from that shell or its scripts inherits it.',
+        'A crontab line or a variable set at the top of the crontab, a launchd `EnvironmentVariables` entry, or a systemd `Environment=` line.',
+        'A script that loads a project `.env` (for example `set -a; source .env`) which contains the key.',
+        'A GitHub Actions workflow that passes `anthropic_api_key` to `anthropics/claude-code-action`; `claude_code_oauth_token` uses a subscription token instead.',
+      ] },
+      { h: 'How to switch a run back to your subscription', list: [
+        '`unset ANTHROPIC_API_KEY` in the environment the job runs in, then check `/status` in Claude Code, which marks the credential that is not in use.',
+        'Remove the key from the job definition or the `.env` it loads, or give the job a subscription token instead.',
+        'For headless runs that should bill an API key, cap them with `--max-budget-usd` and a spend limit on the API workspace.',
+      ] },
+    ],
+    example: { intro: 'What `skillhawk agents` prints for scheduled agents (example data):', code: ` ! cron           claude  */30 * * * * cd ~/repo && claude -p "sweep"  (crontab)
+     bills: API key, pay per token (ANTHROPIC_API_KEY)
+   launchd        claude  com.me.nightly.plist  (~/Library/LaunchAgents/com.me.nightly.plist)
+     bills: subscription token (CLAUDE_CODE_OAUTH_TOKEN)
+
+API keys your shell exports (1)
+ ! ~/.zshrc: ANTHROPIC_API_KEY. Agents started from this shell, including \`claude -p\` in scripts, bill this key per token, even when you are signed in to a subscription.` },
+    command: { intro: 'Read-only; it prints variable names, never their values:',
+      code: 'npx skillhawk agents',
+      note: 'It reads your crontab, launchd or systemd user jobs, the scripts and `.env` files they load, this repository\'s scheduled GitHub workflows and your shell start-up files.' },
+    faq: [
+      { q: 'Does claude -p use my Max subscription?', a: 'Only if no API key is present. Claude Code\'s documentation says that in non-interactive mode (-p) an ANTHROPIC_API_KEY in the environment is always used when present, instead of your subscription.' },
+      { q: 'How do I know which account a run is using?', a: 'Run /status in Claude Code, which marks the credential not in use. For scheduled jobs, check the environment they run in; npx skillhawk agents lists each scheduled agent with the credential it will use.' },
+    ],
+    howto: { name: 'Check which account your scheduled agents bill', steps: [
+      ['List scheduled agents', 'Run npx skillhawk agents and read the bills line under each scheduled agent.'],
+      ['Check your shell', 'Look for an exported ANTHROPIC_API_KEY in your shell start-up files.'],
+      ['Fix the environment', 'Unset the key or move it out of the job, then confirm with /status.'],
+      ['Cap API runs', 'Use --max-budget-usd and a workspace spend limit for runs that should bill a key.'],
+    ] },
+    sources: [
+      { label: 'Claude Code docs: environment variables (ANTHROPIC_API_KEY)', url: 'https://code.claude.com/docs/en/env-vars', quote: 'this key is used instead of your Claude Pro, Max, Ultra, Team, or Enterprise subscription' },
+      { label: 'Claude Code docs: authentication and credentials', url: 'https://code.claude.com/docs/en/iam' },
+      { label: 'GitHub issue #37686: scheduled claude -p runs inherited an API key ($1,800+ in two days)', url: 'https://github.com/anthropics/claude-code/issues/37686' },
+    ],
+    related: ['how-much-is-claude-code-costing-me', 'see-which-ai-coding-agents-are-still-running'],
+  },
+  {
     slug: 'see-which-ai-coding-agents-are-still-running',
     title: 'How to see which AI coding agents are still running',
     desc: 'Find Claude Code, Codex, Gemini and other coding agents still running on your machine, the sessions working with no human, and the dev servers they left behind.',
