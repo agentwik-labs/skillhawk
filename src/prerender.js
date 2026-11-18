@@ -202,9 +202,8 @@ ${body(b)}
     <h1>${esc(P.heading || 'Skillhawk pricing')}</h1>
     <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
-    <h2>${esc(P.audit.name)}: ${esc(P.audit.price)} (${esc(P.audit.extra)})</h2><p>${esc(P.audit.text)}</p>
     <p><a href="${b}#/?s=pilot">Join the Watch waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
-    texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.audit.name}: ${P.audit.price}, ${P.audit.extra}. ${P.audit.text}\n${P.note}`;
+    texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.note}`;
   }
 
   // ---- skills -------------------------------------------------------------------------------------------------

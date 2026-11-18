@@ -22,6 +22,7 @@ test('waitlist cards say so, and Watch matches src/plans.js PREORDERS', () => {
   for (const p of PRICING.plans.filter((x) => x.preorder)) assert.match(p.blurb, /^Waitlist\./, `${p.id} says waitlist`);
   assert.match(PRICING.note, /not on sale yet/);
   assert.match(w.blurb, /not on sale yet/, 'Watch must say it cannot be bought yet');
+  assert.equal(PRICING.audit, undefined, 'no paid audit offer until buyers ask for one');
 });
 
 test('listed prices match src/plans.js', () => {

@@ -373,7 +373,6 @@ const PRICING = {
       items: ['Shared private vault with roles', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Help running it on your own servers'],
       cta: { label: 'Ask about teams', href: '#/teams' } },
   ],
-  audit: { name: 'Skills audit', price: '$750', extra: 'by request', text: 'Reviewer, Security and chat review run over the skills you already use: the same commands as the free CLI, run by us, with a written report.' },
 };
 function lpNav() {
   return `<header class="lp-nav">
@@ -444,7 +443,6 @@ function pricingSection(id = 'pricing') {
         <ul class="pr-items">${p.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
         <a class="${p.cta.code ? 'pr-code' : 'lp-action'}" href="${esc(p.cta.preorder ? preorderHref(p.cta.preorder) : p.cta.href)}">${p.cta.code ? `<code>${esc(p.cta.label)}</code>` : esc(p.cta.label)}</a>
       </li>`).join('')}</ul>
-      <p class="pr-audit"><b>${esc(P.audit.name)}: ${esc(P.audit.price)}</b>, ${esc(P.audit.extra)}. ${esc(P.audit.text)}</p>
       <p class="pr-note">${esc(P.note)}</p>
     </section>`;
 }
