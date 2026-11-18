@@ -17,6 +17,17 @@ The same CLI also checks agent skills: grades every `SKILL.md` A-F, scans skills
 and compiles a skill for Codex, Cursor, Copilot and Gemini. Everything is also available to your agent as a local MCP
 server (`npx -y skillhawk mcp`).
 
+**Runs on your machine.** No account, no API key, no server: the checks read local files and print to your terminal,
+and nothing is uploaded. Only the commands that call a model, a registry or an import source use the network.
+Node.js 20 or newer.
+
+**Use it where you work:** `npx skillhawk connect <claude|codex|cursor|vscode|gemini|claude-desktop> --write` adds the
+MCP server to your agent ([setup for each tool](https://skillhawk.ai/install/)). Listed on
+[npm](https://www.npmjs.com/package/skillhawk), the
+[official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.agentwik-labs/skillhawk)
+(`io.github.agentwik-labs/skillhawk`) and [Glama](https://glama.ai/mcp/servers/agentwik-labs/skillhawk).
+Questions: help@skillhawk.ai or [open an issue](https://github.com/agentwik-labs/skillhawk/issues).
+
 The rest of this README covers the skill registry and vault: keep open-source skills and your company's private ones
 in one place, install them into **Claude Code, OpenAI Codex, Cursor and any AGENTS.md agent**, or let agents load them
 over **MCP**.
