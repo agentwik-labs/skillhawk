@@ -110,3 +110,12 @@ test('Cloudflare Web Analytics only on the public skillhawk.ai build, never on o
   for (const f of ['index.html', 'tools/index.html']) assert.match(fs.readFileSync(path.join(pub, f), 'utf8'), /static\.cloudflareinsights\.com\/beacon\.min\.js/);
   assert.doesNotMatch(fs.readFileSync(path.join(pub, 'index.html'), 'utf8'), /googletagmanager|google-analytics/);
 });
+
+test('install page: every MCP client, the directory listings and the contact address, linked from footer and llms.txt', () => {
+  const h = read('install/index.html');
+  for (const c of ['claude', 'codex', 'cursor', 'vscode', 'gemini', 'claude-desktop']) assert.match(h, new RegExp(`connect ${c} --write`));
+  for (const u of ['www.npmjs.com/package/skillhawk', 'registry.modelcontextprotocol.io', 'glama.ai/mcp/servers/agentwik-labs/skillhawk', 'mailto:help@skillhawk.ai']) assert.ok(h.includes(u), u);
+  assert.match(read('tools/index.html'), /href="\.\.\/install\/"/);
+  assert.match(read('llms.txt'), /\/install\/\)/);
+  assert.match(read('sitemap.xml'), /\/install\/<\/loc>/);
+});

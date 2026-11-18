@@ -20,6 +20,11 @@ const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 const plain = (s) => String(s ?? '').replace(/`/g, '');
 const slugify = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const npx = (cmd) => `npx ${cmd}`;
+const LISTINGS = {
+  npm: 'https://www.npmjs.com/package/skillhawk',
+  registry: 'https://registry.modelcontextprotocol.io/v0/servers?search=io.github.agentwik-labs/skillhawk',
+  glama: 'https://glama.ai/mcp/servers/agentwik-labs/skillhawk',
+};
 const jsonLd = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 const SECURE_LABEL = { clean: 'No security findings', low: 'Low-severity findings', medium: 'Medium-severity findings to review', high: 'High-severity findings' };
 const SITE_DESC = "Free, open-source CLI that shows which account your unattended coding agents bill (subscription or pay-per-token API key), and grades, security-checks and compiles AI agent skills.";
@@ -73,9 +78,9 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
 
   const NAV = (b) => `<header class="top">
     <a class="brand" href="${b}"><span class="mark" aria-hidden="true"></span>skillhawk</a>
-    <nav aria-label="Site"><a href="${b}skills/">Skills</a><a href="${b}tools/">Tools</a><a href="${b}proof/">Proof</a><a href="${b}learn/">Learn</a><a href="${b}pricing/">Pricing</a><a href="${b}#/teams">For teams</a><a href="${b}#/browse">Open the app</a></nav>
+    <nav aria-label="Site"><a href="${b}install/">Install</a><a href="${b}skills/">Skills</a><a href="${b}tools/">Tools</a><a href="${b}proof/">Proof</a><a href="${b}learn/">Learn</a><a href="${b}pricing/">Pricing</a><a href="${b}#/teams">For teams</a><a href="${b}#/browse">Open the app</a></nav>
   </header>`;
-  const FOOT = (b) => `<footer class="foot"><span>Skillhawk checks your AI skills before your agents run them. Open source (MIT).</span><span><a href="${b}skills/">Skills</a> · <a href="${b}tools/">Tools</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></span></footer>`;
+  const FOOT = (b) => `<footer class="foot"><span>Skillhawk shows which account your unattended agents bill, and checks the skills they run. Open source (MIT). Questions: <a href="mailto:help@skillhawk.ai">help@skillhawk.ai</a></span><span><a href="${b}install/">Install</a> · <a href="${b}tools/">Tools</a> · <a href="${b}skills/">Skills</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="${LISTINGS.npm}">npm</a> · <a href="${LISTINGS.glama}">Glama</a> · <a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></span></footer>`;
 
   const page = ({ p, title, description, body, ld = [], lastmod = today, type = 'article' }) => {
     // Search results show about 60 characters of a title and 155 of a description; cut at a word, never mid-word.
@@ -204,6 +209,50 @@ ${body(b)}
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <p><a href="${b}#/?s=pilot">Join the Watch waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.note}`;
+  }
+
+  // ---- install: where to find Skillhawk in the tools people already use ---------------------------------------
+  {
+    const mcpJson = (key, extra = {}) => JSON.stringify({ [key]: { skillhawk: { ...extra, command: 'npx', args: ['-y', 'skillhawk', 'mcp'] } } }, null, 2);
+    const CLIENTS = [
+      ['Claude Code', 'npx skillhawk connect claude --write', 'claude mcp add --scope user skillhawk -- npx -y skillhawk mcp'],
+      ['Codex', 'npx skillhawk connect codex --write', '# ~/.codex/config.toml\n[mcp_servers.skillhawk]\ncommand = "npx"\nargs = ["-y", "skillhawk", "mcp"]'],
+      ['Cursor', 'npx skillhawk connect cursor --write', `// .cursor/mcp.json\n${mcpJson('mcpServers')}`],
+      ['VS Code (Copilot)', 'npx skillhawk connect vscode --write', `// .vscode/mcp.json\n${mcpJson('servers', { type: 'stdio' })}`],
+      ['Gemini CLI', 'npx skillhawk connect gemini --write', `// ~/.gemini/settings.json\n${mcpJson('mcpServers')}`],
+      ['Claude Desktop', 'npx skillhawk connect claude-desktop --write', `// claude_desktop_config.json\n${mcpJson('mcpServers')}`],
+    ];
+    const LISTED = [
+      ['npm', LISTINGS.npm, 'The package: npx skillhawk, no install needed.'],
+      ['Official MCP Registry', LISTINGS.registry, 'Listed as io.github.agentwik-labs/skillhawk (registry entry, JSON).'],
+      ['Glama MCP directory', LISTINGS.glama, 'MCP server listing with a build test of the tools.'],
+      ['GitHub', 'https://github.com/agentwik-labs/skillhawk', 'Source, issues and releases (MIT).'],
+    ];
+    const FOR_AGENTS = [
+      ['llms.txt', '/llms.txt', 'Site summary for language models.'],
+      ['Agent skill', '/.well-known/agent-skills/skillhawk/SKILL.md', 'A SKILL.md your agent can load to use Skillhawk (discovery index at /.well-known/agent-skills/index.json).'],
+    ];
+    page({ p: '/install/', title: 'Install Skillhawk: CLI, MCP server and where to find it | Skillhawk',
+      description: 'Run Skillhawk with npx, add its MCP server to Claude Code, Codex, Cursor, VS Code, Gemini CLI or Claude Desktop, and find it on npm, the MCP Registry and Glama.',
+      ld: [crumbs([['Skillhawk', '/'], ['Install', '/install/']])],
+      body: (b) => `${trail(b, [['Skillhawk', ''], ['Install']])}
+    <h1>Use Skillhawk where you already work</h1>
+    <p class="sp-answer">Everything here is free and open source and runs on your machine: no account, no key, nothing uploaded. You need Node.js 20 or newer.</p>
+    <h2>1. Run the free check</h2>
+    ${code('npx skillhawk agents')}
+    <p>Lists agents that run without you and which account each scheduled one bills: your subscription or a pay-per-token API key. It prints variable names only, never key values. More commands on the <a href="${b}tools/">tools</a> page.</p>
+    <h2>2. Add the MCP server to your agent</h2>
+    <p>Your agent gets four tools: <code>review_skill</code>, <code>secure_scan</code>, <code>compile_skill</code> and <code>check_agents</code>. They run locally over stdio. <code>connect</code> writes the config for you; without <code>--write</code> it prints it so you can check it first.</p>
+    ${CLIENTS.map(([n, cmd, manual]) => `<h3>${esc(n)}</h3>${code(cmd)}<details><summary>Or add it by hand</summary>${code(manual)}</details>`).join('\n')}
+    <p>Any other MCP client: start the server with <code>npx -y skillhawk mcp</code>.</p>
+    <h2>3. Find Skillhawk in directories</h2>
+    <ul>${LISTED.map(([n, u, d]) => `<li><a href="${esc(u)}" rel="noopener">${esc(n)}</a>: ${esc(d)}</li>`).join('')}</ul>
+    <h2>For agents reading this site</h2>
+    <ul>${FOR_AGENTS.map(([n, u, d]) => `<li><a href="${b}${u.replace(/^\//, '')}">${esc(n)}</a>: ${esc(d)}</li>`).join('')}</ul>
+    <p>The home page also offers browser agents two read-only WebMCP tools, where the browser supports WebMCP.</p>
+    <h2>Questions</h2>
+    <p>Email <a href="mailto:help@skillhawk.ai">help@skillhawk.ai</a> or open an issue on <a href="https://github.com/agentwik-labs/skillhawk/issues" rel="noopener">GitHub</a>.</p>` });
+    texts['/install/'] = `Install\nRun: npx skillhawk agents\nMCP: ${CLIENTS.map(([n, cmd]) => `${n}: ${cmd}`).join('; ')}. Any client: npx -y skillhawk mcp\nListed on: ${LISTED.map(([n, u]) => `${n} ${u}`).join('; ')}\nContact: help@skillhawk.ai`;
   }
 
   // ---- skills -------------------------------------------------------------------------------------------------
@@ -385,6 +434,7 @@ ${body(b)}
 
 ## Key pages
 ${L('Home', '/', 'What Skillhawk does, step by step')}
+${L('Install', '/install/', 'The CLI, the MCP server for Claude Code, Codex, Cursor, VS Code, Gemini CLI and Claude Desktop, and where Skillhawk is listed')}
 ${L('Tools', '/tools/', 'Every command, with real example output')}
 ${L('Skill library', '/skills/', `${libSkills.length} public skills with grade, findings and security status`)}
 ${L('Proof', '/proof/', 'Scan of 511 skills, lift evals, reviewer accuracy, library grades, with method')}
@@ -404,8 +454,18 @@ ${LEARN.map((l) => L(l.title, `/learn/${l.slug}/`, l.desc)).join('\n')}
 - npx skillhawk optimize <skill-dir>
 - npx skillhawk install <skill> --agent claude
 
+## MCP server
+- Any MCP client: npx -y skillhawk mcp (tools: review_skill, secure_scan, compile_skill, check_agents)
+- Claude Code: npx skillhawk connect claude --write
+
+## Listings
+- [npm](${LISTINGS.npm})
+- [Official MCP Registry](${LISTINGS.registry})
+- [Glama](${LISTINGS.glama})
+
 ## Source
 - [GitHub](https://github.com/agentwik-labs/skillhawk)
+- Contact: help@skillhawk.ai
 - Full text of tools and answers: ${siteUrl}/llms-full.txt
 - Agent skill: ${siteUrl}/.well-known/agent-skills/skillhawk/SKILL.md
 `);
