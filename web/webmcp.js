@@ -8,7 +8,7 @@
     review: ['npx skillhawk review <skills-dir>', 'Grades each SKILL.md A to F with concrete fixes.'],
     security: ['npx skillhawk secure <skills-dir>', 'Security scan of skills, MCP configs, hooks, remote scripts and tool grants.'],
     compile: ['npx skillhawk compile <skill-dir> --to all', 'Converts one skill for Claude Code, Codex, Cursor, Copilot and Gemini.'],
-    mcp: ['npx skillhawk mcp --local', 'Runs a local stdio MCP server with review_skill, secure_scan, compile_skill and check_agents.'],
+    mcp: ['npx skillhawk mcp --local', 'Runs a local stdio MCP server with six tools (check_agents, review_skill, secure_scan, compile_skill, map_query, skill_section) and the slash commands billing, review-skills and secure.'],
   };
   const text = (t) => ({ content: [{ type: 'text', text: t }] });
   const tools = [

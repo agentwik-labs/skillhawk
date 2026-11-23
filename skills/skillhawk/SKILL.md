@@ -45,8 +45,9 @@ Report the grade and the top findings to the user; fix only what they ask for.
 
 ## Use it as an MCP server
 
-`npx skillhawk mcp --local` runs a stdio MCP server with the tools `review_skill`, `secure_scan`, `compile_skill` and
-`check_agents`. `npx skillhawk connect claude --write` adds it to Claude Code.
+`npx skillhawk mcp --local` runs a stdio MCP server with the tools `check_agents`, `review_skill`, `secure_scan`,
+`compile_skill`, `map_query` and `skill_section`, and the prompts `billing`, `review-skills` and `secure` (in Claude Code:
+`/mcp__skillhawk__billing`). `npx skillhawk connect claude --write` adds it to Claude Code.
 
 ## More
 

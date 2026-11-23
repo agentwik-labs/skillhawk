@@ -13,15 +13,21 @@ const BIN = path.join(ROOT, 'bin', 'skillyard.js');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'skillhawk-mcp-'));
 const call = (h, name, args, id = 1) => h({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } });
 
-test('no registry: only local tools; prompts and resources empty; registry tools unknown', async () => {
+test('no registry: only local tools and the three local prompts; no resources; registry tools unknown', async () => {
   const h = createMcpHandler(null, { root: ROOT, local: true });
   const init = await h({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(init.result.serverInfo.name, 'skillhawk');
   assert.match(init.result.instructions, /Nothing leaves the machine/);
   const names = (await h({ jsonrpc: '2.0', id: 2, method: 'tools/list' })).result.tools.map((t) => t.name);
-  for (const n of ['review_skill', 'secure_scan', 'compile_skill', 'check_agents']) assert.ok(names.includes(n), n);
+  for (const n of ['review_skill', 'secure_scan', 'compile_skill', 'check_agents', 'health_check']) assert.ok(names.includes(n), n);
   assert.ok(!names.includes('search_skills'));
-  assert.deepEqual((await h({ jsonrpc: '2.0', id: 3, method: 'prompts/list' })).result.prompts, []);
+  const prompts = (await h({ jsonrpc: '2.0', id: 3, method: 'prompts/list' })).result.prompts;
+  assert.deepEqual(prompts.map((p) => p.name), ['billing', 'review-skills', 'secure', 'health']);
+  assert.match(init.result.instructions, /check_agents.*bills/);
+  const got = (await h({ jsonrpc: '2.0', id: 5, method: 'prompts/get', params: { name: 'review-skills', arguments: { path: 'skills' } } })).result;
+  assert.match(got.messages[0].content.text, /review_skill.*secure_scan.*"skills"/);
+  assert.match((await h({ jsonrpc: '2.0', id: 6, method: 'prompts/get', params: { name: 'billing' } })).result.messages[0].content.text, /check_agents.*Never print key values/s);
+  assert.equal((await h({ jsonrpc: '2.0', id: 7, method: 'prompts/get', params: { name: 'nope' } })).error.code, -32602);
   assert.deepEqual((await h({ jsonrpc: '2.0', id: 4, method: 'resources/list' })).result.resources, []);
   assert.equal((await call(h, 'search_skills', { query: 'x' })).error.code, -32602);
 });

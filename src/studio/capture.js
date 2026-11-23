@@ -16,6 +16,8 @@ export const TYPES = [
   ['style', 'Wrong form or tone', [/\btoo (long|verbose|wordy|technical|complex|complicated|formal)/, /\b(simpler|shorter|plain english|less jargon)\b/, /\bstop (explaining|narrating)/, /\btl;?dr\b/, /\bjust (show|give) me\b/]],
   ['stop-or-redirect', 'Redirected', [/^(no|nope|nah|stop|wait|hold on|hang on)\b/, /\b(don'?t|do not) do that\b/, /\binstead\b/, /\bthat'?s not (it|what)\b/, /\bwrong (file|place|approach|repo|branch|account)/]],
 ];
+// Durable statements a person makes about how work should be done ("from now on use pnpm"); the Second Brain keeps them.
+export const DECISION = /\b(from now on|going forward|in (the )?future|always (use|run|write|keep|put|ask|check|add)|never (use|run|write|commit|push|deploy|add|delete)|we (use|prefer|decided|standardi[sz]e)|let'?s (always|use|go with|stick with)|remember (to|that)|make sure (you|to) always)\b/i;
 export const TYPE_LABELS = Object.fromEntries(TYPES.map(([k, l]) => [k, l]));
 const NOISE = ['<system-reminder', '<command-', '<local-command', 'caveat:', '<task-notification', '<bash-', '[image', '<pasted_content'];
 
@@ -105,6 +107,8 @@ export async function scanSession(file, source) {
   let branch = null;
   const prompts = [];
   const corrections = [];
+  const asks = [];
+  const decisions = [];
   let lastAsk = null;
   let agentText = '';
   let tools = [];
@@ -150,12 +154,14 @@ export async function scanSession(file, source) {
         skills: [...skills],
       });
     }
-    if (!kind) lastAsk = human;
+    if (human.length < 2000 && DECISION.test(human)) decisions.push({ time, project, session: path.basename(file, '.jsonl').slice(0, 8), said: redact(human).slice(0, 400) });
+    if (!kind) { lastAsk = human; if (asks.length < 400) asks.push({ time, text: redact(human).slice(0, 240) }); }
     agentText = '';
     tools = [];
     sinceAsk = 0;
   }
-  return { prompts, corrections, project, branch, cwd: cwd ? redact(cwd) : null };
+  for (const d of decisions) d.project = project;
+  return { prompts, corrections, asks, decisions, project, branch, cwd: cwd ? redact(cwd) : null };
 }
 
 // Resolve a session's working folder to its git repository name. Worktrees point back to their main repository
@@ -197,7 +203,7 @@ export function projectName(dir) {
   return rest.slice(-2).join('-') || dir;
 }
 
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 
 export const SOURCES = {
   claude: { label: 'Claude Code', root: () => path.join(HOME, '.claude', 'projects') },
@@ -233,7 +239,7 @@ export async function captureAll(sources, cache = {}, onProgress = () => {}) {
     if (hit && hit.v === CACHE_VERSION && hit.mtime === st.mtimeMs && hit.size === st.size) next[file] = hit;
     else {
       const r = await scanSession(file, source);
-      next[file] = { v: CACHE_VERSION, mtime: st.mtimeMs, size: st.size, source, project: r.project, branch: r.branch, cwd: r.cwd, prompts: r.prompts, corrections: r.corrections };
+      next[file] = { v: CACHE_VERSION, mtime: st.mtimeMs, size: st.size, source, project: r.project, branch: r.branch, cwd: r.cwd, prompts: r.prompts, corrections: r.corrections, asks: r.asks, decisions: r.decisions };
     }
     if (++done % 25 === 0) onProgress(done, files.length);
   }

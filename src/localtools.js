@@ -51,6 +51,20 @@ export const LOCAL_TOOLS = [
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
   },
+  {
+    name: 'brain_search',
+    title: 'Search the Second Brain',
+    description: "Search the user's Second Brain: the sources they chose with `skillhawk brain init` (agent sessions, repo docs, git history, folders of notes, transcripts, specs). Returns passages with file and line. Use it to find past decisions, definitions, preferences and context before asking the user or guessing. Read-only; only available when the user allowed agents to search their brain.",
+    inputSchema: { type: 'object', properties: { query: { type: 'string', description: 'What to look for, in plain words.' }, limit: { type: 'number', description: 'Max passages. Default 8.' } }, required: ['query'] },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  },
+  {
+    name: 'health_check',
+    title: 'Codebase health check',
+    description: 'Local health check of a codebase: structure (large files, import cycles, committed .env, lockfile), tests (none, too few, not in CI), clean code (long functions, deep nesting, copied code), system design (stack, entry points, missing health check, rate limiting, validation, migrations, webhook signature checks, LLM call limits) and cloud cost (infrastructure-as-code against list prices: NAT gateways, instance sizes, Lambda arch and memory, log retention, gp2, Multi-AZ). Returns findings with evidence and fixes plus the facts an agent needs to write a system-design review. Read-only, no network.',
+    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Repository folder. Relative paths resolve from the folder the server was started in. Default "."' } } },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  },
 ];
 
 const text = (t, isError = false, structured) => ({ content: [{ type: 'text', text: t }], isError, ...(structured ? { structuredContent: structured } : {}) });
@@ -86,6 +100,25 @@ export async function callLocalTool(name, args = {}, { root = process.cwd(), age
         ...r.warnings.map((w) => `  warn ${w}`),
       ]);
       return text(lines.join('\n'), results.some((r) => !r.ok), { results: results.map(({ target, files, warnings, checks, ok }) => ({ target, files: files.map((f) => path.relative(root, f)), warnings, checks, ok })) });
+    }
+    if (name === 'brain_search') {
+      if (!args.query) return text('query is required.', true);
+      const { loadConfig } = await import('./brain-config.js');
+      const cfg = loadConfig(root);
+      if (!cfg) return text('No Second Brain is set up here. Ask the user to run: npx skillhawk brain init (it asks what goes in).', true);
+      if (!cfg.agents) return text('The user set their brain so agents cannot search it.', true);
+      const { build, find } = await import('./brain.js');
+      const { hasConsent } = await import('./review-chats.js');
+      const { repoOf } = await import('./studio/capture.js');
+      const ok = hasConsent(path.join(os.homedir(), '.skillyard', 'studio'), 'readLogs');
+      const b = await build({ project: repoOf(root), repo: root, config: ok ? cfg : { ...cfg, sources: cfg.sources.filter((x) => x !== 'sessions') } });
+      const hits = find(b, String(args.query), Math.min(Number(args.limit) || 8, 25));
+      return text(hits.length ? hits.map((h) => `${h.where}${h.heading ? ` · ${h.heading}` : ''}\n  ${h.text}`).join('\n\n') : `Nothing matches "${args.query}" (${b.chunks} passages searched).`, false, { hits });
+    }
+    if (name === 'health_check') {
+      const { health, render } = await import('./health.js');
+      const r = health(at(args.path));
+      return text(render(r, { all: true }), false, { grade: r.grade, score: r.score, counts: r.counts, languages: r.languages, tests: r.tests, design: r.design, cloud: r.cloud });
     }
     if (name === 'check_agents') {
       const { collect, render } = await import('./agentwatch.js');

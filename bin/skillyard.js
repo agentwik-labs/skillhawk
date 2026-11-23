@@ -2,6 +2,6 @@
 import { main } from '../src/cli.js';
 
 main(process.argv.slice(2)).catch((e) => {
-  console.error(`skillyard: ${e.message}`);
+  console.error(`skillhawk: ${e.message}`);
   process.exit(1);
 });

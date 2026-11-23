@@ -1,0 +1,17 @@
+{
+  "answers": {
+    "language": "JavaScript (detected)",
+    "formatter": "None, match the existing code",
+    "indent": "2 spaces (detected, 100% of lines)",
+    "quotes": "single quotes (detected, 96%)",
+    "semicolons": "always (detected, 99%)",
+    "modules": "ES modules (import/export) (detected)",
+    "naming": "functions camelCase, files kebab-case (detected)",
+    "tests": "npm test (runs: node --test test/*.test.js) (detected); add or update a test with every behaviour change",
+    "architecture": "Keep the current layout; put new code next to similar code",
+    "commits": "Match the existing style: e.g. \"README: runs-locally note, install page, listings, contact\"",
+    "design": "No UI in this repo",
+    "comments": "Comment why, not what; keep comments short"
+  },
+  "at": "2026-11-22T20:02:18.800Z"
+}

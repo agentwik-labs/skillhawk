@@ -44,7 +44,7 @@ test('Teams has no price and points to the inquiry form', () => {
 });
 
 test('heading states the Watch price', () => {
-  assert.equal(PRICING.heading, `Free checks today. Watch planned at $${PREORDERS.watch.monthlyUsd} a month.`);
+  assert.equal(PRICING.heading, `Free checks today. Autopilot: $${PREORDERS.watch.foundingUsd} a month for the first ${PREORDERS.watch.foundingLimit}.`);
 });
 
 test('web/app.js parses (the tests above only read its data block)', async () => {

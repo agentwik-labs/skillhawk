@@ -283,11 +283,11 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 const FREE = 'Free and open source. Runs on your machine.';
 const PILOT = 'Pro: $20 a month, waitlist; the hosted vault is not running yet. The vault is open source. Team features by request.';
 // Watch is built (private repo skillhawk-watch) and not on sale yet. Each row states what the free command does today and what Watch adds.
-const WATCH = { id: 'watch', step: 'Watch', h: 'Watch: a guard for agents that run without you.', tier: 'Watch: built, not on sale yet; $9 a month when it is. Join the waitlist (free, no payment); the commands below work today.',
-  promise: 'Unattended agents are where surprise bills come from: a scheduled run that picks up an API key, or a loop nobody stops. Today the free command shows which agents run without you and which account each bills. Watch (built, not on sale yet) runs in the background: it warns when a job starts billing an API key, tracks cost per headless job and can stop one that runs away.',
+const WATCH = { id: 'watch', step: 'Autopilot', h: 'Autopilot: the checks, run for you.', tier: 'Autopilot: built, not on sale yet; founding price $9 a month for the first 100 when it is. Join the waitlist (free, no payment); the commands below work today.',
+  promise: 'Unattended agents are where surprise bills come from: a scheduled run that picks up an API key, or a loop nobody stops. Today the free command shows which agents run without you and which account each bills. Autopilot (built, not on sale yet) runs in the background: it warns when a job starts billing an API key, tracks cost per headless job, can stop one that runs away, and every day checks your codebase health, which lessons stick and what work you keep repeating.',
   tools: [
-    { name: 'Agent alerts', cmd: 'skillhawk agents --notify desktop', what: 'Today: run it yourself or on a schedule you set up; --notify sends a desktop or Slack alert with counts only. Watch (built, not on sale yet) does this in the background: warnings when a job starts billing an API key, cost per headless job, and a stop for runaway jobs.', out: '! claude  up 3d 4h  no terminal  1 child process\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
-    { name: 'New-model check', cmd: 'skillhawk watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Watch: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
+    { name: 'Agent alerts', cmd: 'skillhawk agents --notify desktop', what: 'Today: run it yourself or on a schedule you set up; --notify sends a desktop or Slack alert with counts only. Autopilot (built, not on sale yet) does this in the background: warnings when a job starts billing an API key, cost per headless job, and a stop for runaway jobs.', out: '! claude  up 3d 4h  no terminal  1 child process\n! node    up 26d 1h  port 4400  server.cjs', note: 'Output from example data.' },
+    { name: 'New-model check', cmd: 'skillhawk watch run skills/ --model <new> --allow-model', what: 'Today: re-run your skills\' evals on a new model yourself, with your own API key. Planned for Autopilot: run them when a model ships and open a pull request with the drafted fixes.', out: null, noOut: 'Needs a model API key, so no sample output here.' },
     { name: 'Supply-chain check', cmd: 'skillhawk secure . --gate high', what: 'Today: scan the skills, MCP servers, hooks and scripts you use. Planned for Watch: re-scan them when they change upstream.', out: null, noOut: 'Full output in the Check section.' },
     { name: 'Agent format check', cmd: 'skillhawk compile release-notes --to all', what: 'Today: compile to five agents and check each file against its limits. Planned for Watch: re-check when an agent changes its format or limits, and open a pull request.', out: 'copilot: FAIL size (4301/4000 chars read by code review)\ngemini: GEMINI.md  ok size (4385/20000 bytes)' },
   ] };
@@ -304,7 +304,7 @@ const JOURNEY = [
     tools: [
       { name: 'Review', cmd: 'skillhawk review skills/', what: 'Contradictions, vague wording, broken links, skills that crowd each other out. --fix applies the safe fixes.', out: null, noOut: 'Full output below.' },
       { name: 'Secure', cmd: 'skillhawk secure . --gate high', what: 'Permissions, MCP servers, hooks, dependencies and remote scripts. A non-zero exit makes it a CI gate.', out: null, noOut: 'Full output below.' },
-      { name: 'MCP', cmd: 'skillhawk connect claude --write', what: 'A local MCP server that gives your agent the checks as tools: review_skill, secure_scan, compile_skill and check_agents. They run on your machine over stdio, with no account and no server. connect also takes codex, cursor, vscode, gemini and claude-desktop.', out: 'Run:\n  claude mcp add --scope user skillhawk -- npx -y skillhawk mcp\n\nTools: review_skill, secure_scan, compile_skill, check_agents. They run on this machine; no account needed.', note: 'Printed by connect without --write. Any MCP client can start the same server with: npx -y skillhawk mcp' },
+      { name: 'MCP', cmd: 'skillhawk connect claude --write', what: 'A local MCP server that gives your agent the checks as tools: check_agents, review_skill, secure_scan, compile_skill, map_query and skill_section, plus slash commands (in Claude Code: /mcp__skillhawk__billing, /mcp__skillhawk__review-skills, /mcp__skillhawk__secure). They run on your machine over stdio, with no account and no server. connect also takes codex, cursor, vscode, gemini and claude-desktop.', out: 'Run:\n  claude mcp add --scope user skillhawk -- npx -y skillhawk mcp\n\nTools: review_skill, secure_scan, compile_skill, check_agents. They run on this machine; no account needed.', note: 'Printed by connect without --write. Any MCP client can start the same server with: npx -y skillhawk mcp' },
       { name: 'Clean', cmd: 'skillhawk clean scripts skills/', what: 'Scripts shipped inside skills: error handling, hard-coded paths, exec bits.', out: 'high scripts/fetch.sh:2 no `set -e`: a failed command is ignored' },
     ] },
   { id: 'improve', step: 'Improve', h: 'Learn from how your team really works.', tier: FREE,
@@ -353,16 +353,16 @@ const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged co
 
 // Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
 const PRICING = {
-  heading: 'Free checks today. Watch planned at $9 a month.',
-  note: 'Prices in USD. Watch is built and not on sale yet, and the hosted Pro vault is not running yet: join a waitlist, no payment collected. Teams: tell us what you need.',
+  heading: 'Free checks today. Autopilot: $9 a month for the first 100.',
+  note: 'Prices in USD. Autopilot is built and not on sale yet, and the hosted Pro vault is not running yet: join a waitlist, no payment collected. Autopilot founding price: $9 a month for the first 100 buyers, kept for as long as you stay subscribed; then $19 a month or $190 a year. Teams: tell us what you need.',
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
       blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
-      items: ['review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
+      items: ['brief, usage, stuck, snapshot and restore, tidy, logs-secrets', 'setup, health, brain, factory', 'review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
       cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
-    { id: 'watch', name: 'Watch', preorder: true, monthlyUsd: 9, yearlyUsd: 79, seats: 1, extraSeatUsd: null, price: '$9', per: 'per month, or $79 a year', featured: true,
-      blurb: 'Waitlist. Built, not on sale yet. A background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one.',
-      items: ['Warning when a scheduled agent starts billing an API key', 'Cost per headless job, per day', 'Stop a runaway job (opt-in)', 'Desktop or Slack alerts', 'Supply-chain check on skills, MCP servers and plugins you use', 'Agent format check', 'Up to 25 skills'],
+    { id: 'watch', name: 'Autopilot', preorder: true, monthlyUsd: 19, yearlyUsd: 190, foundingUsd: 9, seats: 1, extraSeatUsd: null, price: '$19', per: 'per month, or $190 a year. Founding price: $9 a month for the first 100', featured: true,
+      blurb: 'Waitlist. Built, not on sale yet. The free checks, run for you in the background on your machine, Per problem you choose once: tell me, prepare it, or do it; everything it does is logged and can be undone. If in 30 days it has not caught a billing problem, cut a repeated correction or shipped one skill with measured lift, you get your money back.',
+      items: ['Morning brief: what it did for you, what needs you', 'Usage paced against your own limits; queued jobs wait for the reset and re-run after a limit hit', 'Uncommitted agent work snapshotted every night', 'Sessions waiting on a permission prompt pushed to your phone', 'Red CI investigated overnight by your own agent: a fix branch or draft PR, never merged', 'Clutter cleaned under your rules; secrets redacted from agent logs', 'Tool updates checked against your settings, hooks and MCP servers', 'Warning when a scheduled agent starts billing an API key', 'Cost per headless job, per day; stop a runaway job (opt-in)', 'Daily codebase health, with an alert when it drops', 'Which adopted lessons stick, and which do not', 'Repeated work with no skill yet, ready to draft', 'Weekly report; desktop or Slack alerts', 'Brain notes synced to your own private git repo', 'Supply-chain and agent format checks', '30-day results guarantee'],
       cta: { label: 'Join the waitlist', preorder: 'watch' } },
     { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
       blurb: 'Waitlist. The vault software is built and open source; the hosted vault is not running yet.',
@@ -451,9 +451,9 @@ function preorderCta(id) {
   const paid = CFG.preorder?.watch;
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="pilot">
       <h2 class="lp-h" id="${id}-h">Want a warning before an unattended agent bills the wrong account?</h2>
-      <p class="v-lede">Watch is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. Built and in testing; not on sale yet, $9 a month when it is. The free command above does the check on demand today.</p>
+      <p class="v-lede">Autopilot runs the free checks for you in the background: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, can stop a runaway one, and tracks your codebase health and which lessons stick. Built and in testing; not on sale yet. Founding price: $9 a month for the first 100. The free command above does the check on demand today.</p>
       <div class="po-row" id="reserve-watch">${paid
-        ? `<a class="lp-action" href="${esc(paid)}">Pre-order Watch, $9 a month</a>`
+        ? `<a class="lp-action" href="${esc(paid)}">Get Autopilot, $9 a month (first 100)</a>`
         : signupSentence({ lead: 'Join the waitlist:', button: 'Join', tag: 'preorder-watch', id: `${id}-watch`, note: 'Free to join; no payment is collected. First 10 on the list: a free written review of your agent setup and skills, by email.' })}</div>
     </section>`;
 }
@@ -683,10 +683,10 @@ const CHECKS = [
 ];
 
 function heroReserve(id) {
-  const note = 'Free to join; no payment is collected. Watch is built and not on sale yet; we email you when it is.';
+  const note = 'Free to join; no payment is collected. Autopilot is built and not on sale yet; we email you when it is.';
   if (!signupOn()) return `<p class="hr-alt"><a class="lp-action" href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></p><p class="hr-note">${note}</p>`;
   return `<form class="hero-form signup" data-tag="preorder-watch" id="${id}">
-      <label for="${id}-email">Watch: a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. $9 a month when it goes on sale. Join the waitlist:</label>
+      <label for="${id}-email">Autopilot: the free checks, run for you in the background. It warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, can stop a runaway one, and tracks your codebase health and which lessons stick. $9 a month for the first 100 when it goes on sale. Join the waitlist:</label>
       <div class="hf-row"><input id="${id}-email" name="email" type="email" required placeholder="you@company.com" autocomplete="email"><button type="submit">Join the waitlist</button></div>
       <p class="hf-bonus"><b>First 10 on the list:</b> a free written review of your agent setup and skills, by email.</p>
     </form>

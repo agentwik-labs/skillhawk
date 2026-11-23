@@ -200,14 +200,14 @@ ${body(b)}
     // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
     const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
     const watch = plan('watch');
-    const summary = `Free open-source developer tools.${watch ? ` Watch ${watch.price}${perOf(watch)} (waitlist; built, not on sale yet).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (waitlist).${team ? ' Teams by request.' : ''}`;
-    page({ p: '/pricing/', title: 'Skillhawk pricing: free checks today, Watch planned at $9 a month', description: `${summary} ${P.note}`,
+    const summary = `Free open-source developer tools.${watch ? ` Autopilot ${watch.price}${perOf(watch)} (waitlist; built, not on sale yet).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (waitlist).${team ? ' Teams by request.' : ''}`;
+    page({ p: '/pricing/', title: 'Skillhawk pricing: free checks today, Autopilot from $9 a month', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillhawk', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillhawk', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillhawk', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillhawk pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Watch (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Autopilot (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
-    <p><a href="${b}#/?s=pilot">Join the Watch waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
+    <p><a href="${b}#/?s=pilot">Join the Autopilot waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.note}`;
   }
 
@@ -241,11 +241,14 @@ ${body(b)}
     <h2>1. Run the free check</h2>
     ${code('npx skillhawk agents')}
     <p>Lists agents that run without you and which account each scheduled one bills: your subscription or a pay-per-token API key. It prints variable names only, never key values. More commands on the <a href="${b}tools/">tools</a> page.</p>
-    <h2>2. Add the MCP server to your agent</h2>
-    <p>Your agent gets four tools: <code>review_skill</code>, <code>secure_scan</code>, <code>compile_skill</code> and <code>check_agents</code>. They run locally over stdio. <code>connect</code> writes the config for you; without <code>--write</code> it prints it so you can check it first.</p>
+    <h2>2. In Claude Code: install the plugin</h2>
+    ${code('/plugin install skillhawk --marketplace agentwik-labs/skillhawk')}
+    <p>Type it in Claude Code (2.1.275 or later). You get the MCP server, the commands <code>/skillhawk:billing</code>, <code>/skillhawk:review-skills</code> and <code>/skillhawk:secure</code>, and one line at session start only when a scheduled agent or your shell is set to bill an API key. It stays silent otherwise; <code>SKILLHAWK_NO_HINTS=1</code> turns it off. On older versions: <code>/plugin marketplace add agentwik-labs/skillhawk</code>, then <code>/plugin install skillhawk@skillhawk</code>.</p>
+    <h2>3. Or add the MCP server to any agent</h2>
+    <p>Your agent gets six tools: <code>check_agents</code>, <code>review_skill</code>, <code>secure_scan</code>, <code>compile_skill</code>, <code>map_query</code> and <code>skill_section</code>, plus three slash commands. In Claude Code type <code>/mcp__skillhawk__billing</code>, <code>/mcp__skillhawk__review-skills</code> or <code>/mcp__skillhawk__secure</code>. They run locally over stdio. <code>connect</code> writes the config for you; without <code>--write</code> it prints it so you can check it first.</p>
     ${CLIENTS.map(([n, cmd, manual]) => `<h3>${esc(n)}</h3>${code(cmd)}<details><summary>Or add it by hand</summary>${code(manual)}</details>`).join('\n')}
     <p>Any other MCP client: start the server with <code>npx -y skillhawk mcp</code>.</p>
-    <h2>3. Find Skillhawk in directories</h2>
+    <h2>4. Find Skillhawk in directories</h2>
     <ul>${LISTED.map(([n, u, d]) => `<li><a href="${esc(u)}" rel="noopener">${esc(n)}</a>: ${esc(d)}</li>`).join('')}</ul>
     <h2>For agents reading this site</h2>
     <ul>${FOR_AGENTS.map(([n, u, d]) => `<li><a href="${b}${u.replace(/^\//, '')}">${esc(n)}</a>: ${esc(d)}</li>`).join('')}</ul>
@@ -396,8 +399,8 @@ ${body(b)}
   const stepHtml = (s) => `<section id="${s.id}-static"><h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)} <span class="sp-meta">${esc(s.tier)}</span></p><ul>${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="tools/${t.slug}/"><b>${esc(t.name)}</b></a>: ${esc(t.what)} <code>${esc(t.cmd)}</code></li>`).join('')}</ul></section>`;
   const landing = `<div class="sp-landing">
     <h1>Your agents run without you. Know which account they bill.</h1>
-    <p class="sp-answer">One free command finds every coding agent that runs without you (cron, launchd, scheduled CI, sessions left working) and shows which account each one bills: your subscription, or an API key that charges per token. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Watch, built and not on sale yet, is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one.</p>
-    <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=su-hero">Join the Watch waitlist</a></p>
+    <p class="sp-answer">One free command finds every coding agent that runs without you (cron, launchd, scheduled CI, sessions left working) and shows which account each one bills: your subscription, or an API key that charges per token. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Autopilot, built and not on sale yet, runs the free checks for you in the background: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, can stop a runaway one, and tracks your codebase health and which lessons stick. Founding price: $9 a month for the first 100.</p>
+    <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=su-hero">Join the Autopilot waitlist</a></p>
     ${journey.WATCH ? `<section><h2>${esc(journey.WATCH.step)}: ${esc(journey.WATCH.h)}</h2><p>${esc(journey.WATCH.promise)} <span class="sp-meta">${esc(journey.WATCH.tier)}</span></p><ul>${journey.WATCH.tools.map((t) => `<li><b>${esc(t.name)}</b>: ${esc(t.what)}</li>`).join('')}</ul></section>` : ''}
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
     <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>
@@ -445,6 +448,11 @@ ${LEARN.map((l) => L(l.title, `/learn/${l.slug}/`, l.desc)).join('\n')}
 
 ## Commands
 - npx skillhawk agents
+- npx skillhawk setup
+- npx skillhawk health
+- npx skillhawk brain init
+- npx skillhawk brain search "<question>"
+- npx skillhawk factory
 - npx skillhawk review <dir>
 - npx skillhawk secure <dir>
 - npx skillhawk scan <dir>
@@ -455,7 +463,7 @@ ${LEARN.map((l) => L(l.title, `/learn/${l.slug}/`, l.desc)).join('\n')}
 - npx skillhawk install <skill> --agent claude
 
 ## MCP server
-- Any MCP client: npx -y skillhawk mcp (tools: review_skill, secure_scan, compile_skill, check_agents)
+- Any MCP client: npx -y skillhawk mcp (tools: check_agents, review_skill, secure_scan, compile_skill, map_query, skill_section; prompts: billing, review-skills, secure)
 - Claude Code: npx skillhawk connect claude --write
 
 ## Listings

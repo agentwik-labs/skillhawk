@@ -17,9 +17,43 @@ The same CLI also checks agent skills: grades every `SKILL.md` A-F, scans skills
 and compiles a skill for Codex, Cursor, Copilot and Gemini. Everything is also available to your agent as a local MCP
 server (`npx -y skillhawk mcp`).
 
+**Set up and check a codebase for agents:** `npx skillhawk setup` asks instead of assuming. You pick what to set up:
+rules for agents (language, formatter, style, naming, tests, architecture, commits, UI design, with what your code
+already does marked "detected"), written to `AGENTS.md` with an import in `CLAUDE.md`; what `health` checks and how
+strictly (which areas, file and function size limits, test expectations, folders to skip, grade or no grade); how the
+factory works (what counts as repeated work, drafted by your agent or as a template, what a skill must pass before it
+is installed, and where); and what goes into your brain. Change one part later with `setup --only health`.
+Without settings, health and factory say they are using Skillhawk's defaults. `npx skillhawk health` grades the
+codebase: structure (large files, import cycles, committed `.env`), tests, clean code, system design (health checks,
+rate limits, migrations, webhook signatures, LLM call limits) and cloud cost (NAT gateways, instance sizes, Lambda
+architecture, log retention, from your infrastructure code). In Claude Code: `/skillhawk:setup` and `/skillhawk:health`.
+
+**Stop worrying about it:** `npx skillhawk brief` is one page on your agents: whether your subscription lasts the
+week (`usage`, with caps learned from your own limit hits), sessions stuck on a permission prompt (`stuck`), uncommitted
+agent work across every worktree (`snapshot` saves it in hidden git refs without touching your files; `restore` brings
+it back as a new branch), clutter (`tidy`: merged worktrees, stale `node_modules`, forgotten dev servers, old logs,
+listed until you say `--yes`) and keys that ended up in your agent logs (`logs-secrets`, `--redact`).
+Skillhawk Autopilot (paid) runs all of it for you: per problem you choose once whether it tells you, prepares the fix
+or does it, and every action is logged with an undo.
+
+**Learn over time:** `npx skillhawk brain init` sets up a Second Brain by asking you, not by guessing: what goes in
+(your agent sessions, this repo's docs, git history, any folders of notes, an Obsidian vault, meeting notes,
+transcripts, specs), what it should pull out (repeated corrections, decisions, preferences, open questions,
+definitions, facts, or nothing), what happens to it (you approve each item, it writes automatically, or it never
+writes rules), and where approved items go (`AGENTS.md`, `CLAUDE.md` or a file you name). Everything stays searchable:
+`npx skillhawk brain search "why did we pick Stripe"` answers with file and line, and agents can search it through the
+`brain_search` MCP tool if you allow it. For corrections it also measures whether a rule stuck (how often the same
+correction comes back per 100 prompts, before and after).
+`npx skillhawk factory` finds work you keep asking for, drafts a skill for it with your own agent (never on a
+pay-per-token key without your say-so), and installs it only after it passes grade, security and trigger checks.
+
 **Runs on your machine.** No account, no API key, no server: the checks read local files and print to your terminal,
 and nothing is uploaded. Only the commands that call a model, a registry or an import source use the network.
 Node.js 20 or newer.
+
+**In Claude Code, as a plugin:** `/plugin install skillhawk --marketplace agentwik-labs/skillhawk` adds the MCP server,
+the `/skillhawk:billing`, `/skillhawk:review-skills` and `/skillhawk:secure` commands, and a session-start line that
+speaks only when a scheduled agent or your shell is set to bill an API key.
 
 **Use it where you work:** `npx skillhawk connect <claude|codex|cursor|vscode|gemini|claude-desktop> --write` adds the
 MCP server to your agent ([setup for each tool](https://skillhawk.ai/install/)). Listed on
@@ -98,7 +132,7 @@ your team's defect rate for AI work, with the pipeline from corrections to prove
 | **Private skills** | Every skill lives under a scope (`@acme/…`). Org skills are private by default, visible only to that org's tokens; a company can still publish selected skills publicly. |
 | **Security scan** | Every publish is scanned for prompt-injection phrasing, instructions to hide actions from the user, invisible Unicode, embedded secrets, `curl \| sh`, credential-file reads and secret exfiltration. Critical findings block the publish; warnings are shown on the skill page. |
 | **Cross-agent install** | `skillhawk install` writes each skill where each agent looks: `.claude/skills/`, `.codex/skills/`, `.cursor/rules/*.mdc` (+ files), and `.agents/skills/` with a managed index in `AGENTS.md`. |
-| **MCP server** | `skillhawk mcp` (stdio): local checks `review_skill`, `secure_scan`, `compile_skill`, `check_agents` with no account; plus `search_skills`, `get_skill`, `read_skill_file` and every skill as a prompt and resource when a registry is configured. The registry also serves the skill tools over HTTP at `/mcp`. |
+| **MCP server** | `skillhawk mcp` (stdio): local checks `check_agents`, `review_skill`, `secure_scan`, `compile_skill`, `map_query`, `skill_section` and the slash-command prompts `billing`, `review-skills`, `secure`, with no account; plus `search_skills`, `get_skill`, `read_skill_file` and every skill as a prompt and resource when a registry is configured. The registry also serves the skill tools over HTTP at `/mcp`. |
 | **Lift evals** | `skillhawk eval <skill>` runs the skill's `evals/evals.json` tasks through Claude Code or Codex with and without the skill, grades both with fixed checks, and reports the lift. Skills that don't help are context you pay for on every task. |
 | **Skill reviewer** | `skillhawk review <dir>` grades every skill A-F with line-level findings and fixes, `--fix` applies safe mechanical fixes, and a library pass flags duplicates, overlapping triggers and contradictions; also a Claude Code skill + subagent in `plugins/review`. |
 | **Skill optimizer** | `skillhawk optimize <dir>` cuts tokens with a static pass (filler, repeats, whitespace) that must keep the review grade and trigger cases; `--allow-model` adds model rewrites kept only if lift holds; `--all <dir>` summarizes a library; plugin in `plugins/optimize`. |
@@ -139,8 +173,10 @@ skillhawk install sql-review --agent cursor      # writes .cursor/rules/sql-revi
 skillhawk list && skillhawk update
 ```
 
-**MCP, local checks (no account):** give any MCP client the checks as tools: `review_skill`, `secure_scan`,
-`compile_skill` and `check_agents`. They run on your machine over stdio; nothing is sent anywhere.
+**MCP, local checks (no account):** give any MCP client the checks as tools: `check_agents`, `review_skill`,
+`secure_scan`, `compile_skill`, `map_query` and `skill_section`, plus three prompts that Claude Code shows as slash
+commands: `/mcp__skillhawk__billing`, `/mcp__skillhawk__review-skills` and `/mcp__skillhawk__secure`. They run on your
+machine over stdio; nothing is sent anywhere.
 
 ```sh
 claude mcp add --scope user skillhawk -- npx -y skillhawk mcp   # or: npx skillhawk connect claude --write

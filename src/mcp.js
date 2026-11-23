@@ -13,10 +13,31 @@ const PKG_VERSION = (() => { try { return JSON.parse(readFileSync(new URL('../pa
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const SERVER_INFO = { name: 'skillhawk', title: 'Skillhawk', version: PKG_VERSION };
 const LOCAL_INSTRUCTIONS = [
-  'Skillhawk checks AI agent skills and agent setup on this machine. Nothing leaves the machine.',
-  'Call review_skill before installing or publishing a skill, secure_scan on a repo or skill before trusting it,',
-  'compile_skill to convert a skill for another agent, and check_agents to find agents and sessions nobody is watching.',
+  'Skillhawk checks agent setup and AI agent skills on this machine. Nothing leaves the machine.',
+  'Call check_agents when the user asks what their agents cost, which account a scheduled or headless agent bills',
+  '(subscription or pay-per-token API key), or what is still running; report each bills: line and how to fix an API-key bill.',
+  'Call review_skill before installing or publishing a skill, secure_scan on a repo, skill or MCP config before trusting it,',
+  'compile_skill to convert a skill for another agent, and health_check for a codebase review (structure, tests, clean code,',
+  'system design, cloud cost); treat its findings as evidence and add your own judgement for the design review.',
+  'Call brain_search for the user\'s own past decisions, definitions and notes before guessing (only if they set up a brain).',
+  'The user can also run these as slash commands: the billing, review-skills, secure and health prompts.',
 ].join(' ');
+
+// Prompts that show up as slash commands in MCP clients (Claude Code: /mcp__skillhawk__<name>).
+const LOCAL_PROMPTS = [
+  { name: 'billing', title: 'Skillhawk: which account do my agents bill?', description: 'Find agents that run without you and which account each scheduled one bills (subscription or API key).',
+    arguments: [],
+    text: () => 'Call the skillhawk check_agents tool. Then tell me, briefly: every scheduled or headless agent and the account it bills (subscription, API key or cloud provider), any API key my shell exports, sessions still working with no human message and what they have cost, and agents running for a long time. For each API-key bill I did not intend, say exactly where the key is set and how to remove it. Never print key values.' },
+  { name: 'review-skills', title: 'Skillhawk: grade and scan my skills', description: 'Grade the skills in a folder A to F and security-scan them; list what to fix first.',
+    arguments: [{ name: 'path', description: 'Skills folder (default: .claude/skills)', required: false }],
+    text: (a) => `Call the skillhawk review_skill tool and then the secure_scan tool on "${a.path || '.claude/skills'}". Then list what to fix first, most serious first: security findings before quality findings, with file:line and the fix. A high grade does not mean a skill is safe; say so when the two disagree. Change nothing until I ask.` },
+  { name: 'secure', title: 'Skillhawk: is this safe to trust?', description: 'Security-scan a repo, skill bundle or MCP config before your agent uses it.',
+    arguments: [{ name: 'path', description: 'Folder to scan (default: .)', required: false }],
+    text: (a) => `Call the skillhawk secure_scan tool on "${a.path || '.'}". Give me a verdict (safe to use, use with changes, or do not use), then the high-severity findings with file:line and the fix. Change nothing until I ask.` },
+  { name: 'health', title: 'Skillhawk: codebase health and design review', description: 'Structure, tests, clean code, system design and cloud cost, with evidence and fixes.',
+    arguments: [{ name: 'path', description: 'Repository folder (default: .)', required: false }],
+    text: (a) => `Call the skillhawk health_check tool on "${a.path || '.'}". Then give me: (1) the grade and the three fixes that matter most, (2) a short system-design review: what the system is made of, how requests and data flow, the main risks (reliability, security, scaling, cost) and what you would change first, using the findings as evidence and saying where you are inferring, (3) cloud cost: the always-on resources and the cheapest safe savings. Change nothing until I ask.` },
+];
 const INSTRUCTIONS = [
   'Skillhawk holds reusable skills: tested instructions for specific kinds of work, including your organization\'s private',
   'playbooks (deploy runbooks, code standards, compliance rules, brand voice).',
@@ -105,17 +126,21 @@ export function createMcpHandler(registry, opts = {}) {
     'tools/list': () => ({ tools }),
     'tools/call': (params = {}) => callTool(registry, params.name, params.arguments || {}, opts),
     'prompts/list': async () => {
-      if (!registry) return { prompts: [] };
+      const local = opts.local ? LOCAL_PROMPTS.map(({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })) : [];
+      if (!registry) return { prompts: local };
       const skills = await registry.search({ limit: 500 });
       return {
-        prompts: skills.map((s) => ({
+        prompts: [...local, ...skills.map((s) => ({
           name: promptName(s.id),
           title: `${s.title} (${s.id})`,
           description: s.summary,
-        })),
+        }))],
       };
     },
     'prompts/get': async (params = {}) => {
+      const lp = opts.local && LOCAL_PROMPTS.find((x) => x.name === params.name);
+      if (lp) return { description: lp.description, messages: [{ role: 'user', content: { type: 'text', text: lp.text(params.arguments || {}) } }] };
+      if (!registry) throw rpcError(-32602, `unknown prompt: ${params.name}`);
       const ref = fromPromptName(params.name);
       const info = await registry.get(ref.scope, ref.name, 'latest');
       const task = params.arguments?.task ? `\n\nTask: ${params.arguments.task}` : '';

@@ -306,6 +306,52 @@ export const LEARN = [
     related: ['why-isnt-my-claude-skill-triggering', 'how-to-write-a-skill-md-description-that-triggers'],
   },
   {
+    slug: 'what-is-a-skill-md-file',
+    title: 'What is a SKILL.md file? Format and required fields',
+    desc: 'SKILL.md is the file that defines an agent skill: YAML frontmatter with a name and description, then Markdown instructions. The fields, limits and folder layout from the Agent Skills specification.',
+    answer: 'A SKILL.md file is the one required file in an agent skill. It starts with YAML frontmatter holding a `name` (1 to 64 characters: lowercase letters, digits and hyphens, matching the folder name) and a `description` (1 to 1024 characters: what the skill does and when to use it), followed by Markdown instructions the agent reads when it loads the skill.',
+    sections: [
+      { h: 'Frontmatter fields', list: [
+        '`name` (required): 1 to 64 characters, lowercase letters, digits and hyphens only, no leading, trailing or consecutive hyphens, and the same as the parent directory name.',
+        '`description` (required): 1 to 1024 characters, saying what the skill does and when to use it.',
+        '`license` (optional): a short licence name or a reference to a bundled licence file.',
+        '`compatibility` (optional): 1 to 500 characters, only if the skill has environment requirements.',
+        '`metadata` (optional): a map of string keys to string values for extra properties.',
+        '`allowed-tools` (optional, experimental): a space-separated list of pre-approved tools; support varies by agent.',
+      ] },
+      { h: 'Where Claude Code looks', list: [
+        'Personal skills live in `~/.claude/skills/<skill-name>/SKILL.md` and apply to all your projects.',
+        'Project skills live in `.claude/skills/<skill-name>/SKILL.md` in the repository, so a team can commit them.',
+        'Claude Code is looser than the specification: its documentation treats `name` as optional (it defaults to the directory name) and `description` as recommended. Write both anyway so the skill works in other agents.',
+      ] },
+      { h: 'Folder layout', list: [
+        'Only `SKILL.md` is required.',
+        '`scripts/` holds executable code the skill runs.',
+        '`references/` holds documentation the agent reads on demand.',
+        '`assets/` holds templates, images and data files.',
+      ] },
+      { h: 'Keeping the body small', list: [
+        'The specification recommends keeping the instructions under roughly 5,000 tokens and `SKILL.md` under 500 lines.',
+        'Move detail into files under `references/` and link to them one level deep from `SKILL.md`.',
+      ] },
+    ],
+    example: { intro: 'A minimal SKILL.md (an illustration we wrote, not a skill from the library), in a folder named `meeting-notes`:',
+      code: '---\nname: meeting-notes\ndescription: Formats meeting notes into the team template with decisions and owners. Use when the user pastes meeting notes or asks for a recap.\n---\n\n# Meeting notes\n\n1. List the decisions made.\n2. List each action item with an owner.\n3. Note open questions.' },
+    command: { intro: 'To check a skill against these rules and the description advice on the related page:',
+      code: 'npx skillhawk review <skill-dir>',
+      note: 'The specification also names its own validator, skills-ref. Skillhawk checks are about whether the agent will pick the skill, not only whether the file is valid.' },
+    faq: [
+      { q: 'What is the SKILL.md specification?', a: 'It is the Agent Skills format: a folder with a SKILL.md file whose YAML frontmatter has a required name and description, plus optional license, compatibility, metadata and allowed-tools fields.' },
+      { q: 'Is SKILL.md the same as skill.md or skills.md?', a: 'The file is named SKILL.md. People search for it as "skill md", "skill.md" and "skills md", but the spec names one file, SKILL.md, inside a folder named after the skill.' },
+      { q: 'What goes in the SKILL.md body?', a: 'Instructions for the agent. The specification suggests step-by-step instructions, examples of inputs and outputs, and common edge cases, with no fixed format.' },
+    ],
+    sources: [
+      { label: 'Agent Skills specification', url: 'https://agentskills.io/specification' },
+      { label: 'Claude Code documentation: Skills', url: 'https://code.claude.com/docs/en/skills' },
+    ],
+    related: ['how-to-write-a-skill-md-description-that-triggers', 'why-isnt-my-claude-skill-triggering'],
+  },
+  {
     slug: 'how-to-write-a-skill-md-description-that-triggers',
     title: 'How to write a SKILL.md description that triggers',
     desc: 'The description is the only part of a skill the agent reads before deciding to load it. A formula, a before-and-after, and a check you can run.',

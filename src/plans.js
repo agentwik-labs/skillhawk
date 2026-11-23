@@ -12,7 +12,7 @@ export const PLANS = {
 
 /** Offers on pre-order: priced on the site, not sold or gated by the server yet. */
 export const PREORDERS = {
-  watch: { id: 'watch', name: 'Watch', monthlyUsd: 9, yearlyUsd: 79 },
+  watch: { id: 'watch', name: 'Autopilot', monthlyUsd: 19, yearlyUsd: 190, foundingUsd: 9, foundingLimit: 100 },
 };
 
 /**

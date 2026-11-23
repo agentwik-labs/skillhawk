@@ -21,7 +21,40 @@ const BIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bi
 const REPO_ROOT = path.resolve(path.dirname(BIN), '..');
 const ADMIN = { admin: true, org: null, scopes: ['read', 'publish', 'admin'], tokenId: 'cli' };
 
-const HELP = `skillhawk — a skill registry for AI agents (Claude Code, Codex, Cursor, any AGENTS.md agent)
+const HELP = `skillhawk — your agents run without you; know which account they bill, and check the skills they run.
+Free and open source. The checks run on your machine: no account, no key, nothing uploaded.
+
+Start here
+  agents                                         Which account each unattended agent bills (subscription or API key)
+  review <skills-dir>  ·  secure <dir>           Grade skills A to F  ·  security-scan skills, MCP configs and hooks
+  setup [dir] [--only rules|health|factory|brain] [--yes | --answers a.json | --detect --json]
+                                                 Asks, does not assume: rules for agents (language, style, tests,
+                                                 architecture, commits, UI), what health checks and how strictly, how the
+                                                 factory makes skills, what goes into your brain
+  brain init [dir] [--answers a.json | --questions --json | --yes]
+                                                 Second Brain: you choose what goes in (sessions, docs, git, any folders of
+                                                 notes or transcripts), what it pulls out and where approved items go
+  brain [dir] [--adopt id [--rule "..."]] [--dismiss id] [--retire id]
+                                                 Show what it found, with sources; approve items into your rules file
+  brain search "<question>" [--json]             Search everything in your brain, with file and line
+  factory [dir] [--yes] [--draft id [--allow-model] [--eval]] [--promote name]
+                                                 Software Factory: work you repeat -> a drafted, checked skill -> lift -> installed
+  health [dir]                                   Codebase health: structure, tests, clean code, system design, cloud cost
+  setup · health · brain · factory               Rules for agents · codebase health · your Second Brain · skills from repeated work
+
+Stop worrying about it (Autopilot runs these for you, on rules you set)
+  brief                                          One page: usage pace, sessions waiting for you, unsaved work, clutter
+  usage [--weekly-cap $] [--session-cap $]       Will your subscription last the week? Caps learned from your own limit hits
+  stuck                                          Agent sessions waiting on a permission prompt or a limit reset
+  snapshot [dirs] [--check] · restore [--list | --id c [--into dir]]
+                                                 Save uncommitted agent work in every agent repo (hidden git refs; nothing
+                                                 touched or pushed) · bring it back as a new branch or worktree
+  tidy [--yes] [--only worktrees,node_modules,servers,logs] [--worktree-days 14 ...]
+                                                 Merged worktrees, stale node_modules, forgotten dev servers, old logs
+  logs-secrets [--redact]                        Keys and passwords that ended up in your agent session logs
+  connect claude --write                         Use Skillhawk inside Claude Code (also codex, cursor, vscode, gemini,
+                                                 claude-desktop); then type /mcp__skillhawk__billing in Claude
+  Setup for every tool: https://skillhawk.ai/install/   Questions: help@skillhawk.ai
 
 Using skills
   search [query] [--scope org] [--category c]   Find skills
@@ -202,6 +235,17 @@ export async function main(argv) {
     map: (a, f) => import('./map.js').then((m) => m.run(a, f)),
     tokens: (a, f) => import('./tokens.js').then((m) => m.run(a, f)),
     agents: (a, f) => import('./agentwatch.js').then((m) => m.run(a, f)),
+    health: (a, f) => import('./health.js').then((m) => m.run(a, f)),
+    setup: (a, f) => import('./setup.js').then((m) => m.run(a, f)),
+    brain: (a, f) => import('./brain.js').then((m) => m.run(a, f)),
+    factory: (a, f) => import('./factory.js').then((m) => m.run(a, f)),
+    usage: (a, f) => import('./usage.js').then((m) => m.run(a, f)),
+    snapshot: (a, f) => import('./snapshot.js').then((m) => m.run(a, f, 'snapshot')),
+    restore: (a, f) => import('./snapshot.js').then((m) => m.run(a, f, 'restore')),
+    tidy: (a, f) => import('./tidy.js').then((m) => m.run(a, f)),
+    stuck: (a, f) => import('./stuck.js').then((m) => m.run(a, f)),
+    'logs-secrets': (a, f) => import('./logsecrets.js').then((m) => m.run(a, f)),
+    brief: (a, f) => import('./brief.js').then((m) => m.run(a, f)),
     publish: (a, f) => import('./vault-cli.js').then((m) => m.publish(a, f)),
     pull: (a, f) => import('./vault-cli.js').then((m) => m.pull(a, f)),
     versions: (a, f) => import('./vault-cli.js').then((m) => m.versions(a, f)),
@@ -231,6 +275,16 @@ export async function main(argv) {
   if (!cmd || cmd === 'help' || flags.help) return void process.stdout.write(HELP);
   if (!cmds[cmd]) throw new Error(`unknown command "${cmd}". Run skillhawk help.`);
   await cmds[cmd](args, flags);
+  connectHint(cmd, flags);
+}
+
+/** One quiet line after an interactive check: Skillhawk also works inside Claude Code. Never with --json, pipes, CI,
+ *  SKILLHAWK_NO_HINTS, or when Claude Code already has a skillhawk MCP server. Goes to stderr so stdout stays clean. */
+export function connectHint(cmd, flags, { env = process.env, isTTY = process.stderr.isTTY, home = os.homedir(), write = (t) => process.stderr.write(t) } = {}) {
+  if (!['agents', 'review', 'secure', 'health'].includes(cmd) || flags.json || flags.chats || !isTTY || env.CI || env.SKILLHAWK_NO_HINTS) return false;
+  try { if (/"skillhawk"\s*:/.test(fs.readFileSync(path.join(home, '.claude.json'), 'utf8'))) return false; } catch { /* no Claude Code config */ }
+  write('\nskillhawk: run this inside Claude Code too: npx skillhawk connect claude --write, then /mcp__skillhawk__billing (hide: SKILLHAWK_NO_HINTS=1)\n');
+  return true;
 }
 
 const HAND_WRITTEN_PLUGINS = ['review', 'security', 'create', 'optimize', 'tokensaver', 'clean'];
