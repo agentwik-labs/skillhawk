@@ -1,6 +1,6 @@
 {
   "name": "skillhawk",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Find every coding agent that runs without you (cron, launchd, scheduled CI, unattended sessions) and which account it bills: subscription or API key. Also grades, security-scans and compiles agent skills. CLI and local MCP server.",
   "mcpName": "io.github.agentwik-labs/skillhawk",
   "type": "module",

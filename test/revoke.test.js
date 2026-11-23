@@ -75,6 +75,7 @@ test('revoke: the next call fails clearly and is audit-logged; offboard report l
   await assert.rejects(reg(admin).request('POST', '/api/orgs/acme/revoke', { member: 'nobody' }), /no member/);
   const h = await reg(admin).request('GET', '/api/orgs/acme/members/bob/holdings');
   const md = formatReport(h);
+  assert.ok(!md.includes("[object Object]"), "marks render as text");
   assert.match(md, /# Offboarding report: bob/);
   assert.match(md, /\| @acme\/runbook \| 1\.0\.0 \|/);
   assert.match(md, /\| @acme\/onboarding \| 1\.0\.0 \|/);

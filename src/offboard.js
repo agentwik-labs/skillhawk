@@ -26,7 +26,7 @@ export function formatReport(h) {
   L.push('', `## Skills held (${h.held.length})`, '');
   if (h.held.length) {
     L.push('| Skill | Version | Times | First | Last | How | Mark |', '| --- | --- | --- | --- | --- | --- | --- |');
-    for (const r of h.held) L.push(`| ${r.skill} | ${r.version} | ${r.count} | ${r.first?.slice(0, 10) || ''} | ${r.last?.slice(0, 10) || ''} | ${r.via.join(', ') || 'marked copy'} | ${r.fingerprint ? `\`${r.fingerprint}\`` : ''} |`);
+    for (const r of h.held) L.push(`| ${r.skill} | ${r.version} | ${r.count} | ${r.first?.slice(0, 10) || ''} | ${r.last?.slice(0, 10) || ''} | ${r.via.join(', ') || 'marked copy'} | ${markLabel(r.fingerprint)} |`);
   } else L.push('This person never pulled a skill.');
   L.push('', 'Copies pulled as files may still sit on their machines until the lease expires (default 7 days, removed by `skillhawk sync`); marks identify a leaked copy.');
   return `${L.join('\n')}\n`;
@@ -42,3 +42,6 @@ export async function offboardCmd(args, f) {
   if (f.out && f.out !== true) { fs.writeFileSync(f.out, md); console.log(`revoked ${member}; report written to ${f.out}`); } else process.stdout.write(md);
   return md;
 }
+
+/** A short, readable mark: the per-person tag and which layers carry it. */
+export const markLabel = (fp) => (!fp ? '' : typeof fp === 'object' ? `\`${fp.tag || '?'}\`${fp.layers?.length ? ` (${fp.layers.join(', ')})` : ''}` : `\`${fp}\``);

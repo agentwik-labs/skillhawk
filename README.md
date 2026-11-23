@@ -128,7 +128,7 @@ your team's defect rate for AI work, with the pipeline from corrections to prove
 
 | | |
 |---|---|
-| **Registry server** | REST API, web UI, and an MCP endpoint at `/mcp`. Zero dependencies (Node ≥ 20), file-backed storage. |
+| **Registry server** (Teams) | REST API, web UI, and an MCP endpoint at `/mcp`. Zero dependencies (Node ≥ 20), file-backed storage. Needs a Teams license key. |
 | **Private skills** | Every skill lives under a scope (`@acme/…`). Org skills are private by default, visible only to that org's tokens; a company can still publish selected skills publicly. |
 | **Security scan** | Every publish is scanned for prompt-injection phrasing, instructions to hide actions from the user, invisible Unicode, embedded secrets, `curl \| sh`, credential-file reads and secret exfiltration. Critical findings block the publish; warnings are shown on the skill page. |
 | **Cross-agent install** | `skillhawk install` writes each skill where each agent looks: `.claude/skills/`, `.codex/skills/`, `.cursor/rules/*.mdc` (+ files), and `.agents/skills/` with a managed index in `AGENTS.md`. |
@@ -207,9 +207,14 @@ Copies the [team starter kit](starter-kit/README.md) into your repo: a two-week 
 a skill review checklist, fill-in `data-handling` and `definition-of-done` skills with evals, a new-skill template,
 and a CI check. No server needed: `skillhawk install ./skills/* --agent all` installs straight from the folder.
 
-## Run it for a company
+## Run it for a company (Teams license)
+
+The company vault, offboarding (`revoke`, `offboard`), `exit-interview`, leak tracing (`mark`, `trace`),
+`governance`, `evidence` and streaming need a Teams license key: [skillhawk.ai/#/teams](https://skillhawk.ai/#/teams).
+Everything else in Skillhawk is free. `revoke` and `offboard` keep working on an expired key.
 
 ```sh
+skillhawk license activate <key>                         # or set SKILLHAWK_LICENSE (servers, Docker, CI)
 SKILLYARD_ADMIN_TOKEN=$(openssl rand -hex 24) skillhawk serve --host 0.0.0.0 --data /var/lib/skillyard
 skillhawk org create acme --name "Acme Cloud"            # prints an owner token (read + publish)
 skillhawk token create --org acme --scopes read --name laptop-dana
@@ -219,7 +224,7 @@ skillhawk new deploy-runbook && skillhawk publish deploy-runbook --org acme
 Sign-ups on the public site (the monthly report, audit requests, the Studio waitlist) post to the email-list endpoint in
 [`web/config.js`](web/config.js); until one is set, the forms point to the contact link instead.
 
-Or with Docker: `docker build -t skillhawk . && docker run -p 7420:7420 -v skillyard-data:/data skillhawk`.
+Or with Docker: `docker build -t skillhawk . && docker run -p 7420:7420 -e SKILLHAWK_LICENSE=<key> -v skillyard-data:/data skillhawk`.
 Put it behind TLS (any reverse proxy). Tokens are stored as SHA-256 hashes; org members manage tokens and see the
 activity log on their org page. See [docs/self-hosting.md](docs/self-hosting.md).
 

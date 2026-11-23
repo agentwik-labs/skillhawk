@@ -1,7 +1,7 @@
 {
   "name": "skillhawk",
   "displayName": "Skillhawk",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Know which account your unattended agents bill (subscription or pay-per-token API key), set up coding rules for your repo, review codebase health, system design and cloud cost, learn lessons from your sessions and measure whether they stick, turn repeated work into tested skills, and grade and security-scan agent skills. Local MCP server, three slash commands, and a quiet session-start warning when a scheduled agent bills an API key.",
   "author": { "name": "agentwik-labs", "url": "https://github.com/agentwik-labs" },
   "homepage": "https://skillhawk.ai/install/",

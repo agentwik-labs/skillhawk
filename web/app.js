@@ -281,7 +281,7 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 // every output line comes from a real run on registry/public, examples/, test/fixtures or the seeded demo data
 // (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
-const PILOT = 'Pro: $20 a month, waitlist; the hosted vault is not running yet. The vault is open source. Team features by request.';
+const PILOT = 'Pro: $20 a month, waitlist; the hosted vault is not running yet. The company vault, offboarding and exit interviews need a Teams license.';
 // Watch is built (private repo skillhawk-watch) and not on sale yet. Each row states what the free command does today and what Watch adds.
 const WATCH = { id: 'watch', step: 'Autopilot', h: 'Autopilot: the checks, run for you.', tier: 'Autopilot: built, not on sale yet; founding price $9 a month for the first 100 when it is. Join the waitlist (free, no payment); the commands below work today.',
   promise: 'Unattended agents are where surprise bills come from: a scheduled run that picks up an API key, or a loop nobody stops. Today the free command shows which agents run without you and which account each bills. Autopilot (built, not on sale yet) runs in the background: it warns when a job starts billing an API key, tracks cost per headless job, can stop one that runs away, and every day checks your codebase health, which lessons stick and what work you keep repeating.',
@@ -339,12 +339,12 @@ const PROTECT = { id: 'protect', step: 'Protect', h: 'Your skills are an asset. 
       { name: 'Call-home link', cmd: 'skillhawk org settings acme --beacon on --i-have-legal-review', what: 'A per-copy link that records when a leaked copy is opened: time, IP address and browser.', out: null, note: 'Built, off by default. Not offered until a lawyer has reviewed it.', noOut: 'Off by default. Read docs/beacon.md and get legal review before turning it on.' },
     ] },
     { name: 'Take back (teams)', tools: [
-      { name: 'Revocable streaming', cmd: 'skillhawk connect claude --stream', what: 'Agents load skills from the vault over MCP; Skillhawk installs no skill files (the agent\'s own session logs may still hold text it loaded).', out: 'No skill files are installed on this machine, and `skillhawk revoke` cuts access on the next call.' },
-      { name: 'Offboarding', cmd: 'skillhawk offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
-      { name: 'Exit interview', note: 'Free CLI tool.', cmd: 'skillhawk exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
+      { name: 'Revocable streaming', note: 'Teams license.', cmd: 'skillhawk connect claude --stream', what: 'Agents load skills from the vault over MCP; Skillhawk installs no skill files (the agent\'s own session logs may still hold text it loaded).', out: 'No skill files are installed on this machine, and `skillhawk revoke` cuts access on the next call.' },
+      { name: 'Offboarding', note: 'Teams license.', cmd: 'skillhawk offboard alice --org acme --out off.md', what: 'Revoke a leaver\'s tokens and list every skill and version they pulled.', out: 'revoked alice; report written to off.md' },
+      { name: 'Exit interview', note: 'Teams license.', cmd: 'skillhawk exit-interview pat --answers a.json', what: 'Capture what only they know as private draft skills, checked like any other.', out: 'pat-know-how: review: A (98/100), 1 finding' },
     ] },
     { name: 'Prove', tools: [
-      { name: 'Governance export', note: 'Free CLI tool.', cmd: 'skillhawk governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillhawk itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
+      { name: 'Governance export', note: 'Teams license.', cmd: 'skillhawk governance export --org acme --framework all', what: 'Inventory, approval trail, access and integrity, labelled with the SOC 2, ISO 42001 and EU AI Act controls they support. Evidence for your audit; it does not make you compliant, and Skillhawk itself is not certified.', out: 'wrote governance bundle (7 skills, audit log verified)' },
     ] },
   ] };
 // BACKLOG.md "Later": planned, not built.
@@ -358,19 +358,19 @@ const PRICING = {
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
       blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
-      items: ['brief, usage, stuck, snapshot and restore, tidy, logs-secrets', 'setup, health, brain, factory', 'review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge', 'exit-interview, governance export (evidence for your own audit)'],
+      items: ['brief, usage, stuck, snapshot and restore, tidy, logs-secrets', 'setup, health, brain, factory', 'review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge'],
       cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Autopilot', preorder: true, monthlyUsd: 19, yearlyUsd: 190, foundingUsd: 9, seats: 1, extraSeatUsd: null, price: '$19', per: 'per month, or $190 a year. Founding price: $9 a month for the first 100', featured: true,
       blurb: 'Waitlist. Built, not on sale yet. The free checks, run for you in the background on your machine, Per problem you choose once: tell me, prepare it, or do it; everything it does is logged and can be undone. If in 30 days it has not caught a billing problem, cut a repeated correction or shipped one skill with measured lift, you get your money back.',
       items: ['Morning brief: what it did for you, what needs you', 'Usage paced against your own limits; queued jobs wait for the reset and re-run after a limit hit', 'Uncommitted agent work snapshotted every night', 'Sessions waiting on a permission prompt pushed to your phone', 'Red CI investigated overnight by your own agent: a fix branch or draft PR, never merged', 'Clutter cleaned under your rules; secrets redacted from agent logs', 'Tool updates checked against your settings, hooks and MCP servers', 'Warning when a scheduled agent starts billing an API key', 'Cost per headless job, per day; stop a runaway job (opt-in)', 'Daily codebase health, with an alert when it drops', 'Which adopted lessons stick, and which do not', 'Repeated work with no skill yet, ready to draft', 'Weekly report; desktop or Slack alerts', 'Brain notes synced to your own private git repo', 'Supply-chain and agent format checks', '30-day results guarantee'],
       cta: { label: 'Join the waitlist', preorder: 'watch' } },
     { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
-      blurb: 'Waitlist. The vault software is built and open source; the hosted vault is not running yet.',
+      blurb: 'Waitlist. The vault software is built; the hosted vault is not running yet.',
       items: ['Private skills, installable into Claude Code, Codex, Cursor and AGENTS.md agents', 'Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
       cta: { label: 'Join the Pro waitlist', preorder: 'pro' } },
     { id: 'team', name: 'Teams', inquiry: true, monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Talk to us', per: '',
       blurb: 'A shared vault for several people is set up by request for now. Tell us your team size and what you want to protect.',
-      items: ['Shared private vault with roles', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Help running it on your own servers'],
+      items: ['License key for the company vault: run it on your own servers', 'Shared private vault with roles, tokens and an audit log', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Exit interviews: what a leaver knows, kept as private skills', 'Revocable streaming over MCP', 'Governance and evidence export for your audit', 'Help running it on your own servers'],
       cta: { label: 'Ask about teams', href: '#/teams' } },
   ],
 };

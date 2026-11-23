@@ -9,7 +9,7 @@ Code: `src/plans.js` (price list, gates), `src/store.js` (seats, plan state, wri
 |---|---|---|---|
 | Free | $0 | local CLI | Every developer tool, on your machine. Hosted orgs on Free get public skills only. |
 | Pro | $20 / month | 1 | Private vault: versions, diffs, rollback, publish checks, signed copies, audit log, lockfile |
-| Team | $100 / month | 5 included, $20 per extra seat | Pro plus streaming over MCP. Marked copies, trace, evidence and offboarding work on every plan; the reason to be on Team is more than one person. |
+| Team | $100 / month | 5 included, $20 per extra seat | Pro plus streaming over MCP, marked copies, trace, evidence, governance, offboarding and exit interviews. Self-hosting the vault (`serve`, `org`, `token`) needs a Teams license key (`skillhawk license activate <key>` or `SKILLHAWK_LICENSE`), checked offline by the CLI (src/license.js). |
 | Enterprise | Custom | negotiated | Support for running it on your own servers, security review, SSO (roadmap) |
 
 The price for an extra seat is $20. The owner set the base and Team prices but not this one, so it is open to change.
@@ -23,7 +23,7 @@ The price for an extra seat is $20. The owner set the base and Team prices but n
   - Revoking a member frees their seat.
   - Server-admin tokens hold no org and take no seat.
 - **Seat check.** It lives inside `Store.createToken`, so the API, the CLI and seed all go through it. When the org is full you get 402 with "N of N seats".
-- **Feature gates.** Private skills need Pro. `/mcp?stream=1` needs Team; MCP passes a 402 straight through instead of wrapping it in JSON-RPC. Revoke, token delete and holdings are **never** gated, so offboarding works on any plan or status.
+- **Feature gates.** Private skills need Pro. `/mcp?stream=1` needs Team; MCP passes a 402 straight through instead of wrapping it in JSON-RPC. On the server, revoke, token delete and holdings are **never** gated, so offboarding works on any plan or status; the CLI's `revoke` and `offboard` also accept an expired Teams key.
 - **Read-only state.** An org goes read-only when a pilot passes its `pilotEndsAt`, when it is canceled, or when it is past due beyond 7 days after `periodEnd`. In that state:
   - publish, rollback, visibility, delete, org settings and new tokens return 402;
   - pulls, MCP, revoke and checkout keep working;

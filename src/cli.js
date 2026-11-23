@@ -80,10 +80,15 @@ Connecting agents over MCP
                                                  compile_skill, check_agents), plus the registry's skills when one
                                                  is configured. --local: checks only. connect without a registry
                                                  sets agents up with the local checks
-  connect <agent> --stream | mcp --stream        Stream skills from the company vault on demand: no files on disk,
+  connect <agent> --stream | mcp --stream        Teams: stream skills from the company vault on demand: no files on disk,
                                                  each response marked and audit-logged, revocable mid-session
 
-Offboarding (org admin)
+Teams (paid: needs a license key; skillhawk license activate <key>, or SKILLHAWK_LICENSE)
+  license [status | activate <key> | remove]     Show or set this machine's Teams license
+  The company vault (serve, org, token, audit), streaming, offboarding, leak tracing and governance are Teams.
+  revoke and offboard keep working on an expired key, so you can always cut a leaver's access.
+
+Offboarding (Teams)
   revoke --user <member> [--org o]               Disable a member's tokens now; their next call is refused
   offboard <member> [--org o] [--out report.md]  Revoke, then list every skill/version they ever pulled
   exit-interview <member> [--answers a.json] [--from-logs dir] [--out skills/]
@@ -158,7 +163,7 @@ Authoring
   rollback <skill> <version>                     Serve an earlier version again (admin/editor; history kept)
   audit [--org o] [--skill s] [--json]           Append-only log of pulls, publishes, rollbacks (admin only)
 
-Leak tracing
+Leak tracing (Teams)
   mark <skill-dir> --recipient alice --version 1.0.0 --secret <s> --out <dir> [--marks marks.json] [--layers zw,wording,canary]
                                                  Write a per-person copy (zero-width tag, wording choices, example canary);
                                                  review grade must match the original; appends the fingerprint to --marks
@@ -172,7 +177,7 @@ Leak tracing
   governance export --org o [--framework soc2|iso42001|euaiact|all] [--out dir]
                                                  Auditor bundle: inventory, approval trail, access, integrity, control mapping (admin)
 
-Running a registry
+Running a registry (serve, org, token: Teams)
   serve [--port 7420] [--host 127.0.0.1] [--data ./data] [--log] [--plans enforce] [--trust-proxy] [--rate-limit 300]
                                                  --plans enforce (or SKILLYARD_PLANS=enforce): seat limits and plan gates
                                                  for a hosted vault; STRIPE_* env vars turn on checkout (docs/plans-and-seats.md)
@@ -192,7 +197,7 @@ Running a registry
   export claude-marketplace --out <dir> [--from <dir> | --scope <org>]
                                                  Build a Claude Code plugin marketplace from skills
 
-Env: SKILLYARD_REGISTRY, SKILLYARD_TOKEN, SKILLYARD_ADMIN_TOKEN (server), SKILLYARD_DATA (server data dir)
+Env: SKILLHAWK_LICENSE (Teams key), SKILLYARD_REGISTRY, SKILLYARD_TOKEN, SKILLYARD_ADMIN_TOKEN (server), SKILLYARD_DATA (server data dir)
 `;
 
 export async function main(argv) {
@@ -270,10 +275,14 @@ export async function main(argv) {
     trace: (a, f) => import('./mark.js').then((m) => m.traceCmd(a, f)),
     revoke: (a, f) => import('./offboard.js').then((m) => m.revokeCmd(a, f)),
     evidence: (a, f) => import('./evidence.js').then((m) => m.evidenceCmd(a, f)),
+    license: (a) => import('./license.js').then((m) => m.licenseCmd(a)),
   };
   if (cmd === '--version' || cmd === 'version' || (!cmd && flags.version)) return void console.log(JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
   if (!cmd || cmd === 'help' || flags.help) return void process.stdout.write(HELP);
   if (!cmds[cmd]) throw new Error(`unknown command "${cmd}". Run skillhawk help.`);
+  const gate = (cmd === 'connect' || cmd === 'mcp') && flags.stream ? 'stream' : cmd === 'evidence' && args[0] === 'verify' ? null : cmd;
+  const lic = await import('./license.js');
+  if (gate && lic.GATED[gate]) lic.requireTeams(gate);
   await cmds[cmd](args, flags);
   connectHint(cmd, flags);
 }

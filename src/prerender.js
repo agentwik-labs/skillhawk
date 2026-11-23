@@ -187,7 +187,7 @@ ${body(b)}
   page({ p: '/tools/', title: 'Skillhawk tools: build, check, improve, save and protect AI skills', description: 'Every Skillhawk command with what it does, how to run it and real example output.', ld: [crumbs([['Skillhawk', '/'], ['Tools', '/tools/']])],
     body: (b) => `${trail(b, [['Skillhawk', ''], ['Tools']])}
     <h1>Skillhawk tools</h1>
-    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools are open source too and run on your own server; hosted Pro is planned and not running yet, and team vaults are by request.</p>
+    <p class="sp-answer">Each tool is a command in the open-source CLI. Free tools run on your machine. The Protect tools (company vault, offboarding, exit interviews, leak tracing, governance) need a Teams license and run on your own server; hosted Pro is planned and not running yet, and Teams is by request.</p>
     ${[...journey.JOURNEY, journey.PROTECT].map((s) => `<h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)}</p><ul class="sp-grid">${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="${b}tools/${t.slug}/">${esc(t.name)}</a><p>${esc(t.what)}</p></li>`).join('')}</ul>`).join('\n')}` });
 
   // ---- pricing ------------------------------------------------------------------------------------------------
@@ -205,7 +205,7 @@ ${body(b)}
       ld: [crumbs([['Skillhawk', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillhawk', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillhawk', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillhawk pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Autopilot (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built and open source, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Autopilot (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <p><a href="${b}#/?s=pilot">Join the Autopilot waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.note}`;
