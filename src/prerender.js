@@ -27,7 +27,7 @@ const LISTINGS = {
 };
 const jsonLd = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 const SECURE_LABEL = { clean: 'No security findings', low: 'Low-severity findings', medium: 'Medium-severity findings to review', high: 'High-severity findings' };
-const SITE_DESC = "Free, open-source CLI that shows which account your unattended coding agents bill (subscription or pay-per-token API key), and grades, security-checks and compiles AI agent skills.";
+const SITE_DESC = "Free, open-source CLI that shows what your coding agents left behind: usage pace, stuck sessions, unsaved agent work, keys pasted into chats and agents billing an API key. Also grades and security-checks AI agent skills.";
 // Content Signals (contentsignals.org): search engines, answer engines and model training may all use this site.
 const CONTENT_SIGNAL = 'Content-Signal: search=yes, ai-input=yes, ai-train=yes';
 // Skills published at /.well-known/agent-skills/ (Agent Skills Discovery RFC v0.2.0).
@@ -80,7 +80,7 @@ export function prerenderSite({ out, webDir, reportsDir, siteUrl: siteUrlIn, now
     <a class="brand" href="${b}"><span class="mark" aria-hidden="true"></span>skillhawk</a>
     <nav aria-label="Site"><a href="${b}install/">Install</a><a href="${b}skills/">Skills</a><a href="${b}tools/">Tools</a><a href="${b}proof/">Proof</a><a href="${b}learn/">Learn</a><a href="${b}pricing/">Pricing</a><a href="${b}#/teams">For teams</a><a href="${b}#/browse">Open the app</a></nav>
   </header>`;
-  const FOOT = (b) => `<footer class="foot"><span>Skillhawk shows which account your unattended agents bill, and checks the skills they run. Open source (MIT). Questions: <a href="mailto:help@skillhawk.ai">help@skillhawk.ai</a></span><span><a href="${b}install/">Install</a> · <a href="${b}tools/">Tools</a> · <a href="${b}skills/">Skills</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="${LISTINGS.npm}">npm</a> · <a href="${LISTINGS.glama}">Glama</a> · <a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></span></footer>`;
+  const FOOT = (b) => `<footer class="foot"><span>Skillhawk shows what your coding agents left behind, and checks the skills they run. Open source (MIT). Questions: <a href="mailto:help@skillhawk.ai">help@skillhawk.ai</a></span><span><a href="${b}install/">Install</a> · <a href="${b}tools/">Tools</a> · <a href="${b}skills/">Skills</a> · <a href="${b}proof/">Proof</a> · <a href="${b}learn/">Learn</a> · <a href="${b}llms.txt">llms.txt</a> · <a href="${LISTINGS.npm}">npm</a> · <a href="${LISTINGS.glama}">Glama</a> · <a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></span></footer>`;
 
   const page = ({ p, title, description, body, ld = [], lastmod = today, type = 'article' }) => {
     // Search results show about 60 characters of a title and 155 of a description; cut at a word, never mid-word.
@@ -194,18 +194,17 @@ ${body(b)}
   const P = journey.PRICING;
   if (P) {
     const plan = (id) => P.plans.find((x) => x.id === id);
-    const [pro, team] = [plan('pro'), plan('team')];
-    if (!pro) throw new Error('prerender: PRICING needs a plan with id "pro"');
+    const team = plan('team');
     const perOf = (x) => (x.per ? ` ${x.per}` : '');
     // Listed prices only: nothing is sold through this page (no checkout), so the offers carry no url or availability.
     const offers = P.plans.filter((x) => typeof x.monthlyUsd === 'number').map((x) => ({ '@type': 'Offer', name: x.name, price: String(x.monthlyUsd), priceCurrency: 'USD', description: `${x.price}${perOf(x)}. ${x.blurb} ${P.note}` }));
     const watch = plan('watch');
-    const summary = `Free open-source developer tools.${watch ? ` Autopilot ${watch.price}${perOf(watch)} (waitlist; built, not on sale yet).` : ''} Pro ${pro.price}${perOf(pro)} for your own private vault (waitlist).${team ? ' Teams by request.' : ''}`;
+    const summary = `Free open-source developer tools.${watch ? ` Autopilot ${watch.price}${perOf(watch)} (waitlist; built, not on sale yet).` : ''}${team ? ' Teams (company vault, offboarding) by request.' : ''}`;
     page({ p: '/pricing/', title: 'Skillhawk pricing: free checks today, Autopilot from $9 a month', description: `${summary} ${P.note}`,
       ld: [crumbs([['Skillhawk', '/'], ['Pricing', '/pricing/']]), { '@context': 'https://schema.org', '@type': 'Product', name: 'Skillhawk', description: 'Build, check and protect your company\'s AI agent skills.', offers }],
       body: (b) => `${trail(b, [['Skillhawk', ''], ['Pricing']])}
     <h1>${esc(P.heading || 'Skillhawk pricing')}</h1>
-    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Autopilot (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}Pro (${esc(pro.price)}${esc(perOf(pro))}, waitlist) is a private vault for your skills; the software is built, and the hosted version is not running yet. ${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
+    <p class="sp-answer">The developer tools are free and open source. ${watch ? `Autopilot (${esc(watch.price)}${esc(perOf(watch))} when it goes on sale; built, not on sale yet) is a background guard on your machine: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, and can stop a runaway one. ` : ''}${team ? `${esc(team.blurb)} ` : ''}${esc(P.note)}</p>
     ${P.plans.map((x) => `<h2>${esc(x.name)}: ${esc(x.price)}${esc(perOf(x))}</h2><p>${esc(x.blurb)}</p><ul>${x.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('\n')}
     <p><a href="${b}#/?s=pilot">Join the Autopilot waitlist</a> · <a href="${b}#/teams">Teams: talk to us</a></p>` });
     texts['/pricing/'] = `Pricing\n${P.plans.map((x) => `${x.name}: ${x.price}${perOf(x)}. ${x.blurb} ${x.items.join('; ')}.`).join('\n')}\n${P.note}`;
@@ -398,9 +397,9 @@ ${body(b)}
   const indexFile = path.join(out, 'index.html');
   const stepHtml = (s) => `<section id="${s.id}-static"><h2>${esc(s.step)}: ${esc(s.h)}</h2><p>${esc(s.promise)} <span class="sp-meta">${esc(s.tier)}</span></p><ul>${tools.filter((t) => t.stepId === s.id).map((t) => `<li><a href="tools/${t.slug}/"><b>${esc(t.name)}</b></a>: ${esc(t.what)} <code>${esc(t.cmd)}</code></li>`).join('')}</ul></section>`;
   const landing = `<div class="sp-landing">
-    <h1>Your agents run without you. Know which account they bill.</h1>
-    <p class="sp-answer">One free command finds every coding agent that runs without you (cron, launchd, scheduled CI, sessions left working) and shows which account each one bills: your subscription, or an API key that charges per token. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Autopilot, built and not on sale yet, runs the free checks for you in the background: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, can stop a runaway one, and tracks your codebase health and which lessons stick. Founding price: $9 a month for the first 100.</p>
-    <p><code>npx skillhawk agents</code> <a class="sp-cta" href="#/?s=su-hero">Join the Autopilot waitlist</a></p>
+    <h1>See what your agents left behind.</h1>
+    <p class="sp-answer">One free command checks your Claude Code setup: usage pace, sessions stuck on a prompt, unsaved agent work, keys pasted into chats, and agents that run without you and which account each one bills (your subscription, or an API key that charges per token). Nothing leaves your machine. The same CLI grades your AI skills, scans them for security problems and compiles them for five agents. Autopilot, built and not on sale yet, runs the free checks for you in the background: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, can stop a runaway one, and tracks your codebase health and which lessons stick. Founding price: $9 a month for the first 100.</p>
+    <p><code>npx skillhawk brief</code> <a class="sp-cta" href="#/?s=pilot">Join the Autopilot waitlist</a></p>
     ${journey.WATCH ? `<section><h2>${esc(journey.WATCH.step)}: ${esc(journey.WATCH.h)}</h2><p>${esc(journey.WATCH.promise)} <span class="sp-meta">${esc(journey.WATCH.tier)}</span></p><ul>${journey.WATCH.tools.map((t) => `<li><b>${esc(t.name)}</b>: ${esc(t.what)}</li>`).join('')}</ul></section>` : ''}
     ${[...journey.JOURNEY, journey.PROTECT].map(stepHtml).join('\n')}
     <section><h2>Measured, not claimed</h2><p>The scan, lift, reviewer and trace numbers come from runs you can repeat from the repository; the token week is one developer's own logs.</p><ul>${proofPages.map((x) => `<li><a href="proof/${x.slug}/">${esc(x.title)}</a></li>`).join('')}</ul></section>

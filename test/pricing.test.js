@@ -9,8 +9,8 @@ import { PLANS, PREORDERS } from '../src/plans.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { PRICING } = loadJourney(path.join(ROOT, 'web'));
 
-test('site shows Free, Watch, Pro and a Teams inquiry card, in that order', () => {
-  assert.deepEqual(PRICING.plans.map((p) => p.id), ['free', 'watch', 'pro', 'team']);
+test('site shows Free, Autopilot and a Teams inquiry card, in that order', () => {
+  assert.deepEqual(PRICING.plans.map((p) => p.id), ['free', 'watch', 'team']);
 });
 
 test('waitlist cards say so, and Watch matches src/plans.js PREORDERS', () => {
@@ -44,7 +44,9 @@ test('Teams has no price and points to the inquiry form', () => {
 });
 
 test('heading states the Watch price', () => {
-  assert.equal(PRICING.heading, `Free checks today. Autopilot: $${PREORDERS.watch.foundingUsd} a month for the first ${PREORDERS.watch.foundingLimit}.`);
+  assert.equal(PRICING.heading, `Free now. Autopilot: $${PREORDERS.watch.foundingUsd} a month.`);
+  const w = PRICING.plans.find((p) => p.id === 'watch');
+  assert.match(w.per, new RegExp(`first ${PREORDERS.watch.foundingLimit}`), 'the founding limit is stated on the card');
 });
 
 test('web/app.js parses (the tests above only read its data block)', async () => {

@@ -26,7 +26,7 @@ after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 test('landing text is in index.html without JavaScript, and the SPA scripts are still there', () => {
   const html = read('index.html');
-  assert.match(textOf(html), /Your agents run without you\. Know which account they bill/);
+  assert.match(textOf(html), /See what your agents left behind/);
   assert.match(textOf(html), /skillhawk review skills\//);
   assert.match(html, /<link rel="canonical" href="https:\/\/example\.test\/base\/">/);
   assert.match(html, /src="app\.js/);

@@ -281,7 +281,7 @@ MEDIUM .mcp.json:3  MCP server "files" runs @example/server-filesystem unpinned
 // every output line comes from a real run on registry/public, examples/, test/fixtures or the seeded demo data
 // (long output shortened, not edited).
 const FREE = 'Free and open source. Runs on your machine.';
-const PILOT = 'Pro: $20 a month, waitlist; the hosted vault is not running yet. The company vault, offboarding and exit interviews need a Teams license.';
+const PILOT = 'Teams license: the company vault, offboarding and exit interviews. Talk to us.';
 // Watch is built (private repo skillhawk-watch) and not on sale yet. Each row states what the free command does today and what Watch adds.
 const WATCH = { id: 'watch', step: 'Autopilot', h: 'Autopilot: the checks, run for you.', tier: 'Autopilot: built, not on sale yet; founding price $9 a month for the first 100 when it is. Join the waitlist (free, no payment); the commands below work today.',
   promise: 'Unattended agents are where surprise bills come from: a scheduled run that picks up an API key, or a loop nobody stops. Today the free command shows which agents run without you and which account each bills. Autopilot (built, not on sale yet) runs in the background: it warns when a job starts billing an API key, tracks cost per headless job, can stop one that runs away, and every day checks your codebase health, which lessons stick and what work you keep repeating.',
@@ -353,24 +353,20 @@ const ROADMAP = ['Leak-watch crawler', 'Stronger collusion resistance (merged co
 
 // Free and Pro prices mirror src/plans.js PLANS; test/pricing.test.js keeps them equal. Teams are by inquiry for now.
 const PRICING = {
-  heading: 'Free checks today. Autopilot: $9 a month for the first 100.',
-  note: 'Prices in USD. Autopilot is built and not on sale yet, and the hosted Pro vault is not running yet: join a waitlist, no payment collected. Autopilot founding price: $9 a month for the first 100 buyers, kept for as long as you stay subscribed; then $19 a month or $190 a year. Teams: tell us what you need.',
+  heading: 'Free now. Autopilot: $9 a month.',
+  note: 'Prices in USD. Autopilot is built and not on sale yet: join the waitlist, no payment collected. Founding price: $9 a month for the first 100 buyers, kept for as long as you stay subscribed; then $19 a month or $190 a year. Teams: tell us what you need.',
   plans: [
     { id: 'free', name: 'Free', monthlyUsd: 0, seats: 1, extraSeatUsd: null, price: '$0', per: 'MIT licensed',
-      blurb: 'Open source (MIT). Review, secure, clean and compile run offline on your machine; model, registry and import commands use the network.',
-      items: ['brief, usage, stuck, snapshot and restore, tidy, logs-secrets', 'setup, health, brain, factory', 'review, review --chats, secure, clean', 'create, compile to 5 agents, optimize', 'radar, A/B skills, model-release watch', 'map, tokens, agents, savings ledger and statement', 'test, dev, ci, badge'],
-      cta: { label: 'npx skillhawk review', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
+      blurb: 'Open source (MIT). Runs on your machine when you run it. No account, no key.',
+      items: ['brief, usage, stuck, agents', 'snapshot and restore, tidy, logs-secrets', 'health, setup, brain, factory', 'Skills: review, secure, compile to 5 agents', 'MCP server and Claude Code plugin'],
+      cta: { label: 'npx skillhawk brief', href: 'https://github.com/agentwik-labs/skillhawk', code: true } },
     { id: 'watch', name: 'Autopilot', preorder: true, monthlyUsd: 19, yearlyUsd: 190, foundingUsd: 9, seats: 1, extraSeatUsd: null, price: '$19', per: 'per month, or $190 a year. Founding price: $9 a month for the first 100', featured: true,
-      blurb: 'Waitlist. Built, not on sale yet. The free checks, run for you in the background on your machine, Per problem you choose once: tell me, prepare it, or do it; everything it does is logged and can be undone. If in 30 days it has not caught a billing problem, cut a repeated correction or shipped one skill with measured lift, you get your money back.',
-      items: ['Morning brief: what it did for you, what needs you', 'Usage paced against your own limits; queued jobs wait for the reset and re-run after a limit hit', 'Uncommitted agent work snapshotted every night', 'Sessions waiting on a permission prompt pushed to your phone', 'Red CI investigated overnight by your own agent: a fix branch or draft PR, never merged', 'Clutter cleaned under your rules; secrets redacted from agent logs', 'Tool updates checked against your settings, hooks and MCP servers', 'Warning when a scheduled agent starts billing an API key', 'Cost per headless job, per day; stop a runaway job (opt-in)', 'Daily codebase health, with an alert when it drops', 'Which adopted lessons stick, and which do not', 'Repeated work with no skill yet, ready to draft', 'Weekly report; desktop or Slack alerts', 'Brain notes synced to your own private git repo', 'Supply-chain and agent format checks', '30-day results guarantee'],
+      blurb: 'Waitlist. Built, not on sale yet. The free checks, run for you in the background on your machine. You choose per problem: tell me, prepare it, or do it; everything is logged and can be undone.',
+      items: ['Morning brief: what it did, what needs you', 'Warning when a scheduled agent starts billing an API key; stop a runaway job (opt-in)', 'Usage paced against your limits; jobs wait for the reset', 'Unsaved agent work snapshotted every night', 'Stuck sessions pushed to your phone', 'Daily codebase health, with an alert when it drops', '30-day guarantee: it catches a billing problem, cuts a repeated correction or ships a skill with measured lift, or your money back'],
       cta: { label: 'Join the waitlist', preorder: 'watch' } },
-    { id: 'pro', name: 'Pro', preorder: true, monthlyUsd: 20, seats: 1, extraSeatUsd: null, price: '$20', per: 'per month',
-      blurb: 'Waitlist. The vault software is built; the hosted vault is not running yet.',
-      items: ['Private skills, installable into Claude Code, Codex, Cursor and AGENTS.md agents', 'Versions, diffs and rollback', 'Publish checks: Reviewer + Security', 'Signed skills', 'Audit log, hash-chained', 'Lockfile'],
-      cta: { label: 'Join the Pro waitlist', preorder: 'pro' } },
     { id: 'team', name: 'Teams', inquiry: true, monthlyUsd: null, seats: null, extraSeatUsd: null, price: 'Talk to us', per: '',
       blurb: 'A shared vault for several people is set up by request for now. Tell us your team size and what you want to protect.',
-      items: ['License key for the company vault: run it on your own servers', 'Shared private vault with roles, tokens and an audit log', 'Copies marked for each person, with leak trace', 'Offboarding: revoke a leaver and see what they held', 'Exit interviews: what a leaver knows, kept as private skills', 'Revocable streaming over MCP', 'Governance and evidence export for your audit', 'Help running it on your own servers'],
+      items: ['License key for the company vault, on your own servers', 'Private skills with roles, versions and an audit log', 'Offboarding: revoke a leaver and see what they held', 'Exit interviews: what a leaver knows, kept as skills', 'Copies marked per person, with leak trace', 'Governance and evidence export for your audit'],
       cta: { label: 'Ask about teams', href: '#/teams' } },
   ],
 };
@@ -378,14 +374,14 @@ function lpNav() {
   return `<header class="lp-nav">
     <a class="lp-word" href="#/">skillhawk</a>
     <nav aria-label="Site"><a href="#/?s=checks">Checks</a><a href="#/?s=proof">Proof</a><a href="#/?s=pricing">Pricing</a><a href="#/browse">Library</a><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></nav>
-    <a class="lp-action" href="#/?s=su-hero">Join the waitlist</a>
+    <a class="lp-action" href="https://github.com/agentwik-labs/skillhawk#readme">Install free</a>
   </header>`;
 }
 
 function lpFooter() {
   return `<footer class="lp-foot">
     <div class="lp-foot-top">
-      <div><h2 class="lp-h">Know which account your agents bill.</h2><p class="lp-install"><code>npx skillhawk agents</code> · <a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
+      <div><h2 class="lp-h">See what your agents left behind.</h2><p class="lp-install"><code>npx skillhawk brief</code> · <a href="https://github.com/agentwik-labs/skillhawk#readme">Install guide on GitHub →</a></p></div>
       <ul class="jf"><li><a href="tools/">All commands</a></li><li><a href="proof/">Proof</a></li><li><a href="#/browse">Library</a></li><li><a href="#/?s=pricing">Pricing</a></li><li><a href="#/teams">For teams</a></li><li><a href="learn/">Answers</a></li></ul>
       <ul><li><a href="#/browse">Browse all skills</a></li><li><a href="#/examples">Good vs bad</a></li><li><a href="#/create">Create a skill</a></li><li><a href="https://github.com/agentwik-labs/skillhawk">GitHub</a></li><li><a href="${esc(CFG.contact.url)}">${esc(CFG.contact.label)}</a></li></ul>
     </div>
@@ -434,7 +430,6 @@ const preorderHref = (id) => CFG.preorder?.[id] || `#/?s=reserve-${id}`;
 function pricingSection(id = 'pricing') {
   const P = PRICING;
   return `<section class="v-sec pr" id="${id}" aria-labelledby="${id}-h">
-      <p class="v-eyebrow">Pricing</p>
       <h2 class="lp-h" id="${id}-h">${esc(P.heading)}</h2>
       <ul class="pr-grid">${P.plans.map((p) => `<li class="pr-card${p.featured ? ' pr-featured' : ''}">
         <h3>${esc(p.name)}</h3>
@@ -450,8 +445,8 @@ function pricingSection(id = 'pricing') {
 function preorderCta(id) {
   const paid = CFG.preorder?.watch;
   return `<section class="lp-cta" aria-labelledby="${id}-h" id="pilot">
-      <h2 class="lp-h" id="${id}-h">Want a warning before an unattended agent bills the wrong account?</h2>
-      <p class="v-lede">Autopilot runs the free checks for you in the background: it warns when a scheduled agent starts billing an API key, tracks the cost of each headless job, can stop a runaway one, and tracks your codebase health and which lessons stick. Built and in testing; not on sale yet. Founding price: $9 a month for the first 100. The free command above does the check on demand today.</p>
+      <h2 class="lp-h" id="${id}-h">Let Autopilot run these for you.</h2>
+      <p class="v-lede">Every morning: a brief of what it did and what needs you, a warning when a scheduled agent starts billing an API key, unsaved agent work snapshotted. Built and in testing; not on sale yet. $9 a month for the first 100, kept while you stay subscribed.</p>
       <div class="po-row" id="reserve-watch">${paid
         ? `<a class="lp-action" href="${esc(paid)}">Get Autopilot, $9 a month (first 100)</a>`
         : signupSentence({ lead: 'Join the waitlist:', button: 'Join', tag: 'preorder-watch', id: `${id}-watch`, note: 'Free to join; no payment is collected. First 10 on the list: a free written review of your agent setup and skills, by email.' })}</div>
@@ -675,11 +670,30 @@ Agent processes
  !  100  claude  up 3d 4h  no terminal
 
 Nothing was stopped.`;
+// Real output of skillhawk 0.7.0 on an example machine (made-up user, repos and logs), trimmed.
+const BRIEF_OUT = `$ npx skillhawk brief
+skillhawk brief · dana-mbp
+
+1 thing needs you.
+
+Usage: this week is 240% of your typical week
+Waiting for you: shop (Bash)
+Uncommitted agent work: 4 files in 2 worktrees
+  (skillhawk snapshot saves it)
+
+$ npx skillhawk logs-secrets
+1 secret in 1 session log(s): 1 anthropic
+  anthropic  sk-a…(64 chars)
+  ~/.claude/projects/…/3c8e1f00….jsonl:1
+
+Redact: skillhawk logs-secrets --redact`;
 const CHECKS = [
-  { name: 'Agents', what: 'Every agent that runs without you (processes, unattended sessions, cron, launchd, scheduled CI) and which account each one bills. Read-only.', cmd: 'npx skillhawk agents', out: '! cron claude */30 * * * *  bills: API key (example data)' },
-  { name: 'Review', what: 'Grades every skill A to F with line-level findings: contradictions, vague rules, broken links, skills that crowd each other out.', cmd: 'npx skillhawk review .', out: 'C notes-v2: description never says when to use it' },
-  { name: 'Secure', what: 'Audits skills, MCP configs, hooks and scripts. A non-zero exit makes it a CI gate.', cmd: 'npx skillhawk secure .', out: 'HIGH settings.json:2 "Bash(*)" runs any shell command' },
-  { name: 'Compile', what: 'One skill, native files for five agents, each checked against its limits.', cmd: 'npx skillhawk compile ./skill', out: 'copilot: FAIL size 4301/4000 chars' },
+  { name: 'Will your plan last the week?', what: 'Usage paced against the limits you have hit before, from your own logs. An estimate in API list prices, not a bill.', cmd: 'npx skillhawk usage', out: 'last 5 hours: $18.57 of about $40.66 (46%)\nthis week is 240% of your typical week' },
+  { name: 'Sessions waiting on you', what: 'Agent sessions stuck on a permission prompt or a limit reset, with the command to resume each one.', cmd: 'npx skillhawk stuck', out: 'shop (7f3a9c21): waiting on Bash: npm run migrate · 24 min' },
+  { name: 'Save unsaved agent work', what: 'Uncommitted work in every agent repo, saved to hidden git refs. Your files, branches and index are not touched; nothing is pushed.', cmd: 'npx skillhawk snapshot', out: 'saved   3 file(s)  ~/dev/shop (main) -> 398af29996' },
+  { name: 'Keys pasted into chats', what: 'Claude Code keeps every session as plain text. This finds keys and passwords in those logs and redacts them in place.', cmd: 'npx skillhawk logs-secrets', out: '1 secret in 1 session log(s): 1 anthropic' },
+  { name: 'Agents billing an API key', what: 'Agents that run without you (cron, launchd, scheduled CI, unattended sessions) and which account each one bills.', cmd: 'npx skillhawk agents', out: '! cron claude */30 * * * *  bills: API key, pay per token' },
+  { name: 'Codebase health', what: 'Structure, tests, clean code, system design and cloud cost, graded with a fix for each finding. Local checks.', cmd: 'npx skillhawk health .', out: 'skillhawk health: B (89/100) · 0 high, 3 medium, 2 low' },
 ];
 
 function heroReserve(id) {
@@ -693,17 +707,12 @@ function heroReserve(id) {
     <p class="hr-note" data-note>${note}</p>`;
 }
 
-// One real run of `skillhawk agents` on the founder's own machine, counts only (no paths or commands).
-const OWN_RUN = { date: 'Nov 17, 2026', flagged: 24, detail: '10 agents up over 12 hours, 13 dev servers left running, 1 session with no human message for 2+ hours' };
-
-async function proofStats(el) {
-  const [d, l] = await Promise.all([fetch('media/proof.json').then((r) => (r.ok ? r.json() : null)).catch(() => null), loadLibrary()]);
-  const tiles = [];
-  if (d?.scan) tiles.push({ n: d.scan.skills, k: 'public skills scanned', s: `${d.scan.ship_scripts} ship scripts, ${d.scan.network_calls} make network calls, ${d.scan.confirmed_malicious} confirmed malicious.`, href: 'proof/scan/' });
-  if (l) tiles.push({ n: l.total, k: 'public skills graded', s: `${l.grades?.A ?? ''} got an A; ${(l.grades?.D ?? 0) + (l.grades?.F ?? 0)} got a D or F.`, href: 'proof/library/' });
-  if (d?.lift) { const up = d.lift.rows.filter((r) => r.with > r.without).length; tiles.push({ n: `${up} of ${d.lift.rows.length}`, k: 'tasks scored higher with a skill installed', s: 'Claude Haiku, 2 runs per task. A small sample.', href: 'proof/lift/' }); }
-  el.innerHTML = tiles.length ? tiles.map((t) => `<a class="ps" href="${t.href}"><b>${esc(String(t.n))}</b><span class="ps-k">${esc(t.k)}</span><span class="ps-s">${esc(t.s)}</span><span class="ps-l">Method and data →</span></a>`).join('') : '';
-}
+// Real runs on the founder's own machine, counts only (no paths, keys or commands).
+const OWN = [
+  { n: '13', k: 'secrets in 5 of my Claude Code session logs', s: '1 private key, 7 OpenAI keys, 5 passwords or tokens. skillhawk logs-secrets, Nov 23, 2026.' },
+  { n: '15', k: 'of my repos had unsaved agent work', s: 'Uncommitted files in agent worktrees. skillhawk snapshot --check, Nov 23, 2026.' },
+  { n: '$1,800+', k: 'billed in two days by scheduled jobs', s: 'Not ours: a Max subscriber whose jobs picked up an API key.', href: 'https://github.com/anthropics/claude-code/issues/37686', l: 'GitHub #37686 →' },
+];
 
 async function viewShowcase() {
   app.innerHTML = `
@@ -712,26 +721,25 @@ async function viewShowcase() {
 
     <section class="h2-hero" aria-labelledby="hero-h">
       <div class="h2-copy">
-        <h1 id="hero-h" class="lp-sentence h2-h1">Your agents run without you. Know which account they bill.</h1>
-        <p class="h2-lede">One free command finds every coding agent that runs without you (cron, launchd, scheduled CI, sessions left working) and shows which account each one bills: your subscription, or an API key that charges per token. Open source; nothing leaves your machine.</p>
-        ${cmd('npx skillhawk agents')}
-        <p class="h2-own">Why it matters: when <code>ANTHROPIC_API_KEY</code> is set, Claude Code uses it instead of your subscription, and <code>claude -p</code> always does (<a href="https://code.claude.com/docs/en/env-vars">Claude Code docs</a>). One Max subscriber's scheduled jobs billed <b>$1,800+ in two days</b> that way (<a href="https://github.com/anthropics/claude-code/issues/37686">GitHub #37686</a>).</p>
-        ${heroReserve('su-hero')}
+        <h1 id="hero-h" class="lp-sentence h2-h1">See what your agents left behind.</h1>
+        <p class="h2-lede">One free command checks your Claude Code setup: usage pace, stuck sessions, unsaved agent work, keys pasted into chats and agents billing an API key. Nothing leaves your machine.</p>
+        ${cmd('npx skillhawk brief')}
+        <p class="h2-own">Free and open source (MIT). No account, no key. Want it run for you every morning? <a href="#/?s=pilot">Autopilot, $9 a month for the first 100 →</a></p>
       </div>
-      <figure class="h2-term"><figcaption>Real output format, example data, trimmed</figcaption><pre tabindex="0" aria-label="Example output of skillhawk agents">${esc(AGENTS_OUT)}</pre></figure>
+      <figure class="h2-term"><figcaption>Real output, example machine, trimmed</figcaption><pre tabindex="0" aria-label="Example output of skillhawk brief and logs-secrets">${esc(BRIEF_OUT)}</pre></figure>
     </section>
 
     <section class="h2-sec" id="checks" aria-labelledby="checks-h">
-      <h2 id="checks-h" class="h2-h">Four free checks, one command each.</h2>
+      <h2 id="checks-h" class="h2-h">Six free checks, one command each.</h2>
       <ul class="h2-cards">${CHECKS.map((c) => `<li><h3>${esc(c.name)}</h3><p>${esc(c.what)}</p>${cmd(c.cmd)}<pre aria-label="Example output">${esc(c.out)}</pre></li>`).join('')}</ul>
-      <p class="h2-more"><a href="tools/">Every command, with example output →</a></p>
+      <p class="h2-more"><a href="tools/">Every command, with example output →</a> · For skills: <a href="tools/">review, secure and compile</a></p>
       <p class="h2-more">Answers: <a href="learn/why-is-claude-code-billing-my-api-key-instead-of-my-subscription/">why Claude Code bills an API key</a> · <a href="learn/see-which-ai-coding-agents-are-still-running/">which agents are still running</a> · <a href="learn/how-much-is-claude-code-costing-me/">what Claude Code is costing you</a> · <a href="learn/stop-a-background-ai-agent-safely/">stopping one safely</a></p>
     </section>
 
     <section class="h2-sec" id="proof" aria-labelledby="proof-h">
-      <h2 id="proof-h" class="h2-h">Measured, not claimed.</h2>
-      <div class="h2-stats" data-stats></div>
-      <p class="h2-more"><a href="proof/">Every measurement, with method and limits →</a></p>
+      <h2 id="proof-h" class="h2-h">Measured on my own machine.</h2>
+      <div class="h2-stats">${OWN.map((t) => `<${t.href ? `a href="${t.href}"` : 'div'} class="ps"><b>${esc(t.n)}</b><span class="ps-k">${esc(t.k)}</span><span class="ps-s">${esc(t.s)}</span>${t.l ? `<span class="ps-l">${esc(t.l)}</span>` : ''}</${t.href ? 'a' : 'div'}>`).join('')}</div>
+      <p class="h2-more"><a href="proof/">Skill measurements: 511 scanned, lift with and without, method and limits →</a></p>
     </section>
 
     ${pricingSection()}
@@ -740,7 +748,6 @@ async function viewShowcase() {
   </div>`;
   bindSignups(app);
   copyButtons(app);
-  await proofStats(app.querySelector('[data-stats]'));
 }
 
 function viewTeams() {
